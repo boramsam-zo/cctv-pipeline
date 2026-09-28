@@ -1,0 +1,26 @@
+services:
+  scene-db:
+    profiles: [tools]
+    # Reuse the already deployed Python/psycopg tool image; no model or AWS keys.
+    image: cctv-rag-tools:gemini-001-768-v1
+    pull_policy: never
+    entrypoint: [python, /scene/db.py]
+    networks: [database]
+    secrets: [db_app_password]
+    volumes:
+      - type: bind
+        source: ${SCENE_APP_DIR:?Set the scene application directory}
+        target: /scene
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SCENE_RESULT_FILE:?Set the existing result.json file}
+        target: /result.json
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]

@@ -1,0 +1,6 @@
+# CPU synthetic tests only. Runpod GPU dependencies live in apps/runpod_worker.
+starlette==1.6.0
+uvicorn==0.53.0
+httpx==0.28.1
+numpy==2.2.6
+av==16.1.0

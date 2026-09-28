@@ -1,0 +1,5 @@
+*
+!Dockerfile
+!requirements.txt
+!index.py
+!container_entrypoint.py

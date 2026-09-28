@@ -1,0 +1,55 @@
+name: cctv
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg16-bookworm@sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cctv
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+    secrets:
+      - db_admin_password
+      - db_app_password
+    volumes:
+      - type: bind
+        source: ${CCTV_DATA_DIR:-/srv/cctv}/postgresql
+        target: /var/lib/postgresql/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./init-db.sql
+        target: /docker-entrypoint-initdb.d/10-cctv.sql
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: [database]
+    # No published database port. Only containers on this network can connect.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U postgres -d cctv &&
+          psql -U postgres -d cctv -tAc
+          "SELECT EXISTS (SELECT FROM pg_extension WHERE extname='vector')
+          AND EXISTS (SELECT FROM pg_roles WHERE rolname='cctv_app');" | grep -qx t
+      interval: 5s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    shm_size: 128mb
+
+networks:
+  database:
+    internal: true
+
+secrets:
+  db_admin_password:
+    file: ${CCTV_SECRETS_DIR:-/etc/cctv/secrets}/db_admin_password
+  db_app_password:
+    file: ${CCTV_SECRETS_DIR:-/etc/cctv/secrets}/db_app_password

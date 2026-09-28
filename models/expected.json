@@ -1,0 +1,13 @@
+{
+  "schema_version": "cctv-model-files-v1",
+  "files": {
+    "x3d_s_real_so_tad_epoch7_best_model.pt": {
+      "bytes": 36344683,
+      "sha256": "ca2db4a25c9cd2d859a7143932d911a3351beacc5193de3ada16f3115bea09bf"
+    },
+    "yolo11s_accident_150_e30_best.pt": {
+      "bytes": 19156378,
+      "sha256": "44f7e937068ec8862e30245314ec1cd54d6782e716eec1abc3fcf3ab7b761007"
+    }
+  }
+}

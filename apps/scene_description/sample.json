@@ -1,0 +1,9 @@
+{
+  "bucket": "replace-with-your-private-bucket",
+  "region": "ap-northeast-2",
+  "job_id": "00000000000000000000000000000000",
+  "event_id": "event_000",
+  "expected_input_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "model": "gemini-3.5-flash-lite",
+  "video_sample_fps": 4
+}

@@ -1,0 +1,50 @@
+# Merge with the existing DB compose.yaml. No DB/public service port is added.
+services:
+  be-queue:
+    profiles: [be-tools]
+    image: cctv-be-queue:pg-v1
+    build:
+      context: ${BE_APP_DIR:?Set the BE app directory}
+      dockerfile: Queue.Dockerfile
+    pull_policy: never
+    user: "${BE_CONTAINER_UID:-0}:${BE_CONTAINER_GID:-0}"
+    environment:
+      AWS_SHARED_CREDENTIALS_FILE: /run/secrets/be_aws_credentials
+      AWS_CONFIG_FILE: /run/secrets/be_aws_config
+      AWS_DEFAULT_REGION: ap-northeast-2
+    networks: [database, be_egress]
+    secrets: [db_app_password, runpod_worker_token, be_aws_credentials, be_aws_config]
+    volumes:
+      - type: bind
+        source: ${BE_APP_DIR}
+        target: /code/apps/be_worker
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${BE_SCENE_APP_DIR:?Set the scene app directory}
+        target: /code/apps/scene_description
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${BE_INPUT_DIR:?Set the video/config directory}
+        target: /input
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${BE_SPOOL_DIR:?Set the persistent queue spool directory}
+        target: /spool
+        bind: {create_host_path: false}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+networks:
+  be_egress: {}
+secrets:
+  runpod_worker_token:
+    file: ${BE_SECRETS_DIR:?Set the private queue secret directory}/runpod_worker_token
+  be_aws_credentials:
+    file: ${BE_SECRETS_DIR}/aws_credentials
+  be_aws_config:
+    file: ${BE_SECRETS_DIR}/aws_config

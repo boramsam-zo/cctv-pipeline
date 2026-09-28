@@ -1,0 +1,5 @@
+{
+  "runpod_url": "https://REPLACE_WITH_POD_ID-8000.proxy.runpod.net",
+  "s3_bucket": "replace-with-your-private-bucket",
+  "s3_region": "ap-northeast-2"
+}

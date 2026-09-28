@@ -1,0 +1,36 @@
+# Merge with the DB compose.yaml. In the deployment bundle this file sits beside it.
+services:
+  rag:
+    profiles: [tools]
+    build:
+      context: ${RAG_APP_DIR:?Set RAG_APP_DIR to the staged apps/rag_index directory}
+    image: cctv-rag-tools:gemini-001-768-v1
+    user: "${CCTV_APP_UID:-10001}:${CCTV_APP_GID:-10001}"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [database, api_access]
+    secrets: [db_app_password, gemini_api_key]
+    volumes:
+      - type: bind
+        source: ${CCTV_INPUT_DIR:?Set CCTV_INPUT_DIR to the directory containing chunks.jsonl}
+        target: /input
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CCTV_DATA_DIR:-/srv/cctv}/rag-output
+        target: /output
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+networks:
+  api_access: {}
+
+secrets:
+  gemini_api_key:
+    file: ${CCTV_SECRETS_DIR:-/etc/cctv/secrets}/gemini_api_key
