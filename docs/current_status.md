@@ -1,18 +1,20 @@
 # 현재 상태 — CCTV 파이프라인
 
-## 작업 재개 요약 — 2026-10-05 두 모델 연결 구현·비공개 가중치 저장·게시 준비
+## 작업 재개 요약 — 2026-10-05 Node.js 24 Actions·이미지 게시 완료, 실제 모델/보고 연결 검증 잔여
+
+**최신 게시 결과:** 기존 main 이력을 보존한 일반 push와 Node.js 24 기반 Actions 실행37214466090이 성공했다. Runpod39·BE55·MLflow/등록27개, 총121개 검사 대상 중117개 통과/제외자료 관련4개 skip이며 실제 이미지 빌드·Hub 게시·digest 출력 단계가 성공했다. 최종 로그에 Node.js 20 사용 중단 경고 없음. [성공한 Actions](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37214466090). 이미지 코드 커밋은 `9707c6ba0123f7d5cae1e33ae415cbca678b3ba4`, 적용할 불변 주소는 `dahyeguk/cctv-runpod-ab@sha256:ce806774fde5eb047da54532646b2580d6552cc2a9bec4788c77cb5e6b7c4bc1`이다. Hub API에서도 Linux amd64/tag/digest를 독립 확인했다. Python/CUDA/모델 환경은 이번 Node 변경으로 바꾸지 않았다. 영수증은 `artifacts/git-publication-20261004-01/actions-node24-success.json`·`hub-node24-run.json`이다.
 
 **최신 자원 결정:** 사용자가 비용/프리티어 확인 뒤 t3.small 유지로 확정했다. 일시적인 t3.medium 승인 제안은 이 결정으로 대체한다. 기존 인스턴스 변경·중지·삭제0, MLflow 서버 기동도 보류다. c7i-flex.large는 향후 변경 시 고려 대상이라는 사용자 언급이며 지금 변경 승인이 아니다. 무료 플랜 ACTIVE/크레딧 상태는 읽기 API로 확인했으며 비공개 근거는 artifacts/mlops/implementation-20261004-01/aws-account-plan-state.json이다. 프리티어 대상도 크레딧/기간 제한이 있다.
 
 **최우선 목표:** CCTV 영상 접수부터 사고 모델 분석, EC2 결과 회수, 기존 VLM/문서 근거, 보고서 저장·화면 확인까지다. 현재 운영 X3D-S와 R2만 선택하며 고정 B YOLO·기존 원문·기존 실행 기록을 보존한다. 새 모델 학습은 하지 않는다.
 
-**실행한 내용:** 모델별 불변 계약/가중치 해시/전처리/출력 식별, R2 런타임 어댑터, EC2 선택·근거 검증·기존 보고 경로, 최소 모델 선택 UI, MLflow 실제 등록 버전 확인/메타데이터 재전송/화면 상태 표시, 유한 B/R2 실행창, Pod 시작·EC2 연결 helper, Git 게시 선별/Actions 빌드·Hub tag/digest 출력 코드를 추가했다. 기존 85개 회귀 검사와 새 관련 오프라인 검사·AppTest가 통과했으며 최종 게시 복사본 검사는 진행 중이다. 실제 GPU 로딩/추론 호환성 또는 새 영상 보고 완료를 확인한 것으로 쓰지 않는다.
+**실행한 내용:** 모델별 불변 계약/가중치 해시/전처리/출력 식별, R2 런타임 어댑터, EC2 선택·근거 검증·기존 보고 경로, 최소 모델 선택 UI, MLflow 실제 등록 버전 확인/메타데이터 재전송/화면 상태 표시, 유한 B/R2 실행창, Pod 시작·EC2 연결 helper, Git 게시 선별/Actions 빌드·Hub tag/digest 출력 코드를 추가했다. 기존 회귀/새 관련 오프라인 검사·AppTest와 최종 게시 복사본·원격 CI 검사를 마쳤다. 실제 GPU 로딩/추론 호환성 또는 새 영상 보고 완료를 확인한 것으로 쓰지 않는다.
 
-**실제 원격 확인/변경:** R2 원본의 기존 확인 해시 c40c150e…78b46/125379501바이트로 기존 비공개 S3의 해시별 새 키에 조건부 업로드했다. Public Access Block 4개, 업로드 객체 크기·SHA metadata·S3 checksum 일치와 AES256 암호화를 확인했다. 원본 보존, 기존 객체 덮어쓰기/다운로드 없음. 근거는 `artifacts/mlops/weight-publication-20261004-01/`의 영수증이다. GitHub private main은 b625fbde033bac13f93b395ec31b61113fbaec1e이며 보호 없음·별도 clone 준비. 사용자가 DOCKERHUB_USERNAME/DOCKERHUB_TOKEN을 등록했고 이름만 확인했다. Secret 값은 출력하지 않았다. 기존 main을 부모로 한 74d287f82faefc92ea6f1ae10d1f70fec7b7b13f를 일반 push했다(강제 push0). 첫 GitHub Actions37212781450에서 Ubuntu/Python3.12 실제 검사121개가 통과했고 제외자료 관련4개는 skip했다. Hub 로그인 성공 뒤 CUDA base 추출 중 임시 runner 디스크 부족으로 build가 실패했으며 새 이미지 게시0이다. 사용하지 않는 hosted runner SDK 정리 후 재검증한다.
+**실제 원격 확인/변경:** R2 원본 해시 c40c150e…78b46/125379501바이트로 기존 비공개 S3의 새 키에 조건부 업로드1회, Public Access Block4개·크기·SHA metadata·S3 checksum·AES256을 확인했다. 원본/기존 객체 보존, 다운로드 없음. 기존 main b625fbde…를 부모로 74d287f→1e3c2ba→6ad46bf→9707c6b를 일반 push했으며 강제 push0이다. 첫 runner 디스크 부족과 후속40GiB 사전 조건 실패는 원문 보존했고, 사용하지 않는 임시 runner SDK/이미지 정리 후 실제 빌드·게시 성공으로 해결했다. 공개 사용자명 DOCKERHUB_USERNAME은 Actions Variable로, DOCKERHUB_TOKEN은 Secret으로 유지해 이미지 주소 마스킹을 해결했다. 토큰 값 열람/출력0. 첫 실패부터 최종 성공까지의 근거는 artifacts/git-publication-20261004-01에 보존한다.
 
 **배포 조건:** 현재 EC2는 t3.small(x86_64·2GiB), 가용 RAM 519MiB, 기존 worker 사용 약616MiB/상한896MiB다. MLflow 후보 상한384MiB와 기존 worker가 상한까지 늘어날 여유280MiB를 합치면 현재 가용보다 약145MiB 많다. 상한은 실제 사용량과 다르지만 이 상태로 안전한 동시 운영을 보장할 수 없어 기존 서비스를 건드리거나 MLflow를 기동하지 않았다. 새 서버/증설은 사용자 논의 대상이다. 기존 /input이 읽기 전용이므로 새 연결 설정은 원본 보존 복사한 /spool/model-target-config.json을 API/worker가 함께 읽도록 준비해야 한다.
 
-**미실행/다음:** 원격 EC2 패키지 설치·서비스 변경·DB migration·MLflow 등록/기동, Pod 생성/이미지 적용, 실제 GPU/VLM 호출은 미실행이다. 먼저 최종 오프라인 검사와 기존 main 이력 보존 Git/Actions 게시를 마친다. 그 뒤 메모리/MLflow 운영 조건 및 사용자가 적용한 Pod 정보를 연결한다. 첫 실제 검증은 같은 짧은 영상1개×두 모델 각1회·회당300초·새 VLM0·자동 GPU 재실행0이며 full_report 실제 실행과 분리한다. 정답 없는 accuracy/F1은 기록하지 않고 기존 개발 검증과 독립 최종 평가는 구분한다.
+**미실행/다음:** 원격 EC2 패키지 설치·서비스 변경·DB migration·MLflow 등록/기동, Pod 생성/이미지 적용, 실제 GPU/VLM 호출은 미실행이다. Git/Actions/Hub 게시 단계는 완료했으며 다음 하나는 t3.small 유지 조건에서 MLflow 운영 자원 조건을 해결하는 것이다. 현재 메모리 부족 가능성 때문에 기동 보류를 유지하며 임의 증설하지 않는다. 그 뒤 사용자가 적용한 Pod 정보를 연결한다. 첫 실제 검증은 같은 짧은 영상1개×두 모델 각1회·회당300초·새 VLM0·자동 GPU 재실행0이며 full_report 실제 실행과 분리한다. CCTV 분석부터 보고서까지의 실제 연결 완료를 이미지 게시 성공으로 대신하지 않는다. 정답 없는 accuracy/F1은 기록하지 않고 기존 개발 검증과 독립 최종 평가는 구분한다.
 
 ## 작업 재개 요약 — 2026-10-04 MLOps 착수·영상부터 보고서까지 완료 기준 확정
 

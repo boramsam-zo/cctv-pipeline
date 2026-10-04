@@ -6216,3 +6216,13 @@ OpenAI Docs의 [Run long horizon tasks with Codex](https://developers.openai.com
 **자원 결정 변경:** 사용자 t3.medium4GiB 증설 승인 후 프리티어/비용 질문과 t3.small유지 최종지시 수신. 서비스정지·인스턴스변경·삭제 전에 즉시보류했고 기존small실행중/변경0을 확인했다. c7i-flex.large는 조건부향후대안이며 실행하지않는다. 현AWS CLI가GetAccountPlanState를지원하지않아 공식botocore API정의만private artifact AWS_DATA_PATH로 읽어 시스템설치없이FREE/ACTIVE상태를 조회했다. 플랜변경·추가유료자원0. 세부잔액/계정정보는Git문서에싣지않고비공개영수증만보존. MLflowcap192도현재worker증가여유와합하면59MiB밖에남지않고SDK추가메모리도미측정이라 실제기동보류. 기존보고우선.
 
 **CI 도구 보완:** 공개DockerHub계정명이 Secret으로설정되어완전한이미지주소가자동마스킹되는문제를발견해 DOCKERHUB_USERNAME을동일값ActionsVariable로보존하고중복usernameSecret만제거했다. DOCKERHUB_TOKEN은Secret유지/값열람0. 사용자Node.js20경고질문에따라 공식최신안정릴리스와각action.yml의using=node24를확인해 checkout7.0.1/setup-python7.0.0/login4.6.0/buildx4.4.1/build-push7.4.0의실제커밋SHA로갱신했다. Python/CUDA/모델패키지변경0. 최신원격재검증전까지경고해소와이미지게시성공은미확인이다. 근거 artifacts/git-publication-20261004-01/node24-actions.json.
+
+
+## 2026-10-05 — Node.js 24 최종 Actions 검사·이미지 게시 성공
+
+- 변경 이유: 사용자 Node.js20 사용 중단 경고 질문에 따라 실제 Action 런타임을 Node.js24로 갱신했다. 공식 릴리스의 action.yml/커밋을 대조해5개 Action을 고정했고 Python/CUDA/모델 버전은 유지했다. 관련 workflow 검사17개 통과 후 원격에서 확인했다.
+- 디스크 실패 해결 이력: 첫37212781450은 CUDA base 추출 중 공간 부족. 1e3c2ba의37213214589는 SDK 정리 후36GiB여서40GiB 사전 조건에서 중단했다. 6ad46bf의37213769640은 Swift/미사용 사전 이미지 정리로41GiB를 확보해 첫 게시 성공. 정리 범위는 GitHub hosted 임시 runner에 한정하며 Mac/EC2/모델 원본은 삭제하지 않았다. 첫 성공 원문과 실패 원문 모두 보존한다.
+- 최종 원격 실행: [37214466090](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37214466090), 코드 커밋9707c6ba0123f7d5cae1e33ae415cbca678b3ba4. Ubuntu24.04/Python3.12에서 Runpod39개2.878초, BE55개0.737초(skip4), MLflow/등록27개0.147초. 총121개 검사 대상 중117개 통과/4개 건너뜀이며 실패0. skip은 Git에서 제외한 미디어3건/운영 RAG 묶음1건이다. 최종 로그의 Node.js20 사용 중단 경고0, check/publish 모두 성공.
+- 실제 게시 tag: `dahyeguk/cctv-runpod-ab:sha-9707c6ba0123f7d5cae1e33ae415cbca678b3ba4`. 불변 이미지 주소: `dahyeguk/cctv-runpod-ab@sha256:ce806774fde5eb047da54532646b2580d6552cc2a9bec4788c77cb5e6b7c4bc1`. Hub API의 활성 tag/digest 및 Linux amd64를 독립 확인했다. 별도 platform manifest는5587e455…이며 전체 이미지 digest와 구분한다.
+- 이미지 주소 Summary 단계 성공과 username/digest 입력의 마스킹 해제는 로그로 확인했다. 완성 주소는 GITHUB_STEP_SUMMARY에 기록되므로 stdout에 조립된 한 줄이 없으며, 렌더링된 Summary 화면의 시각 검증은 하지 않았다. 원본은 actions-node24-success.log/json·hub-node24-run.json·node24-actions.json이다. 독립 읽기 검토에서도 일치했다.
+- 남은 조건: EC2 t3.small 유지·중지/종류 변경/삭제0. MLflow 실제 서버/등록·EC2 배포/DB migration은 메모리 조건으로 보류. Pod 적용/실제 GPU 호환·신규 VLM/분석부터 보고서까지의 종단 실행은 미실행이다. MOPS1/4만 완료 처리하고 MOPS0/2/3/5의 실제 운영 검증은 남긴다. 이후 문서만 기록하는 커밋은 새 이미지 빌드를 유발하지 않는다.
