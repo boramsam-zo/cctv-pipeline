@@ -244,6 +244,9 @@ class RegistryGuardTests(unittest.TestCase):
         self.assertNotIn('AWS_', workflow)
         self.assertNotIn(':latest', workflow)
         self.assertNotIn('CCTV_R2_MODEL_S3_KEY', workflow)
+        self.assertIn('username: ${{ vars.DOCKERHUB_USERNAME }}', workflow)
+        self.assertNotIn('secrets.DOCKERHUB_USERNAME', workflow)
+        self.assertIn('password: ${{ secrets.DOCKERHUB_TOKEN }}', workflow)
         self.assertIn('platforms: linux/amd64', workflow)
         self.assertIn('persist-credentials: false', workflow)
 

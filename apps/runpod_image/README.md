@@ -4,7 +4,7 @@
 
 새 배포 식별자는 `mlops-20261004-v1`이며 신규 제출 버전은 **B/R2**입니다. 아래 P4/P6의 A/B 실행 기록과 기존 결과는 이력으로 보존합니다. 새 코드는 준비·오프라인 검사 단계이며, 실제 이미지 게시 성공은 GitHub Actions 결과와 registry digest로 확인해야 합니다.
 
-GitHub 저장소의 Actions Secrets에 `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`을 등록합니다. 선택적인 Actions Variable `DOCKERHUB_IMAGE`의 기본값은 `dahyeguk/cctv-runpod-ab`입니다. AWS 자격 증명과 모델 파일은 GitHub 이미지 빌드에 전달하지 않습니다.
+GitHub 저장소의 Actions Variable `DOCKERHUB_USERNAME`에는 공개 계정명 `dahyeguk`을, Actions Secret `DOCKERHUB_TOKEN`에는 인증 토큰을 등록합니다. 계정명을 같은 이름의 Secret에도 남기면 이미지 주소와 Actions Summary가 `***`로 가려질 수 있으므로 공개 계정명은 Variable에만 둡니다. 토큰은 계속 Secret으로 유지합니다. 선택적인 Actions Variable `DOCKERHUB_IMAGE`의 기본값은 `dahyeguk/cctv-runpod-ab`입니다. AWS 자격 증명과 모델 파일은 GitHub 이미지 빌드에 전달하지 않습니다.
 
 `.github/workflows/runpod-image.yml`은 관련 PR과 main 변경의 CPU 계약/서비스/MLflow 검사를 실행합니다. 검사가 성공하고 이미지 소스·계약이 바뀐 main push 또는 main의 수동 `workflow_dispatch`일 때만 Linux amd64 이미지를 빌드·게시합니다. BE 전용 변경은 검사만 수행합니다. 결과는 `sha-<전체 commit SHA>` 태그와 `저장소@sha256:<digest>`로 Actions Summary에 표시하며 기존 같은 commit 태그는 덮어쓰지 않습니다. `latest`는 사용하지 않습니다.
 
