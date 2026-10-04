@@ -1,5 +1,16 @@
 # 진행 기록
 
+## 2026-10-05 — 최신 BE/UI·보고 관련성 검수 Git 게시와 원격 CPU CI 완료
+
+사용자의 명시적 게시 요청에 따라 기존 전용 checkout의 clean main `6f886d72171a3e5fe111badc7db833dc2f2f9b96`과 GitHub 원격 일치/브랜치 보호 비활성을 확인했다. Rulesets API는 GitHub 플랜 제한403이므로 전체 규칙 부재를 단정하지 않았다. 선별452파일·변경38개를 검토하고 `core.autocrlf=false`로 기존 CRLF와 catalog 바이트를 보존했다. Git index 및 커밋 blob 전부가 게시 manifest와 일치했다. 원본 프로젝트·실자료·운영 인증은 그대로 두었고, 게시 문서 복사본에서만 개인 경로와 운영 EC2/Pod/IP 식별자를 중립화했다. 비밀 검사0·모델/영상/실행결과 업로드0이다.
+
+[구현 커밋4bfa99706e0de40b82c24ecfdfd9ac1b4cae80eb](https://github.com/boramsam-zo/cctv-pipeline/commit/4bfa99706e0de40b82c24ecfdfd9ac1b4cae80eb)을 위 main의 단일 부모로 일반 push했다. 강제 push/기존 이력 삭제0. 전용 checkout에서 최종125 CPU검사 전부통과/skip0/3.559초. 앞선 선별본에서15개시험이 비공개 corpus/index에 의존하던 문제는 테스트 setup의 공개 계약파일+임시 합성자료로 격리했다. 실제 제품의 계약 검증은 완화하지 않았다.
+
+- [CCTV source checks37231132582](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37231132582): 실제 Ubuntu24.04/Python3.12에서 BE103·UI11·게시보호7·문서관련성4, 총125개 전부통과. 모델/서비스 실행·외부 API·DB 변경0.
+- [Runpod image37231132603](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37231132603): 기존 CPU검사39+55+27=121개 중117통과/비공개자료 관련4skip, 패키징검사 성공. `publish_required=false`, publish job `skipped`. 이번 변경은 BE/UI/보고 경로이므로 기존 Runpod 이미지 digest `ce806774…4bc1`을 유지한다.
+
+원격 Actions 성공을 실제 GPU/VLM 재실행이나 법령 적용/정확도 평가로 표시하지 않는다. 원문 로그·선별manifest·Git게시 영수증은 `artifacts/git-publication-20261005-01/`의 `source-actions.*`, `runpod-actions.*`, `source-publish-receipt.json`, `release-02/`에 보존했다. 아래 구현/EC2/화면 검증 기록과 연결하며 이후 문서 완료 기록을 별도 커밋으로 남긴다.
+
 ## 2026-10-05 — 보고 근거 관련성 검수·원본 보존·BE/UI 게시
 
 사용자 최신 요청으로 관련성 검수와 최신 BE/UI Git 추가 게시를 진행했다. 원본 장면/검색/보고를 보존하고 추가 모델 실행 없이 별도 검수본을 만드는 범위다. 기존 ‘관련성 검수/게시 별도 잔여’ 상태를 이번 승인으로 대체했다.

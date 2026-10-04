@@ -6,7 +6,9 @@
 - [x] 관찰 조건·조치 주체 기반 문서 관련성 검사와 전체 제공 청크 발췌 보존 구현.
 - [x] 원본 불변 검수 sidecar·MLflow 기록·관제 보고 판 선택 연결 및 관련 검사.
 - [x] EC2 읽기 전용 소스 적용·실제 저장 보고 검수본/원본 보존·UI 확인(새 모델 호출 0).
-- [ ] 기존 main 이력 유지 일반 push·CPU CI 확인 및 사용법/변경 근거 기록.
+- [x] 기존 main 이력 유지 일반 push·CPU CI 확인 및 사용법/변경 근거 기록.
+
+게시 근거: [구현 커밋4bfa997](https://github.com/boramsam-zo/cctv-pipeline/commit/4bfa99706e0de40b82c24ecfdfd9ac1b4cae80eb), [source CPU125개 전부 통과](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37231132582), [Runpod CPU117통과/4skip·이미지 게시 skipped](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37231132603). 기존 main 부모6f886d7과 이미지 digest를 보존했다. 코드 게시를 추가 모델 실행이나 새 실행창 승인으로 사용하지 않는다.
 
 ## 2026-10-05 — 사용자 새 Pod 연결·최신 관제 UI·MLflow 조회
 

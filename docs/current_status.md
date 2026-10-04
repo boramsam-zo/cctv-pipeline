@@ -1,6 +1,8 @@
 # 현재 상태 — CCTV 파이프라인
 
-## 작업 재개 요약 — 2026-10-05 보고 관련성 검수·EC2/UI 적용 완료, Git 추가 게시 마무리
+## 작업 재개 요약 — 2026-10-05 보고 관련성 검수·EC2/UI 적용·Git/CPU CI 완료
+
+**Git 게시 완료:** 기존 main `6f886d7`을 부모로 [구현 커밋 `4bfa997`](https://github.com/boramsam-zo/cctv-pipeline/commit/4bfa99706e0de40b82c24ecfdfd9ac1b4cae80eb)을 일반 push했다. 선별 452파일의 Git blob/manifest 일치·비밀/개인경로 검사0을 확인했다. [CCTV source checks](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37231132582)는 실제 Ubuntu/Python3.12에서 125개 전부 통과했다. [Runpod image 검사](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37231132603)는 121개 중117통과/기존 비공개자료 관련4skip이며, 이미지 관련 변경이 없어 `publish_required=false`·게시 단계 skipped다. 기존 Hub digest `ce806774…4bc1`은 유지하며 이번 BE/UI/문서 변경 때문에 Pod 이미지를 교체할 필요는 없다. 영수증/원문 로그는 `artifacts/git-publication-20261005-01/`에 보존한다.
 
 **최신 승인/완료:** 사용자가 문서 관련성 검수와 최신 BE/UI Git 추가 게시를 승인했다. 저장된 X3D-S 관찰·검색 원문을 재사용해 보행자 조건/조치 주체가 맞지 않는 제27조 근거1개를 제외한 별도 검수본을 저장했다. 문서5→4, 6절 유지. 최초 보고/장면/영상/DB행·검색 trace를 보존했고 GPU/VLM/E5 재실행0이다. 정확도/F1은 계속 미기록이다.
 
