@@ -104,6 +104,31 @@ jobs:
           python-version: '3.12'
       - name: Prepare allowlisted code context
         run: python -B scripts/prepare_runpod_ci.py --output "$RUNNER_TEMP/runpod-release"
+      - name: Reserve disk for the CUDA base on the ephemeral runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${RUNNER_ARCH:-}" != X64 ]]; then
+            echo '::error::SDK cleanup is restricted to GitHub-hosted Linux X64 job VMs.'
+            exit 1
+          fi
+          docker_root=$(docker info --format '{{.DockerRootDir}}')
+          test -d "$docker_root"
+          echo 'Disk space before removing unused preinstalled SDKs:'
+          df -h "$docker_root" "$GITHUB_WORKSPACE"
+          # Fixed SDK allowlist only. Keep Python/toolcache siblings, Docker,
+          # checkout, build context, credentials and all model files intact.
+          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          echo 'Disk space available for CUDA extraction and image export:'
+          df -h "$docker_root" "$GITHUB_WORKSPACE"
+          minimum_kib=$((40 * 1024 * 1024))
+          for storage_path in "$docker_root" "$GITHUB_WORKSPACE"; do
+            available_kib=$(df -Pk "$storage_path" | awk 'NR == 2 {print $4}')
+            if [[ ! "$available_kib" =~ ^[0-9]+$ ]] || (( available_kib < minimum_kib )); then
+              echo '::error::At least 40 GiB free is required before extracting the CUDA base. SDK cleanup was insufficient; use a runner with more disk.'
+              exit 1
+            fi
+          done
       - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
       - name: Log in to Docker Hub
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
