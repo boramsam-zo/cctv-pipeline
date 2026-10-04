@@ -181,6 +181,7 @@ class ReportPipelineTests(unittest.TestCase):
         from test_scene_jobs import SceneJobTests
         self.fixture = SceneJobTests('runTest')
         self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
         self.addCleanup(self.fixture.tearDown)
         self.fixture.fetch(); self.fixture.describe()
         self.scene_result = next(iter(self.fixture.results.values()))

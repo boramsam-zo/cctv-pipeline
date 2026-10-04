@@ -35,7 +35,7 @@ def receipt(directory, task, *, create=False):
             raise WorkerError('analysis_task_receipt_missing')
 
 
-def validate(task, row):
+def _validate_identity(task, row, *, stored=False):
     state = row['state']
     profile = profiles.validate_profile(state.get('analysis_profile'))
     key = profiles.gpu_identity(state['input_sha256'], profile)['gpu_key']
@@ -48,13 +48,40 @@ def validate(task, row):
         if settings is not None or day is not None:
             raise WorkerError('comparison_has_generation_settings')
     elif purpose == 'full_report':
-        generation.validate(settings, analysis_profile=profile)
+        if stored and team_settings.is_team(settings):
+            team_settings.validate_stored(settings, profile)
+        else:
+            generation.validate(settings, analysis_profile=profile)
         day = team_settings.reference_date(settings, day)
     else:
         raise WorkerError('invalid_analysis_purpose')
     expected = identifier(dict(gpu_key=key, purpose=purpose, generation_settings=settings, reference_date=day))
     if task['task_id'] != expected:
         raise WorkerError('analysis_task_id_mismatch')
+    return settings
+
+
+def validate(task, row):
+    """Execution boundary: frozen generation settings must match this release."""
+    return _validate_identity(task, row)
+
+
+def validate_stored(task, row, *, directory):
+    """View only: bind stored settings, task/GPU identity and the saved receipt.
+
+    Keep this separate from validate so admission, resume and worker paths
+    cannot accidentally accept an old code contract for new execution.
+    """
+    settings = _validate_identity(task, row, stored=True)
+    path = Path(directory)/('task-'+checked_id(task['task_id'])+'.json')
+    if Path(directory).is_symlink() or path.is_symlink():
+        raise WorkerError('analysis_task_receipt_mismatch')
+    if not path.is_file():
+        raise WorkerError('analysis_task_receipt_missing')
+    # These are immutable, atomically written receipts. Viewing them must not
+    # create/chmod a lock file or contend with a worker's execution lock.
+    if read_json(path) != snapshot(task):
+        raise WorkerError('analysis_task_receipt_mismatch')
     return settings
 
 
@@ -72,13 +99,18 @@ def admit(store, video, reference_date, selection, purpose, *, spool, config, js
     conn = store.connection
     # Locks enclose the SQL transaction, so rollback precedes advisory unlock.
     with store.lock('admission'), store.lock('dispatch'), conn.transaction():
-        trial_limits.check_admission(conn, sha, size, versions, purpose)
+        admission = trial_limits.check_admission(conn, sha, size, versions, purpose)
         children, answers = [], []
         for version in versions:
             profile = profiles.profile(version)
             key = profiles.gpu_identity(sha, profile)['gpu_key']
             queue_key = 'ab-gpu-'+key
             row = store.by_key(queue_key)
+            from . import report_continuation
+            if report_continuation.selected(admission):
+                if row is None:
+                    raise WorkerError('report_continuation_cannot_enqueue_gpu')
+                report_continuation.check_row(admission, row)
             if row is None:
                 answer = enqueue(store, spool, video, config, queue_key,
                                  dispatch_locked=True, analysis_profile=profile)

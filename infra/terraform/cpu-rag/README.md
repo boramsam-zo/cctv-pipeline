@@ -4,7 +4,7 @@
 
 사용자는 Mac 로컬 시험에서 EC2 배포 기준으로 전환했다. EC2는 실행할 서버, Docker Compose는 그 서버 안의 BE·PostgreSQL/pgvector 컨테이너 실행 도구, Terraform은 AWS 자원/설정 관리 도구다. Mac Docker는 기존 개발/검증 환경이며 EC2 배포의 필수 선행 단계가 아니다. 클라우드 변경·배포 명령은 사용자가 CLI로 실행한다.
 
-이번 AWS 읽기 조회에서 기존 `i-02017b92281737f53`은 **running**, t3.small, 공인 IP `3.36.76.85`, 인스턴스 프로필 미연결로 확인됐다. 역할에 대응하는 기존 프로필 이름은 `hanwha-cctv-ec2-role`로 조회됐다. 이번에 서버를 시작하거나 역할을 연결한 것은 아니다. 실제 IAM 정책의 S3 허용 여부와 컨테이너 인증 성공은 별도 확인 대상이다. 근거: `artifacts/infra/cpu-rag-ec2-resume-20260929-01/inspection.json`.
+이번 AWS 읽기 조회에서 기존 `YOUR_EC2_INSTANCE_ID`은 **running**, t3.small, 공인 IP `203.0.113.10`, 인스턴스 프로필 미연결로 확인됐다. 역할에 대응하는 기존 프로필 이름은 `hanwha-cctv-ec2-role`로 조회됐다. 이번에 서버를 시작하거나 역할을 연결한 것은 아니다. 실제 IAM 정책의 S3 허용 여부와 컨테이너 인증 성공은 별도 확인 대상이다. 근거: `artifacts/infra/cpu-rag-ec2-resume-20260929-01/inspection.json`.
 
 현재 Terraform은 EC2/보안그룹/키/프로필 연결을 관리하고 부팅 시 Docker와 DB를 준비한다. BE 코드·Runpod 토큰·접속 설정·큐/spool은 자동 배포하지 않는다. 전원 상태 리소스가 없으므로 이미 실행 중인 이 서버를 위해 신규 apply할 필요가 없다. 이후 기존 프로필 연결 등 필요한 구성 변경만 기존 state로 plan/apply한다. public IP는 재시작 후 바뀔 수 있으므로 조회값을 사용한다.
 
@@ -229,7 +229,7 @@ from apps.be_worker.common import WorkerError, config_checked, read_json
 from apps.be_worker.runpod_api import RunpodAPI
 try:
     config = config_checked(read_json(Path('/input/config-ec2-v1.json')))
-    if config['runpod_url'].rstrip('/') != 'https://ufpzz3c31eelb5-8000.proxy.runpod.net':
+    if config['runpod_url'].rstrip('/') != 'https://YOUR_RUNPOD_ID-8000.proxy.runpod.net':
         raise WorkerError('config_does_not_match_new_pod')
     token = Path('/run/secrets/runpod_worker_token').read_text().strip()
     health = RunpodAPI(config['runpod_url'], token).health()
@@ -311,13 +311,13 @@ terraform plan -out=be-role-20260930.tfplan
 
 ```bash
 aws ec2 associate-iam-instance-profile \
-  --instance-id i-02017b92281737f53 \
+  --instance-id YOUR_EC2_INSTANCE_ID \
   --iam-instance-profile Name=hanwha-cctv-ec2-role \
   --profile cctv --region ap-northeast-2 \
   --query 'IamInstanceProfileAssociation.{State:State}' \
   --output json --no-cli-pager &&
 aws ec2 modify-instance-metadata-options \
-  --instance-id i-02017b92281737f53 \
+  --instance-id YOUR_EC2_INSTANCE_ID \
   --http-tokens required --http-put-response-hop-limit 2 \
   --profile cctv --region ap-northeast-2 \
   --query 'InstanceMetadataOptions.{State:State,Tokens:HttpTokens,HopLimit:HttpPutResponseHopLimit}' \
@@ -626,7 +626,7 @@ Docker DB에서 먼저 확인한다. 아래 과거의 EC2 검색 단계가 선�
 ### Mac: 기존 EC2가 중지인지 확인하고 시작
 
 ```bash
-aws ec2 describe-instances --instance-ids i-02017b92281737f53 \
+aws ec2 describe-instances --instance-ids YOUR_EC2_INSTANCE_ID \
   --profile cctv --region ap-northeast-2 \
   --query 'Reservations[].Instances[].{ID:InstanceId,State:State.Name,IP:PublicIpAddress,Profile:IamInstanceProfile.Arn}' \
   --output table --no-cli-pager
@@ -636,9 +636,9 @@ aws ec2 describe-instances --instance-ids i-02017b92281737f53 \
 기존 디스크·state부터 확인한다. `running`이면 시작을 반복하지 않는다.
 
 ```bash
-aws ec2 start-instances --instance-ids i-02017b92281737f53 --profile cctv --region ap-northeast-2 --no-cli-pager
-aws ec2 wait instance-running --instance-ids i-02017b92281737f53 --profile cctv --region ap-northeast-2
-aws ec2 describe-instances --instance-ids i-02017b92281737f53 \
+aws ec2 start-instances --instance-ids YOUR_EC2_INSTANCE_ID --profile cctv --region ap-northeast-2 --no-cli-pager
+aws ec2 wait instance-running --instance-ids YOUR_EC2_INSTANCE_ID --profile cctv --region ap-northeast-2
+aws ec2 describe-instances --instance-ids YOUR_EC2_INSTANCE_ID \
   --profile cctv --region ap-northeast-2 \
   --query 'Reservations[0].Instances[0].{State:State.Name,IP:PublicIpAddress}' --output table --no-cli-pager
 ```
@@ -843,7 +843,7 @@ sudo bash rag.sh load --input /input/embedded.jsonl
 
 - 명령 실행 사용자: `dahye-dev` 또는 해당 사용자의 소속 그룹.
 - 서버 역할: `hanwha-cctv-ec2-role`. 인스턴스 프로필의 정확한 이름·ARN 및 이 역할의 포함 여부도 회신 요청.
-- 서버: 서울 `ap-northeast-2`, `i-02017b92281737f53` (`cctv-cpu-rag`).
+- 서버: 서울 `ap-northeast-2`, `YOUR_EC2_INSTANCE_ID` (`cctv-cpu-rag`).
 - 버킷: `boram3-cctv-evidence-80bee9db7c3bca316ef395375a`.
 
 #### A. Mac CLI를 실행하는 사용자/그룹에 필요한 권한
@@ -955,7 +955,7 @@ terraform show -no-color attach-role.tfplan
 ```bash
 terraform apply "attach-role.tfplan"
 aws ec2 describe-iam-instance-profile-associations \
-  --filters Name=instance-id,Values=i-02017b92281737f53 \
+  --filters Name=instance-id,Values=YOUR_EC2_INSTANCE_ID \
   --profile cctv --region ap-northeast-2 \
   --query 'IamInstanceProfileAssociations[].{State:State,Profile:IamInstanceProfile.Arn}' \
   --output json --no-cli-pager

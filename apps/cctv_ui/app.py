@@ -1,7 +1,13 @@
-"""Keep the established analysis tool; open the saved-result control room by default."""
+"""One app for the control room and the established analysis submission form."""
 import os
-from pathlib import Path
-import runpy
+import streamlit as st
 
-view = "analysis_app.py" if os.environ.get("CCTV_UI_VIEW") == "analysis" else "control_room.py"
-runpy.run_path(str(Path(__file__).with_name(view)), run_name="__main__")
+st.session_state['cctv_navigation_enabled'] = True
+analysis_default = os.environ.get('CCTV_UI_VIEW') == 'analysis'
+page = st.navigation([
+    st.Page('control_room.py', title='CCTV 사고 관제', icon=':material/videocam:',
+            default=not analysis_default),
+    st.Page('analysis_app.py', title='새 영상 분석', icon=':material/upload_file:',
+            url_path='analysis', default=analysis_default),
+], position='hidden')
+page.run()

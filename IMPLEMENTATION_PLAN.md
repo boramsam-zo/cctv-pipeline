@@ -1,6 +1,45 @@
 # CCTV 프로젝트 실행계획 — 팀 서비스 기획·모델 실험
 
+## 2026-10-05 — 보고 문서 관련성 검수·BE/UI 추가 게시
+
+- [x] 사용자 검수·게시 승인 및 저장 결과 재사용/원본 보존 범위 확정.
+- [x] 관찰 조건·조치 주체 기반 문서 관련성 검사와 전체 제공 청크 발췌 보존 구현.
+- [x] 원본 불변 검수 sidecar·MLflow 기록·관제 보고 판 선택 연결 및 관련 검사.
+- [x] EC2 읽기 전용 소스 적용·실제 저장 보고 검수본/원본 보존·UI 확인(새 모델 호출 0).
+- [ ] 기존 main 이력 유지 일반 push·CPU CI 확인 및 사용법/변경 근거 기록.
+
+## 2026-10-05 — 사용자 새 Pod 연결·최신 관제 UI·MLflow 조회
+
+- [x] 사용자 직접 EC2 시작 결과와 실제 5개 서비스 running 확인. 사용자 UI 터널 8501 유지.
+- [x] 새 Pod SSH 접속·서비스 bundle/모델 카탈로그 대조 및 명시 승인 후 기존 private 인증 설정 복원. API/EC2 활성화와 추론 성공은 별도 확인.
+- [x] 최신 control_room API 모드·모델 선택 진입/복귀·같은 영상/보고 연결. 로컬90시험·원격3렌더/GET30·두 데스크톱 크기 시각 확인, 기존 디자인/보고 보존.
+- [x] localhost5001 SSH 터널로 내부 MLflow UI 조회, 두 Registry v1 브라우저 확인. 외부 포트/SG 변경 없음.
+- [x] B/R2 각1회 실제 GPU·결과 회수·MLflow 기록·Pod결과식별 확인. 기존업무행보존/새VLM0/재실행0.
+- [x] B결과1건 보고후속 전용 세션·GPU재실행/중복 차단 및 전용15/BE524통과·32skip. EC2 source-only 반영/업무행불변/읽기계획 확인.
+- [x] 사용자 추가 승인으로 새VLM1·CPU검색/6절보고1 생성, 최신 관제 동일작업/6절/두 데스크톱 표시 확인.
+- [x] 신규 full_report completed·DB/파일해시/6절·MLflow FINISHED/succeeded·원본01세션/13파일불변·GPU추가0 최종 대조 및 기록 완료.
+
+이번 승인 범위는 완료했다. 보고의 보행자 조항R3 관련성 품질검수, 다음 신규영상 실행창, 최신BE/UI Git추가게시, 2GiB축소는 별도 잔여/판단이며 자동으로 실행하지 않는다.
+
+사용자 최신 요청은 관제 UI에도 적용하는 것이며 기존 분석 폼만 별도로 배포한 상태를 최종으로 두지 않는다. EC2/Pod는 사용자가 켠 상태이므로 추가 생성·재학습·무단 종료를 하지 않는다.
+
+## 2026-10-05 — EC2 이전·MLflow 적용 완료, 첫 GPU 검증 대기
+
+- [x] 2b/2d 지원 및 기존네트워크 확인, 사용자 c7i-flex.large 4GiB 이전승인.
+- [x] 원본2a DB/input/spool/설정의 EC2내 비공개백업·전후해시일치, 앱/DB정상종료 및 EC2 stopped.
+- [x] 비공개 AMI/스냅샷 완료 후 2b 새 1대 기동, DB 10테이블 32행·파일 257개 해시 일치 및 서비스 복구.
+- [x] 새 CPU 이미지·내부 MLflow 서버, X3D-S/R2 각 v1 참조 등록, BE 제약/설정 및 두 모델 선택 UI 반영.
+- [x] 실제 UI AppTest에서 기존 6절 보고 1개 조회·표시 확인. 새 분석/VLM 호출 0.
+- [x] 같은 EC2 실제 stop/start 1회, 업무 데이터·중지된 작업 보존 및 DB/MLflow/API/UI/worker 복구 확인. 전체 보고 부하 메모리 측정과 2GiB 복귀 판단은 잔여.
+- [x] 검증 후 새 EC2도 정상 중지. 최종 AWS 조회에서 원본/새 서버 모두 stopped·디스크 보존 확인.
+- [x] 후속 10월5일 사용자 Pod 적용 후 B/R2 각1회 GPU 검증 완료. 별도승인 VLM1/보고1 근거는 최상단 참조.
+
+기존서버/EBS/백업은 복구용으로 보존한다. DB/CCTV의Mac추가복사는자동승인검토가목적지승인부재로차단해미실행이며AWS내승인된복제로진행한다. 아래이전위치논의/실행0은당시이력이다.
+
+
 ## 2026-10-05 — MLOps 두 모델 구현·Git/Actions/Hub 완료, 운영 검증 잔여
+
+**2026-10-05 착수/배포 위치 확인:** 임시 증설·필요 시 중지 운영안은 사용자 확정. 이번 범위는 EC2자료보존/증설/서비스복구→MLflow기동·두모델참조등록→중지·재개절차. 사용자콘솔은새인스턴스시작화면이며c7i-flex.large의서울신규생성가능을확인한것이다. 기존2a의물리구역ID(apne2-az1)와c7i제공ID(az2/az4)가달라,4GiB유지에는지원구역복제이전이필요하다. 단순확인용중지/8GiB변경/새인스턴스생성은실행하지않았다. 데이터복제이전방식결정까지기존서버를보존하고,사용자에게불필요한중지를요구하지않는다. 자동Pod생성/추가모델실행/평가확대0.
 
 **후속 확정/확인:** 사용자는 현재 운영 X3D-S와 앞선 제한 범위를 확정했다. 첫 구현은 운영 X3D-S epoch7(SHA ca2db4a2…09bf)·R(2+1)D-18 epoch7(c40c150e…78b46)의 두 모델이며 현재 B의 YOLO 가중치·클래스·설정은 고정한다. T9 R2의 직접 SHA/크기가 기존 후보와 일치해 MOPS0의 R2 바이트 확인은 완료했다. 모델 로딩/추론 호환은 미검증이다. 현재 A/B 전체 파이프라인 버전과 분류기 모델 선택을 분리한다. 아래 다른 절의 세 모델/비교 X3D 제안은 이전 논의 이력이다. 원본 증거: artifacts/mlops/weight-audit-20261004-01/r2plus1d-epoch7-verification.json.
 
@@ -8,14 +47,14 @@
 
 | ID | 상태 | 작업·완료 기준 |
 |---|---|---|
-| MOPS0 | R2 실파일 해시·두 버전/계약 구현 완료, 실제 호환 검증 잔여 | 지정 노트북/수신 결과/해시/전처리 대조. 운영 X3D-S epoch7·R2 epoch7의 클래스/전처리/판정/출력 계약과 고정 B YOLO를 연결. 새 런타임 로딩/추론 성공은 별도 실제 검증 전까지 미확인 |
+| MOPS0 | R2 해시·두 계약 및 실제 GPU 로딩/추론 검증 완료 | 지정 노트북/수신 결과/해시/전처리 대조. 운영 X3D-S epoch7·R2 epoch7의 클래스/전처리/판정/출력 계약과 고정 B YOLO를 연결. 새 런타임 로딩/추론 성공은 별도 실제 검증 전까지 미확인 |
 | MOPS1 | 완료: 기존 main 이력 보존 push·실제 CPU CI 통과 | 게시 파일 선별→별도 checkout에서 기존 main 이력 보존 교체→일반 push/보호 규칙에 따른 PR→외부 모델 호출 없는 기본 CI |
-| MOPS2 | 코드/대역 검사 완료, t3.small 메모리 조건으로 원격 기동·등록 보류 | MLflow 지속 실행/저장 위치 및 모델 계약 확정. 기존 한 모델로 버전 등록·EC2 선택/실행 기록 연결. 모델 버전/가중치 SHA·코드/이미지·입력/설정·job/run ID 추적 |
-| MOPS3 | 코드/오프라인 회귀 완료, 실제 GPU 호환 검증 대기 | 운영 X3D-S·R2 두 모델의 구조/가중치/전처리/출력을 연결. 기존 선택/결과 화면에 최소 표시 추가. 미지원 모델/계약 불일치·실패를 정상 예측과 분리하고 관련 오프라인 검사 통과 |
+| MOPS2 | 2b 4GiB에 MLflow·두 모델 v1·실제 B/R2 실행 기록 완료 | 영속 MLflow 데이터와 모델 계약을 연결. 모델 버전/가중치 SHA·코드/이미지·입력/설정·job/run ID 추적. Registry 성공을 신규 GPU 실행 기록 성공으로 대체하지 않음 |
+| MOPS3 | 두 모델 실제 GPU 호환·선택 UI·기존/신규 B 보고 표시 완료 | 운영 X3D-S·R2 두 모델의 구조/가중치/전처리/출력을 연결. 미지원 모델/계약 불일치·실패를 정상 예측과 분리 |
 | MOPS4 | 완료: Node.js 24 Actions·Linux amd64 이미지 Hub 게시/digest 확인 | Actions의 재현 가능한 Linux 빌드 입력·검사·새 버전 Hub 게시·digest 출력 실제 확인. 이미지 관련 변경만 빌드, GPU 분석/학습 자동 실행 없음 |
-| MOPS5 | 합의 한도 확정·실행 대기 | 사용자 Pod 적용 후 사전 합의한 유한 GPU 검증. 선택 버전=실행 버전=저장 결과=MLflow 기록 일치, 성공/실패와 기존 결과 보존 확인. 정답 전 정확도/F1은 미평가 |
+| MOPS5 | B/R2 각1회 완료·별도승인 B 보고1 신규검증 | 사용자 Pod 적용 후 사전 합의한 유한 GPU 검증. 선택 버전=실행 버전=저장 결과=MLflow 기록 일치, 성공/실패와 기존 결과 보존 확인. 정답 전 정확도/F1은 미평가 |
 
-**최신 완료 근거/자원 결정:** [Actions37214466090](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37214466090), 이미지 코드 커밋9707c6b·digest `sha256:ce806774fde5eb047da54532646b2580d6552cc2a9bec4788c77cb5e6b7c4bc1`. 검사121개 중117개 통과/4개 skip, 실제 빌드·게시 성공 및 Hub 독립 확인. 사용자 최종 결정은 t3.small 유지이며 서버 중지·종류 변경·삭제0이다. MLflow 운영 자원 조건을 먼저 해결해야 하며 이미지 게시를 새 영상의 실제 분석/보고 완료로 표시하지 않는다.
+**최신 완료 근거/자원 결정:** [Actions37214466090](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37214466090), 이미지 코드 커밋9707c6b·digest `sha256:ce806774fde5eb047da54532646b2580d6552cc2a9bec4788c77cb5e6b7c4bc1`. 검사121개 중117개 통과/4개 skip, 실제 빌드·게시 성공 및 Hub 독립 확인. 실제 서버는 t3.small 유지/중지·종류 변경·삭제0이다. 후속으로 사용자가 c7i-flex.large 임시4GiB 후 조건부2GiB 복귀와 필요 시 사용 방식을 논의했다. 메모리 최대치·여유를 확인하기 전2GiB 복귀를 보장하지 않으며 현재 구조에는 EC2 stop/start와 결과 보존 후 수동 Runpod 재생성을 권한다. MLflow 운영 자원 조건을 먼저 해결해야 하며 이미지 게시를 새 영상의 실제 분석/보고 완료로 표시하지 않는다.
 
 **중지 기준:** 위 두 흐름이 지정 모델/한도에서 확인되면 작업 종료. R3D/X3D-M/비교 X3D 추가·새 학습/튜닝·자동 최적 모델 채택·실시간 CCTV·알림/기관 전송·새 관리 화면·추가 인프라/자동 Pod 생성은 별도 요청 없이는 시작하지 않는다. 새 기능이 생기면 기존 TODO에 범위 변경을 먼저 기록한다. 일반 구현/관련 검사/오류 수정은 합의 범위 안에서 에이전트가 담당하며 권한·비밀 설정/외부 자원·실제 실행 한도처럼 사용자 결정이 필요한 부분만 구분한다.
 
@@ -293,7 +332,7 @@ BE 중지 명령은 stopped=true·bindings1/claims2 보존·신규 접수/다음
 
 - [x] 10/03 현재 Pod 비밀 설정 복원: 사용자 `p6_runtime_files_prepared` 수신,4파일 저장·읽기·권한·Pod ID 일치 통과. runtime.env 비밀값 없음·현재 셸 변경 없음·기존 파일 삭제0·모델/네트워크0. API/시간창/실제 인증/S3 검증은 미실행. 원본 `artifacts/be-worker/pod-restore-20261003-01/runtime-install-user-result-01.json`. 복원/복사/이미지 재적용은 반복하지 않는다.
 - [x] 10/03 EC2 토큰 일치·클립보드 복사 출력 수신: `runtime_private_settings_copied`/`ec2_tokens_match:true`, SSH 읽기1회·비밀값 출력/별도 파일저장/EC2변경0. 원본 `artifacts/be-worker/pod-restore-20261003-01/runtime-copy-user-result-01.json`. 현재 Pod의 실제 API 인증/S3 접근 성공을 뜻하지 않는다.
-- [x] 10/03 EC2 신규 접수 기본 URL 갱신: 사용자 `ec2_default_url_updated` 수신, `https://p1zl69a2uzjgz5-8000.proxy.runpod.net` 반영·원본 백업·소유자/그룹/권한 보존·API/worker 읽기 확인 통과. URL 필드만 변경, S3 bucket/region·기존 작업 설정/이미 읽은 요청 보존, 서비스 재시작/API/DB/S3/모델 요청0. 실제 Runpod 연결 미검증. 원본 `artifacts/be-worker/pod-restore-20261003-01/default-url-user-result-01.json`. 갱신 명령은 반복하지 않는다.
+- [x] 10/03 EC2 신규 접수 기본 URL 갱신: 사용자 `ec2_default_url_updated` 수신, `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net` 반영·원본 백업·소유자/그룹/권한 보존·API/worker 읽기 확인 통과. URL 필드만 변경, S3 bucket/region·기존 작업 설정/이미 읽은 요청 보존, 서비스 재시작/API/DB/S3/모델 요청0. 실제 Runpod 연결 미검증. 원본 `artifacts/be-worker/pod-restore-20261003-01/default-url-user-result-01.json`. 갱신 명령은 반복하지 않는다.
 - [x] 10/03 공통 프로필 배포·현재 Pod API/1시간 helper 로컬 준비: `portable-session-20261003-01`에 기존 hour 동결 릴리스의 BE Python6파일+공통 catalog1개를 반영한 배송 묶음과 설치/시작/활성화/조회/종료 명령 준비. 별도 RAG 시험 수정은 제외. 로컬77검사 통과(배송 DB 대역14+프로필6, 시작17, 활성화23, 설치기 대역17). 근거 `preparation-verification-01.json`, `runpod-start-verification.json`, `activation-verification.json`. 준비 단계의 실제 원격·API·모델 실행0.
 - [x] 10/03 사용자 공통 프로필 설치 중 EC2 격리20검사 통과: `portable_session_extracted` 뒤 `portable_isolated_postgres_checks_passed`, tests20/failures0/errors0/skipped0, 해당 검사 단계의 운영 DB 쓰기0. 원본 `artifacts/be-worker/portable-session-20261003-01/isolated-checks-user-result-01.json`. 당시 중간 출력만으로 설치 완료를 판정하지 않았으며, 아래 후속 상태 읽기에서 적용 완료를 확인했다.
 - [x] 10/03 설치 상태 읽기 명령 준비: 사용자가 위20검사 출력이 전부이며 화면 터널 미기동이라고 설명. Mac 설치 루트 프로세스0 읽기 확인은 원격 성공/실패 판정과 구분한다. 화면 터널은 설치 자체 SSH/EC2 내부 UI 확인과 독립이다. EC2 완료/실패 기록·컨테이너4개 상태·설치 프로세스 수를 읽는 `read-install-status-command-01.sh` 준비/구문검증, 실제 원격0. 근거 `local-install-process-read-01.json`, `install-status-preparation-01.json`.
@@ -303,7 +342,7 @@ BE 중지 명령은 stopped=true·bindings1/claims2 보존·신규 접수/다음
 - [ ] Mac의 새 `activate-command.sh` → `portable_hour_session_ready` → 새 MP4 / B / 장면 설명·보고까지 수동 시험. API 인증·프로필/한도 확인 후 EC2 시간창을 연결하며 기존 시간창/예약은 초기화하지 않는다. 실제 S3 권한·GPU/VLM/보고는 첫 B 흐름에서 확인한다. health의 S3 방식 응답을 실제 저장 성공으로 표시하지 않는다.
 - [ ] 결과 확인 후 필요 시 새 `stop-command.sh`로 BE 신규 분석/새 호출 차단, `read-session-command.sh`로 상태 조회. 진행 중 호출 취소·Pod 정지·터널 종료와 별개이며 시작/종료 UI 버튼은 미구현이다.
 - 아래 날짜별 준비·대기 기록은 당시 이력이며 현재 실행은 위 `portable-session-20261003-01` 명령을 따른다. 이전 trial/이미지/비밀 복원/URL 갱신은 반복하지 않는다.
-- 10/03 앞선 Pod적용 수신 이력: portable public_image_checks_passed=true, p1zl69a2uzjgz5/RTX2000Ada16380MiB/driver595.91.07, auto/deployment·manifest2개SHA·image53존재/service17해시통과. private4파일/hour budget없음. 원본pod-files-user-result-01.json. 당시 다음이던pod-restore revision02비밀복원은 위 최신 수신으로 완료했다. 이전20시험소스10파일해시일치/재시험0·Mac비밀원본2파일존재만확인,실제비밀읽기/원격0. 이미지재빌드/게시/재적용불필요. 새인증/S3/실추론/API/시간창은대기.
+- 10/03 앞선 Pod적용 수신 이력: portable public_image_checks_passed=true, YOUR_RUNPOD_ID/RTX2000Ada16380MiB/driver595.91.07, auto/deployment·manifest2개SHA·image53존재/service17해시통과. private4파일/hour budget없음. 원본pod-files-user-result-01.json. 당시 다음이던pod-restore revision02비밀복원은 위 최신 수신으로 완료했다. 이전20시험소스10파일해시일치/재시험0·Mac비밀원본2파일존재만확인,실제비밀읽기/원격0. 이미지재빌드/게시/재적용불필요. 새인증/S3/실추론/API/시간창은대기.
 - 10/03 최신 게시 수신: 사용자 공통판 push1회/exit0, 실제 registry digest95590931c8cda4b68ac22b099ed90035f387249d48179734eb155849b2754ddd 확인. 원본 image-publish-receipt-01.json/log의 해시·빌드영수증 연결 일치. 독립registry조회0. 다음은 현재Pod의Container image에 이주소적용 및 새read-pod-command-01.sh 확인. GPU기종만변경하면 같은이미지재사용, build/push반복불필요. 실제Pod/API/시간창/모델은아직0.
 - 10/03 게시 준비: 공통판 publish-command-01.sh로 검증된 Mac image ID를 새 Hub 태그 dahyeguk/cctv-runpod-ab:p6-cuda-portable-v1에 연결해 사용자 직접 게시. 원본 빌드 영수증/이미지 ID 검사·대상 로컬 태그 충돌 차단·push 출력/log/digest 보존. 이전 태그/이미지 보존, 실제 게시와 Pod/API/시험 시작은 아직이다. 원격 작업은 기존대로 사용자가 CLI로 실행한다.
 - 10/03 최신 수신: 사용자 공통 이미지 p6-cuda-portable-v1 빌드·image53/service17파일·환경·A/B 연결·expected_gpu=auto 검증 완료. ID95590931…754ddd, 13:43:55 KST. 원본 service-cuda-portable-20261003-01/image-build-receipt.json. 게시/API/모델/시간창0. 다음은 준비된 게시 명령 실행이며 빌드는 반복하지 않는다. 새 GPU 확인은 예정된 첫 B/full_report 실제 분석에 포함하고 추가 검사 영상/중복 추론을 요구하지 않는다. 저장 결과 조회는 실제 GPU 실행 확인에 포함하지 않는다.
@@ -314,12 +353,12 @@ BE 중지 명령은 stopped=true·bindings1/claims2 보존·신규 접수/다음
 - [x] 사용자 EC2 격리 PostgreSQL 14시험 통과. 설치는 서비스 정지 전 `unexpected_compose_mount_change`에서 중단. Compose의 `../` 경로 표기 비교 오류를 로컬 재현하고 별도 복구 helper/14시험·원본 보존/재개 명령을 준비했다. 근거 hour-session-20261002-01/install-stopped-user-result-01.json, install-recovery-verification-01.json.
 - [x] 사용자 `resume-install-command-01.sh`의 `hour_session_code_installed` 수신. API/worker 전환·기존 업무 테이블/이전 trial·UI/DB 보존 통과, DB14검사 해시 확인 후 재사용. `session_started:false`, 새 모델 호출0. 원본 hour-session-20261002-01/install-completed-user-result-01.json.
 - [ ] Runpod 별도1시간 API기동 → Mac 활성화의 hour_session_ready → train_109 B/full_report 버튼부터 보고 조회 확인. EC2 설치 성공을 새 영상 전체 흐름 성공으로 확대하지 않는다. 시작/종료 UI 버튼은 미구현이다.
-  - 10/03 이전 RTX 전용 준비 이력: p1zl69a2uzjgz5의RTX2000Ada16380MiB/드라이버595.91.07·기존P6 manifest일치·비밀4파일/hour budget부재·overlay를사용자출력으로확인. 새기종프로필/실행기/결과검증·VRAM최소제거와로컬188검사완료. 새Docker context23파일/ZIP70,616바이트준비,원본53파일중50유지/실행기3변경. Mac빌드/검증명령대역17검사와Bash구문도통과. 이후사용자변수화요청으로공통CUDA묶음으로대체했다. 게시/Pod적용·BE프로필/URL전환·비밀복원·API/시간창·실추론은미실행. 근거service-rtx2000ada-20261003-01/preparation.json·verification-01.json.
+  - 10/03 이전 RTX 전용 준비 이력: YOUR_RUNPOD_ID의RTX2000Ada16380MiB/드라이버595.91.07·기존P6 manifest일치·비밀4파일/hour budget부재·overlay를사용자출력으로확인. 새기종프로필/실행기/결과검증·VRAM최소제거와로컬188검사완료. 새Docker context23파일/ZIP70,616바이트준비,원본53파일중50유지/실행기3변경. Mac빌드/검증명령대역17검사와Bash구문도통과. 이후사용자변수화요청으로공통CUDA묶음으로대체했다. 게시/Pod적용·BE프로필/URL전환·비밀복원·API/시간창·실추론은미실행. 근거service-rtx2000ada-20261003-01/preparation.json·verification-01.json.
   - 2026-10-03 재개 순서 보완: 사용자가 Pod 중지를 알려 기존 Pod Start 뒤 GPU·비밀파일·시간창 존재 확인을 먼저 수행한다. EC2 재설치/기존 시간창 삭제는 하지 않는다. `read-restarted-pod-command-01.sh`는 읽기 전용이며 실제 출력은 대기다.
-  - 최신 변경: 사용자 새 Pod URL `https://nbtmqum7v7f5ck-8000.proxy.runpod.net/` 수신. `read-new-pod-command-01.sh`로 이미지/GPU/mount/비밀 파일 존재 확인을 먼저 수행한다. 기존 시작/활성화/비밀 복원 명령은 이전 Pod에 고정돼 있어 수정 전 실행하지 않는다. 새 URL 원격 적용/비밀 복원/API 기동/시간창 활성화는 아직 미실행이다. EC2 설치와 기존 DB/claims/결과는 보존한다.
+  - 최신 변경: 사용자 새 Pod URL `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net/` 수신. `read-new-pod-command-01.sh`로 이미지/GPU/mount/비밀 파일 존재 확인을 먼저 수행한다. 기존 시작/활성화/비밀 복원 명령은 이전 Pod에 고정돼 있어 수정 전 실행하지 않는다. 새 URL 원격 적용/비밀 복원/API 기동/시간창 활성화는 아직 미실행이다. EC2 설치와 기존 DB/claims/결과는 보존한다.
   - 새 Pod 확인 수신: RTX2000Ada16GB·프로젝트 image/설정 파일 없음·overlay30GB. 게시 service의 A4500/20000MiB 고정 조건을 확인해 기존 image 적용만으로 성공한다고 안내하지 않는다. 사용자 후속 결정은 A4500 재사용. 현재 RTX2000Ada 지원 변경은 진행하지 않고 새 A4500 Pod 주소/파일 확인을 기다린다. 실제 이미지 변경/API/모델 호출0. 원본 new-pod-read-user-result-01.json.
   - 최신 사용자 화면/주소: A4500 x1·시스템RAM62GB·container30GB, `w3zhjl0uoq0kxg`. VRAM20000MiB 최소 조건 제거 요청을 로컬 service_job에 반영·18+7검사 통과·새서비스16파일ZIP 준비. 공개이미지/원격은 미변경. 먼저 게시 p6-service 이미지 적용과 갱신된 확인명령 결과를 받고, 수정 서비스/manifest와 비밀·EC2 URL·시작명령을 새 Pod에 연결한다. 현재 새 GPU 실추론/시간창 미실행.
-  - 최신 화면/주소 갱신: p1zl69a2uzjgz5는 RTX2000Ada1대·공식PyTorch기본이미지다. 이전A4500기동성공을승계하지않는다. 현재Pod용확인ID만갱신했고원격변경은0. VRAM최소제거와A4500기종/결과검사지원은별개이며후자는남아있다. 이미지등록(build/tag/push)과hour budget용도를설명하고새Pod반복생성대신현재기종지원범위를다음에다룬다.
+  - 최신 화면/주소 갱신: YOUR_RUNPOD_ID는 RTX2000Ada1대·공식PyTorch기본이미지다. 이전A4500기동성공을승계하지않는다. 현재Pod용확인ID만갱신했고원격변경은0. VRAM최소제거와A4500기종/결과검사지원은별개이며후자는남아있다. 이미지등록(build/tag/push)과hour budget용도를설명하고새Pod반복생성대신현재기종지원범위를다음에다룬다.
 - [x] 2026-10-03 재개 기준/명령 모음: current_status 맨 위에서 운영 시험과 독립 RAG 완료를 구분, LOCAL_SETUP 상단에 Mac·Runpod별 복사/기동/활성화/종료/저장결과 조회 명령 수록. Bash6블록 구문 통과. 서버/모델 실행은 없으며 같은 승인·성공 검사를 다시 질문하지 않는다.
 - 사용자 결정: A+B 동일 영상 비교는 후속으로 보류한다. 현재는 한 버전의 영상 업로드→GPU 분석→S3 근거 검증→VLM 설명→RAG 검색/보고 저장→화면 조회를 우선한다.
 - [x] 사용자 시험 방식 결정: 한 버전으로 수동 업로드부터 보고 조회까지1시간 시험. 첫train_108 지정, A+B 후속 보류. 구현·운영 적용은 다음 항목에서 확인한다.
@@ -410,7 +449,7 @@ BE 중지 명령은 stopped=true·bindings1/claims2 보존·신규 접수/다음
     - [x] 완료 B의 worker 재시작 후 호출 불변: 사용자 실제 기동 시각 변경·idle 확인과 16:53:19 KST DB 후속 출력에서 상태·호출/예약·ID·해시 유지. 진행 중 작업 중단/복구 검증과 구분. 근거 b-worker-restart-invariance-check-01.json.
     - [ ] 지정 input_001·A+B/full_report·문서 검색 기준일2026-10-02로 실제 버튼 한 번 실행 → 근거/설명/문서·출처/보고 저장·표시, 조회/중복/worker재시작 호출 불변과 사용자 내용 검수. 기존 S3 검증은 재사용하며 API 예산을 초기화하지 않는다.
 
-**다음 한 작업:** 기존pod-restore-20261003-01/install-runtime-settings-command-02.sh를Runpod숨김입력까지실행→Mac copy-runtime-settings-command-02.sh→숨김입력에붙여넣어private4파일복원. 현재Pod p1zl69a2uzjgz5/공통이미지적용은완료. 기존EC2설치/DB/claims/결과·1시간승인유지. 이후BE공통프로필/URL·API/시간창활성화가남아있다. 실제GPU 확인은 예정된 첫 B 분석과 함께 한다.
+**다음 한 작업:** 기존pod-restore-20261003-01/install-runtime-settings-command-02.sh를Runpod숨김입력까지실행→Mac copy-runtime-settings-command-02.sh→숨김입력에붙여넣어private4파일복원. 현재Pod YOUR_RUNPOD_ID/공통이미지적용은완료. 기존EC2설치/DB/claims/결과·1시간승인유지. 이후BE공통프로필/URL·API/시간창활성화가남아있다. 실제GPU 확인은 예정된 첫 B 분석과 함께 한다.
 
 조회 안내: 기존 Mac 터널은 유지한다. UI 아래 ‘작업 선택’으로 과거 결과와 이번 완료 B를 열 수 있다. Runpod 연결 경고는 현재 서버 연결 상태이며 완료된 B 보고의 실패가 아니다. 조회는 GPU·Gemini·질문 임베딩을 추가하지 않는다. 새 기능/재생성은 추가하지 않는다.
 
@@ -584,7 +623,7 @@ BE 중지 명령은 stopped=true·bindings1/claims2 보존·신규 접수/다음
 
 - [x] 공유 가이드의 A. 로컬 Docker Compose / B. EC2 Docker Compose 실행 환경 구분. 공통 코드 유지·EC2 준비 항목·경로/인증/이관 차이 반영, v7 공유 ZIP 검증 완료. 실제 EC2 배포 TODO는 유지.
 - [x] 사용자 결정: EC2 안의 Docker Compose를 실행 기준으로 사용. Mac Docker 검증을 선행 조건으로 요구하지 않는다.
-- [x] AWS 읽기 조회: 기존 EC2 running/t3.small/3.36.76.85, 프로필 미연결. hanwha-cctv-ec2-role 프로필 존재 확인. 원본 근거 artifacts/infra/cpu-rag-ec2-resume-20260929-01/inspection.json.
+- [x] AWS 읽기 조회: 기존 EC2 running/t3.small/203.0.113.10, 프로필 미연결. hanwha-cctv-ec2-role 프로필 존재 확인. 원본 근거 artifacts/infra/cpu-rag-ec2-resume-20260929-01/inspection.json.
 - [x] 기존 SSH 도우미의 공인 IP 갱신·이전 host key 검증 유지, 원본 보존·셸 구문 확인. Terraform README 재개 방향 수정.
 - [x] 사용자 EC2 DB Compose 출력 healthy 확인. 이후 테이블 조회·BE 배포 준비로 진행하며 클라우드 변경·배포 CLI는 사용자 실행.
 - [ ] 기존 Terraform state에서 IAM 프로필 연결 계획 검토·적용, 컨테이너 S3 역할 인증 확인. 정책/PassRole/IMDS 접근은 아직 미확인.

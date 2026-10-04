@@ -12,6 +12,10 @@ from apps.cctv_ui.report_view import (
 )
 
 st.set_page_config(page_title='CCTV 분석', page_icon=':material/videocam:', layout='wide')
+if st.session_state.get('cctv_navigation_enabled') and st.button(
+        '관제 화면으로', icon=':material/arrow_back:', key='analysis_control_home'):
+    st.session_state.control_refresh_pending = True
+    st.switch_page('control_room.py')
 st.title('CCTV 영상 분석')
 st.caption('선택한 사고 영상 모델로 분석하고, 장면 설명·문서 근거·보고서까지 확인합니다.')
 for key, value in [('selected_result', None), ('last_submission', None)]:
@@ -96,6 +100,7 @@ if submit or inspect_input:
                 st.session_state.selected_result = 'selection:' + result['selection_id']
                 st.session_state.result_picker = st.session_state.selected_result
                 st.session_state.last_submission = result
+                st.session_state.control_refresh_pending = True
                 st.success('기존 요청을 불러왔습니다.' if result['already_present']
                            else '접수했습니다. worker가 선택한 범위를 처리합니다.')
             except Exception as exc:
@@ -136,7 +141,7 @@ def show_clip(identifier, event_id, kind, label, version):
 def show_evidence(job, event_id, event):
     identifier = job['worker_job_id']
     version = event.get('version') or (job.get('analysis_profile') or {}).get('version') or job.get('version')
-    timings = [('candidate_time_s', 'X3D 후보 시각'), ('display_sample_time_s', '표시 요청 시각'),
+    timings = [('candidate_time_s', '사고 후보 시각'), ('display_sample_time_s', '표시 요청 시각'),
                ('representative_source_time_s', '실제 표시 프레임 시각')]
     shown = [f'{label}: {float(event[key]):.3f}초' for key, label in timings if event.get(key) is not None]
     if shown:
@@ -254,6 +259,12 @@ def show_job(job):
             stage = pending[0]
     st.subheader(LABELS.get(stage, stage))
     st.caption('작업 ID: ' + identifier)
+    if st.session_state.get('cctv_navigation_enabled') and st.button(
+            '관제에서 영상·보고 보기', icon=':material/videocam:', key='analysis_control_job_' + identifier):
+        st.session_state.control_source = 'api'
+        st.session_state.control_selected_job = identifier
+        st.session_state.control_refresh_pending = True
+        st.switch_page('control_room.py')
     if job.get('purpose') in PURPOSES:
         st.caption('실행 범위: ' + PURPOSES[job['purpose']])
     tracking = job.get('mlflow')

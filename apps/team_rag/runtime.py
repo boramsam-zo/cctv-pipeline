@@ -9,7 +9,7 @@ import time
 from .control_rag import ROOT, markdown, read, retrieve, validate
 
 PIPELINE_ID = "team-rag-v1"
-TEMPLATE_REVISION = "team-rag-integration-20261003-v1"
+TEMPLATE_REVISION = "team-rag-relevance-20261005-v1"
 
 
 def build_result(event, *, database=None, contacts=None, model_path=None, deadline_at=None):

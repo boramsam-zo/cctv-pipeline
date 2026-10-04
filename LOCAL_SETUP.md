@@ -1,5 +1,68 @@
 # 실행·복구 사용법 — 현재 CCTV 프로젝트
 
+## 2026-10-05 — MLflow에서 실행 내용을 읽는 순서
+
+[MLflow](http://127.0.0.1:5001/)에서 **Experiments → cctv-model-executions**(experiment 2)를 선택한다. Default의 빈 목록을 실제 실행 실패로 해석하지 않는다. Models는 모델 등록 목록이고 Experiments는 실행 기록이다. 모델의 Registry v1은 첫 등록 버전이며 학습 epoch 1이라는 뜻이 아니다.
+
+| 확인 순서 | 위치·항목 | 의미 |
+|---|---|---|
+| 1 | Params: model_id, model_version, registered_model_version | 선택한 X3D-S 또는 R2와 실제 학습 가중치 버전이 맞는가 |
+| 2 | Params: input_sha256, weights_sha256, config_sha256 | 같은 입력 파일·가중치·설정으로 실행했는가 |
+| 3 | Status FINISHED/FAILED, Tags cctv.outcome/error_code | 성공·실패·후보 없음을 구분 |
+| 4 | Metrics: pipeline_seconds | 해당 작업 전체 처리 시간. 대기·회수 등이 포함되어 순수 GPU 속도와 다름 |
+| 5 | Artifacts → observations/*.json | 전처리/실행 설정, purpose, 결과/보고 ID·해시 추적 |
+
+관제 `B · 29136c38`의 **보고 판**에서 `관련성 검수본`과 `최초 생성본`을 바꿀 수 있다. 기본 검수본은 보행자 조건이 확인되지 않은 제27조 근거를 제외하고 4개 근거를 연결한다. 최초 원문은 그대로이며 제외 사유는 확인 필요 사항에 표시한다. 검수 MLflow run은 `16a8f6851f5742638370d8d92b17e8f7`, 표시 실행 이름은 `75bb59ba…`다. 모델 재추론/장면 재생성이 아니다.
+
+실행 이름 `62e4f838…`는 X3D-S GPU, `1e024089…`는 R2 GPU, `32e3d128…`는 X3D-S 후속 보고다. GPU 실행과 후속 보고 시간을 합치거나 같은 종류의 속도처럼 비교하지 않는다. 보고 본문은 [관제 화면](http://127.0.0.1:8501/)의 같은 사건에서 확인한다. 별도 관련성 검수는 purpose=report_review와 new_model_calls=0으로 구분하며 새 GPU 실행으로 세지 않는다. 정확도·F1은 공통 정답 자료로 평가하지 않아 기록하지 않았다.
+
+**같은 영상·SHA-256:** 파일 내용의 지문이다. 이름을 바꿔도 내용이 같으면 같고, 같은 이름이라도 내용이 바뀌면 다르다. 같은 입력 해시라도 모델/설정이 다르면 GPU 작업 식별자는 다르다. 재인코딩·잘라내기·파일 메타데이터 변경은 해시를 바꿀 수 있으므로 같은 사건/비슷한 영상 자동 판별 기능은 아니다. 해시는 암호화나 정확도 점수가 아니며 비교할 원본 해시를 신뢰할 수 있어야 무결성 확인에 의미가 있다.
+
+**박스 주석:** 최신 관제는 원본 영상·후보 클립·박스 주석 정지 이미지를 구분한다. 현재 실행의 주석을 우선하고 누락/연결 오류를 표시한다. 저장 화면에서 같은 원본의 과거 B 분석 참고를 보여줄 때는 그 출처를 명시한다. 최신 UI 변경을 YOLO 재학습/정확도 향상으로 해석하지 않는다.
+
+**메모리:** 서버는 2→4GiB(+2GiB, 2배)다. worker 상한은 이전 512→896MiB(+384MiB, 75%) 변경을 유지했고 이번 MLOps 연결에서 더 올리지 않았다. 실제 보고 처리 이력은 worker peak 약896.14MiB, OOM0이며 MLflow는 상한768MiB/peak약623.76MiB다. 상한 근접은 여유가 충분하다는 뜻이 아니며 2GiB 축소는 아직 적용하지 않았다. 같은 시점 호스트 가용 약1.81GiB는 전체 실행 동안의 최저 여유가 아니다.
+
+## 2026-10-05 — 새 EC2 사용 시작·중지와 다음 Runpod 연결
+
+현재 원격 운영 서버는 **서울 2b의 c7i-flex.large 4GiB**다. 원본 2a의 t3.small은 복구용으로 중지·보존한다. 두 서버를 함께 시작하지 않는다. 새 서버에 기존 DB/영상/보고 자료와 두 모델 선택 UI, MLflow 3.16.1을 적용했다. MLflow Registry에는 `cctv-x3d-s`와 `cctv-r2plus1d-18` 각 v1을 등록했다. 실제 stop/start 후 업무 데이터·두 등록 버전·5개 서비스 복구를 확인했다. 이전 stop/start 검증 후 둘 다 중지했으나, 사용자가 새 서버를 다시 시작하여 현재 5개 서비스가 실행 중이다. 새 Pod에서 X3D-S/R2 각1회 실제 추론·결과 회수·MLflow 기록을 확인했다. 후속 별도 승인으로 B의 기존 결과를 재사용한 Gemini1회·CPU 검색/6절 보고1건도 생성했으며, 관제의 `B · 29136c38`에서 확인한다. R2는 GPU 비교만 완료했고 새 보고를 만들지 않았다.
+
+아래 명령은 **이 Mac의 프로젝트 루트**에서 실행한다. 운영 helper와 인증은 로컬 비공개 `artifacts`에 보존하며 공개 Git/이미지에 넣지 않는다. 명령은 새 서버의 고정 인스턴스만 대상으로 하며 원본 삭제·서버 재생성·Pod 조작을 하지 않는다.
+
+```sh
+# 현재 상태만 확인
+python3 artifacts/mlops/ec2-upgrade-20261005-01/prepared/ec2-lifecycle.py
+
+# 사용할 때: 같은 서버·DB·MLflow·API/UI/worker 시작 및 보존 검사
+python3 artifacts/mlops/ec2-upgrade-20261005-01/prepared/ec2-lifecycle.py start --apply
+
+# 화면 접속: 이 명령을 실행한 터미널을 유지하고 http://127.0.0.1:8501 열기
+bash artifacts/be-worker/ec2-stage6-20260930-01/tunnel.sh
+
+# MLflow 조회: 별도 터미널에서 유지하고 http://127.0.0.1:5001 열기
+python3 artifacts/mlops/ec2-upgrade-20261005-01/ec2-ssh.py --mlflow-tunnel 5001
+
+# 사용 종료: 분석/보고가 끝난 뒤 정상 종료 및 EC2 중지
+python3 artifacts/mlops/ec2-upgrade-20261005-01/prepared/ec2-lifecycle.py stop --apply
+```
+
+SSH와 UI 터널은 새 서버의 현재 공인 IP를 AWS에서 조회하므로 이전 IP를 직접 수정할 필요가 없다. 터널을 Ctrl+C로 닫아도 EC2는 계속 실행 중이므로 비용 절감을 위한 중지는 마지막 명령으로 별도 수행한다. 활성/불확실 작업, 데이터 변경, 종료 실패가 있으면 helper는 EC2 중지를 보류한다. 오류 때 같은 실행을 반복하거나 창/claims를 초기화하지 말고 현재 상태를 확인한다. EC2를 중지하면 원격 화면/API/MLflow는 사용할 수 없고 EBS·AMI 스냅샷·S3 등 보존 저장 비용은 남는다. 2GiB 복귀는 실제 분석·보고의 최대 메모리를 확인한 뒤 결정한다.
+
+**다음 순서:** EC2 시작 확인 → 사용자가 아래 이미지를 Runpod에 적용·Pod 생성 → Pod ID/API 주소와 SSH 연결 정보를 에이전트에게 전달 → 비밀 설정 복원·새 세션 API 시작·EC2 연결 → 합의한 유한 GPU 검증. 비밀 값 자체는 채팅에 보내지 않는다. 이미지 주소만 넣으면 분석 API가 자동으로 시작되는 것은 아니다.
+
+```text
+dahyeguk/cctv-runpod-ab@sha256:ce806774fde5eb047da54532646b2580d6552cc2a9bec4788c77cb5e6b7c4bc1
+```
+
+[게시 성공 Actions](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37214466090), [Pod 시작·연결 명령](apps/runpod_image/README.md). 첫 검증은 같은 짧은 영상 1개를 X3D-S/R2 각 1회, 회당 300초·API 세션 900초·새 VLM 0·자동 GPU 재시도 0으로 제한한다. 이 시간은 Pod 과금 상한이나 자동 Pod 종료 시간이 아니다. 새 영상의 사고 분석→VLM/문서 근거→보고 저장·화면 확인은 최종 목표로 유지하며, 첫 GPU 검증이나 기존 보고 조회만으로 전체 완료라고 표시하지 않는다.
+
+원격8501도 최신 관제 화면이 기본이다. 상단 ‘새 영상 분석’에서 모델을 선택하고, ‘관제 화면으로’ 또는 작업의 ‘관제에서 영상·보고 보기’로 돌아간다. 기존 영상·6절 보고는 운영 API 저장 결과로 조회한다. 로컬8510은 아래 저장 snapshot 실행법을 유지한다.
+
+**현재 저장 결과:** `B · 29136c38`는 새 VLM/보고, `R2 · 201a4be6`는 비교 결과다. 원본/모델 후보 시점·6절 보고·문서 근거를 구분한다. 이번 실행은 제한 검증용이며 GPU창01은 소진/만료, 보고창02는 동일 B보고1건 전용이다. 상단 새 영상 분석 버튼만으로 새 GPU예산/실행창이 열리지 않는다. 다음 신규 영상 분석은 승인할 입력/한도로 새 실행창을 준비해야 하며 기존창/claims를 초기화하지 않는다.
+
+MLflow의 Models에서는 등록한 두 모델 v1을, Experiments에서는 실제 실행 후 모델·설정·처리시간·성공/실패·결과 기록을 확인한다. 이번 실측으로 X3D-S/R2 비교 run 2개와 X3D-S 후속 full_report run 1개를 확인했다. 새 보고 run은 `a0330b21a31249a19983e67cdb4b07bd`이며 상태 FINISHED, outcome succeeded, 후속처리시간 약21.94초다. 보고 본문은 관제에서, 모델/설정/처리시간/보고 식별은 MLflow에서 본다. Registry 등록과 실행 기록은 별개다. 터널을 닫거나 EC2를 중지하면 이 localhost 주소는 사용할 수 없다.
+
+`ssh-add ~/.ssh/runpod_cctv_ed25519`의 마지막 줄이 `Identity added ... (cctv-runpod)`이면 기존 키가 SSH agent에 등록된 것이다. 이 암호는 로컬 개인키의 잠금 암호이며 채팅에 보내지 않는다. 재부팅 등으로 agent에서 키가 사라진 경우 같은 명령으로 다시 해제한다.
+
 ## 2026-10-04 — 보고 UI 반영 완료·현재 실행법
 
 아래 최신 전달문의 보고 UI 구현은07근거까지 **로컬 완료**했다. [검증/스크린샷](artifacts/cctv-ui/control-room-20261004-07/verification-07.json). HTML 미리보기 제한을 실제 성공으로 대신하지 않았으며 두 저장 보고의 실제 복사·파일 다운로드를 원문과 대조했다.
@@ -310,7 +373,7 @@ A+B 비교·새 모델/학습·데이터 확대·로그인·별도 인프라·�
 - **Mac 터미널2:** 아래 상태/접수중지 명령용. 명령 완료 뒤 프롬프트가 돌아오면 된다.
 - **API 종료 후 다음 운영 행동:** Runpod 콘솔 **Stop**으로 GPU compute 정지. API 종료만으로 Pod은 정지되지 않는다. Delete는 Pod 삭제이며 이번 절차에서 실행하지 않는다.
 
-현재 Pod `joz22uv6z03uu1`의 `/workspace`는 **`/ overlay`**다. Stop/restart 후 private/budget 보존을 기대하지 않는다. 아래3절의 Pod 밖 기록과 복원 경계를 따른다. 새 volume/network volume 구성은 추가 선택이며 이번 완료 작업에서 자동 변경하지 않았다.
+현재 Pod `YOUR_RUNPOD_ID`의 `/workspace`는 **`/ overlay`**다. Stop/restart 후 private/budget 보존을 기대하지 않는다. 아래3절의 Pod 밖 기록과 복원 경계를 따른다. 새 volume/network volume 구성은 추가 선택이며 이번 완료 작업에서 자동 변경하지 않았다.
 
 ## 1. 운영 코드·버전의 기준
 
@@ -356,7 +419,7 @@ Mac8501→EC2 loopback8501 연결, 화면 `http://127.0.0.1:8501/`. 기존 터�
 **1. Mac→EC2, 분석 전 창 선택:**
 
 ```bash
-bash ./artifacts/be-worker/portable-session-20261003-01/activate-command.sh --action select --session-name p6-hour-session-20261004-01 --max-jobs 1 --pod-id joz22uv6z03uu1
+bash ./artifacts/be-worker/portable-session-20261003-01/activate-command.sh --action select --session-name p6-hour-session-20261004-01 --max-jobs 1 --pod-id YOUR_RUNPOD_ID
 ```
 
 성공 `portable_hour_session_selected`, marker만 변경·기존 창/claims 보존·DB쓰기/모델0. old active 창/실행 불명 작업이 있으면 중단한다. 이전 marker는600 backup, parent700/marker644 유지·workerUID10001 소유로 교체한다. `selection_backup_exists_preserved`면 자동 반복하지 않는다. 이번 권한 실패01/02 후 **정확한 backup/old marker 확인과 변경 검사**를 마친 복구03에서만 `--resume-selection`을 사용했고 통과했다.
@@ -372,7 +435,7 @@ pbcopy < ./artifacts/be-worker/portable-session-20261003-01/start-runpod-command
 **3. Mac→EC2 활성화:**
 
 ```bash
-bash ./artifacts/be-worker/portable-session-20261003-01/activate-command.sh --action activate --session-name p6-hour-session-20261004-01 --max-jobs 1 --pod-id joz22uv6z03uu1
+bash ./artifacts/be-worker/portable-session-20261003-01/activate-command.sh --action activate --session-name p6-hour-session-20261004-01 --max-jobs 1 --pod-id YOUR_RUNPOD_ID
 ```
 
 성공 `portable_hour_session_ready`, 같은 Pod/창·상한1·인증/프로필/한도 GET1·최초 새 DB행1. 기존 기록/claims 보존·분석0. 실패면 마지막 code를 확인; 요청 이름/상한/health가 다르면 등록하지 않는다. S3 mode=true는 실제 S3 저장 성공을 뜻하지 않는다.
@@ -401,7 +464,7 @@ Pod 교체 시 다음 세 가지를 구분한다.
 | 실행 설정·기록 | deployment/S3 mode·bucket/region/prefix, GPU동시1·승인 한도와 provider budget/jobs/API 상태를 복원/대조. 기존 작업의 URL/설정·호출 기록을 덮어쓰지 않음 |
 | 비밀 파일 | `/workspace/cctv-p6-private-20261002-01`의 runtime.env/token/aws_credentials/aws_config4파일. 이미지에 포함하지 않음. 디렉터리700/파일600, EC2의 기존 비밀을 숨김 입력으로 복원 |
 
-기존 복원 revision02는 `artifacts/be-worker/pod-restore-20261003-01`에 있다. 현재 ID/URL은 joz이며 backup suffix는 `.before-pod-joz22uv6z03uu1-url-20261004-01`이다. 현재 공개파일 확인·비밀4파일 복원·EC2 URL 변경은 실제 완료했으므로 반복하지 않는다. 원문은 current_status의 최신 JSON에 연결한다.
+기존 복원 revision02는 `artifacts/be-worker/pod-restore-20261003-01`에 있다. 현재 ID/URL은 joz이며 backup suffix는 `.before-pod-YOUR_RUNPOD_ID-url-20261004-01`이다. 현재 공개파일 확인·비밀4파일 복원·EC2 URL 변경은 실제 완료했으므로 반복하지 않는다. 원문은 current_status의 최신 JSON에 연결한다.
 
 다음 새 Pod 복원 시 실행 위치와 순서는 다음과 같다.
 
@@ -473,7 +536,7 @@ worker 이전512MiB 구성으로의 원복과 revision02 CPU896MiB 연결은 실
 marker 선택 원복은 **새 DB행을 활성화하기 전**에만 아래 명령으로 가능하다.600 backup의 원문 SHA/candidate와 현재 marker·옛 창 보존을 검사하고 marker 바이트만 복원한다. owner는 worker10001로 유지하며 원래 root 소유권 복원이라고 표시하지 않는다.
 
 ```bash
-bash ./artifacts/be-worker/portable-session-20261003-01/activate-command.sh --action restore-selection --session-name p6-hour-session-20261004-01 --max-jobs 1 --pod-id joz22uv6z03uu1
+bash ./artifacts/be-worker/portable-session-20261003-01/activate-command.sh --action restore-selection --session-name p6-hour-session-20261004-01 --max-jobs 1 --pod-id YOUR_RUNPOD_ID
 ```
 
 성공 `portable_hour_session_selection_restored`, 모델/DB쓰기0. **현재 창은 활성화됐으므로 이 원복 명령을 실행하지 않는다.** 이미 DB행이 있으면 `existing_named_window_preserved`로 차단한다. 활성화 후 중단은 stop 명령으로 기록을 보존하고 처리한다. 새 창이 선택된 상태에서 old guard를 원복하는 경계는 아직 실제 검증하지 않았다. 기존 서비스 원복 사전 검사의 old marker 조건을 임의로 완화하지 않는다.
@@ -509,7 +572,7 @@ report: 50bb10ef-4e80-503f-80f5-4f9771e21c04
 p6-hour-session-20261004-01은 B 1개 한도를 사용했고 BE stopped=true입니다.
 자동 연장·초기화·기존 claims 삭제는 금지합니다. 새 시험은 유효한 별도 한도를 확인하세요.
 BE 접수 중지와 Runpod API 종료·Pod Stop은 별개이며, API 종료와 Pod Stop은 아직 확인되지 않았습니다.
-마지막 Pod은 joz22uv6z03uu1이고 URL은 https://joz22uv6z03uu1-8000.proxy.runpod.net 입니다.
+마지막 Pod은 YOUR_RUNPOD_ID이고 URL은 https://YOUR_RUNPOD_ID-8000.proxy.runpod.net 입니다.
 현재 실행 여부와 Pod 교체 여부는 사용자 설명과 필요한 상태 조회로 확인하세요.
 /workspace는 / overlay입니다. private 4파일·URL·실행 설정의 복원과 Pod 밖 기록을 구분하세요.
 S3/EC2 DB·spool/Mac에 남은 근거를 재사용하고, Pod 파일 전체 백업이 완료됐다고 가정하지 마세요.
@@ -811,7 +874,7 @@ cd ~/edu_project/boram3-cctv
 bash artifacts/be-worker/teammate-rag-integration-20261003-01/read-ec2-sizing-command-01.sh
 ```
 
-예상 출력은 `team_ec2_sizing_read`. 기존 `i-02017b92281737f53`의 유형/AZ/EBS/EIP와 t3.small·t3.medium·t3.large·c7i-flex.large·m7i-flex.large의 RAM/vCPU/아키텍처/현재 AZ 제공/FreeTierEligible/서울 Linux Shared On-Demand 시간당 가격을 읽는다. AWS CLI 읽기9개 실행이며 자동 재시도0·인스턴스 변경/중지·SSH/DB/Runpod/모델 요청0·파일 저장0이다. 가격 권한이 없으면 해당 가격만 unavailable로 표시한다. 기존 Mac AWS 로그인/CLI를 사용하며 새 설치나 자격값 출력은 없다.
+예상 출력은 `team_ec2_sizing_read`. 기존 `YOUR_EC2_INSTANCE_ID`의 유형/AZ/EBS/EIP와 t3.small·t3.medium·t3.large·c7i-flex.large·m7i-flex.large의 RAM/vCPU/아키텍처/현재 AZ 제공/FreeTierEligible/서울 Linux Shared On-Demand 시간당 가격을 읽는다. AWS CLI 읽기9개 실행이며 자동 재시도0·인스턴스 변경/중지·SSH/DB/Runpod/모델 요청0·파일 저장0이다. 가격 권한이 없으면 해당 가격만 unavailable로 표시한다. 기존 Mac AWS 로그인/CLI를 사용하며 새 설치나 자격값 출력은 없다.
 
 과거 t3.medium 생성은 계정의 Free Tier 유형 제한으로 거절됐다. `FreeTierEligible:true`도 실제 무료 과금·계정 허용·변경 가능성을 확약하지 않는다. 현재 크레딧/실청구는 확인하지 않으며 요금제 전환은 자동 실행하지 않는다. 표시 가격은 EC2 기본 계산 단가이고 CPU credit 설정/추가 비용·IPv4/EBS/S3/전송/세금/Runpod/Gemini는 포함하지 않는다. CPU credit 설정도 이번 읽기로 확인하지 않는다.
 
@@ -921,7 +984,7 @@ bash artifacts/be-worker/teammate-rag-integration-20261003-01/run-ec2-step-comma
 
 **입력 확인 버튼은 선택 사항이다.** 처음 `trial_input_not_approved`를 조사할 때 실제 화면 서버가 받은 영상과 허용 영상의 파일 크기/SHA256을 대조하려고 추가했다. 같은 이름이어도 내용이 다를 수 있어 해시를 함께 보여준다. 현재 버튼은 파일명·크기·해시·분석 버전·실행 범위를 표시하며 영상 재생 가능 여부, BE 접수 허용, GPU/Gemini 연결이나 사고 여부는 검사하지 않는다. 파일 선택으로 Mac→EC2 화면 서버 업로드는 이뤄지지만, 이 버튼은 BE 분석 요청을 보내지 않는다. 평소에는 **분석 시작**, 파일을 잘못 선택했는지 확인할 때만 **선택 영상 확인**을 사용한다.
 
-현재 Pod는 `p1zl69a2uzjgz5`, URL은 `https://p1zl69a2uzjgz5-8000.proxy.runpod.net`, 공통 이미지는 다음 고정 주소다.
+현재 Pod는 `YOUR_RUNPOD_ID`, URL은 `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net`, 공통 이미지는 다음 고정 주소다.
 
 ```text
 dahyeguk/cctv-runpod-ab@sha256:95590931c8cda4b68ac22b099ed90035f387249d48179734eb155849b2754ddd
@@ -1006,7 +1069,7 @@ bash artifacts/be-worker/portable-session-20261003-01/stop-command.sh
 | 같은 Pod의 API 재시작, 기존 창 유효 | 기존 파일이 보존됐고 미완료 작업이 없으면 시작 helper가 원래 마감 시간을 재사용한다. 시간을 새로1시간 부여하지 않는다. |
 | 코드·패키지·가중치 변경 | 새 버전 이미지 빌드·검증·게시 후 새 digest를 적용한다. |
 
-자동감지 설정은 `auto`이며 실제 GPU 이름을 바꿔 입력할 필요 없다. VRAM 최소20000MiB 조건은 없다. 메모리 부족·CUDA 호환성·속도는 실제 실행에서 확인해야 하며 모든 기종의 추론 성공을 보장하지 않는다. 보존된 B pipeline에는 A100 비용 가드가 남아 있다. 새 Pod 연결은 자동으로 갱신되지 않는다. 현재 helper는 Pod ID p1zl69a2uzjgz5와 공개 manifest에 고정돼 있으므로 새 Pod에서 옛 명령을 그대로 사용하지 않는다. `/workspace`의 설정 파일은 새 컨테이너에도 자동 보존된다고 가정하지 않는다.
+자동감지 설정은 `auto`이며 실제 GPU 이름을 바꿔 입력할 필요 없다. VRAM 최소20000MiB 조건은 없다. 메모리 부족·CUDA 호환성·속도는 실제 실행에서 확인해야 하며 모든 기종의 추론 성공을 보장하지 않는다. 보존된 B pipeline에는 A100 비용 가드가 남아 있다. 새 Pod 연결은 자동으로 갱신되지 않는다. 현재 helper는 Pod ID YOUR_RUNPOD_ID와 공개 manifest에 고정돼 있으므로 새 Pod에서 옛 명령을 그대로 사용하지 않는다. `/workspace`의 설정 파일은 새 컨테이너에도 자동 보존된다고 가정하지 않는다.
 
 ### 7. 1시간 만료와 다음 시험
 
@@ -1027,7 +1090,7 @@ cd ~/edu_project/boram3-cctv
 bash artifacts/be-worker/pod-restore-20261003-01/update-default-url-command-02.sh
 ```
 
-이 명령은 Mac에서 SSH로 EC2에 연결해 앞으로 접수할 작업의 기본 주소를 `https://p1zl69a2uzjgz5-8000.proxy.runpod.net`으로 바꾸고 BE API/worker가 같은 설정을 읽는지 확인한다. 사용자 `ec2_default_url_updated` 출력에서 원본 백업·URL 필드만 변경·파일 소유자/그룹/권한 보존과 두 서비스의 읽기 확인이 통과했다. S3 bucket/region과 기존 작업 설정·이미 읽은 요청은 유지했다. 기존 로컬20검사 근거는 `pod-restore-20261003-01/verification-01.json`이며 이번에는 재시험하지 않았다.
+이 명령은 Mac에서 SSH로 EC2에 연결해 앞으로 접수할 작업의 기본 주소를 `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net`으로 바꾸고 BE API/worker가 같은 설정을 읽는지 확인한다. 사용자 `ec2_default_url_updated` 출력에서 원본 백업·URL 필드만 변경·파일 소유자/그룹/권한 보존과 두 서비스의 읽기 확인이 통과했다. S3 bucket/region과 기존 작업 설정·이미 읽은 요청은 유지했다. 기존 로컬20검사 근거는 `pod-restore-20261003-01/verification-01.json`이며 이번에는 재시험하지 않았다.
 
 서비스 재시작/API/DB/S3/모델 호출과1시간 시작은 이 명령에 없다. `runpod_connectivity_verified:false`는 설정만 읽어 확인했고 실제 Runpod API 연결은 아직 검사하지 않았다는 뜻이다. **공통 프로필 설치와 API 기동·활성화까지 완료됐다. 현재는 새 영상 분석·보고 조회 단계다.** 아래 이전 Pod 시작/활성화 명령은 이력으로만 보존한다.
 
@@ -1039,7 +1102,7 @@ bash artifacts/be-worker/pod-restore-20261003-01/update-default-url-command-02.s
 
 ### 완료한 단계 — Runpod에 게시된 공통 이미지 적용
 
-현재 Pod `p1zl69a2uzjgz5`에 아래 이미지를 적용하고 새 공개파일검사통과출력을수신했다. 다음주소/명령은완료이력이며재실행하지않는다. 특히비밀설정복원뒤이미지를다시바꾸면복원파일이사라질수있다.
+현재 Pod `YOUR_RUNPOD_ID`에 아래 이미지를 적용하고 새 공개파일검사통과출력을수신했다. 다음주소/명령은완료이력이며재실행하지않는다. 특히비밀설정복원뒤이미지를다시바꾸면복원파일이사라질수있다.
 
 ```text
 dahyeguk/cctv-runpod-ab@sha256:95590931c8cda4b68ac22b099ed90035f387249d48179734eb155849b2754ddd
@@ -1098,7 +1161,7 @@ CCTV_EXPECTED_GPU=NVIDIA RTX 2000 Ada Generation
 
 13:34 KST RTX전용 `p6-rtx2000ada-v1`에 이어 13:43:55 KST 공통판 `p6-cuda-portable-v1` 빌드도 성공했다. 아래는 사용자가 완료한 명령이며 다시 실행할 필요 없다. 두 원본 영수증은 보관하고 다음 배포는 공통판으로 진행한다.
 
-현재 Pod은 `p1zl69a2uzjgz5`, 주소는 `https://p1zl69a2uzjgz5-8000.proxy.runpod.net/`다. RTX2000Ada16380MiB/드라이버595.91.07·기존 이미지 파일을 확인했고 비밀4파일/hour budget은 없다. 현재 공개 P6 이미지에는 기종 고정 검사가 있으므로 **이번에 공통 이미지로 한 번 전환**한다. 공통형으로 바꾼 뒤에는 기종 변경만으로 재빌드하지 않는다.
+현재 Pod은 `YOUR_RUNPOD_ID`, 주소는 `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net/`다. RTX2000Ada16380MiB/드라이버595.91.07·기존 이미지 파일을 확인했고 비밀4파일/hour budget은 없다. 현재 공개 P6 이미지에는 기종 고정 검사가 있으므로 **이번에 공통 이미지로 한 번 전환**한다. 공통형으로 바꾼 뒤에는 기종 변경만으로 재빌드하지 않는다.
 
 이 명령은 Docker Desktop을 켠 **Mac 터미널**에서 실행했다. Runpod 터미널 명령이 아니다.
 

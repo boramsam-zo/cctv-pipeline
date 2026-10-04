@@ -75,8 +75,8 @@ def _state(job):
 def unique_jobs(jobs, selections=()):
     """The same worker job in /jobs and /selections counts exactly once.
 
-    /jobs is authoritative for the job body. Selection-only flow information is
-    added on a copy, since legacy API rows can omit that view field.
+    /jobs is authoritative for the job body. Selection-only flow and MLflow
+    view fields are added on a copy when the job row does not contain them.
     """
     selected = {}
     for selection in _list(selections):
@@ -92,8 +92,9 @@ def unique_jobs(jobs, selections=()):
         if not isinstance(identifier, str) or not identifier or identifier in result:
             continue
         row = dict(job)
-        if not row.get('flow') and _dict(selected.get(identifier)).get('flow'):
-            row['flow'] = selected[identifier]['flow']
+        for field in ('flow', 'mlflow'):
+            if not row.get(field) and _dict(selected.get(identifier)).get(field):
+                row[field] = selected[identifier][field]
         result[identifier] = row
     for identifier, job in selected.items():
         result.setdefault(identifier, dict(job))
@@ -135,7 +136,72 @@ def _reports(job, description, analysis_id=None):
             or _dict(_dict(_dict(item).get('state')).get('result')).get('analysis_id') in analysis_ids]
 
 
-def normalize_case(job, event_id=None, analysis_id=None):
+def _report_revisions(job, description, original):
+    """Keep reviewed copies tied to their immutable source and scene identity."""
+    if not original:
+        return [], []
+    source_state = _dict(original.get('state'))
+    source = _dict(source_state.get('result'))
+    source_id = original.get('report_id')
+    source_sha = source_state.get('result_sha256')
+    def fingerprint(value):
+        # Match the persisted report contract (spaces are part of these bytes).
+        try:
+            return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
+                                             allow_nan=False).encode()).hexdigest()
+        except (TypeError, ValueError, RecursionError):
+            return None
+
+    revisions, rejected = [], []
+    if original.get('quality_review_error'):
+        rejected.append('stored_report_review_unavailable')
+    seen = {source_id}
+    for candidate in _list(original.get('quality_reviews')):
+        row = _dict(candidate)
+        review, settings, state = (_dict(row.get(key)) for key in ('review', 'settings', 'state'))
+        result = _dict(state.get('result'))
+        identifier = row.get('report_id')
+        valid = (
+            source.get('schema_version') == TEAM_REPORT
+            and source_state.get('status') == 'report_stored'
+            and isinstance(source_sha, str) and re.fullmatch(r'[a-f0-9]{64}', source_sha)
+            and source_sha == fingerprint(source) and source.get('report_id') == source_id
+            and isinstance(identifier, str)
+            and re.fullmatch(r'[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}', identifier)
+            and identifier not in seen
+            and review.get('schema') == 'cctv-team-report-review-v1'
+            and review.get('source_report_id') == settings.get('source_report_id') == source_id
+            and review.get('source_result_sha256') == source_sha
+            and isinstance(review.get('policy_sha256'), str)
+            and re.fullmatch(r'[a-f0-9]{64}', review['policy_sha256'])
+            and type(review.get('excluded_count')) is int and review['excluded_count'] >= 0
+            and type(review.get('model_calls')) is int and review['model_calls'] == 0
+            and state.get('status') == 'report_stored'
+            and isinstance(state.get('result_sha256'), str)
+            and re.fullmatch(r'[a-f0-9]{64}', state['result_sha256'])
+            and state['result_sha256'] == fingerprint(result)
+            and result.get('schema_version') == TEAM_REPORT
+            and result.get('report_id') == identifier
+            and _dict(description).get('analysis_id') is not None
+            and result.get('analysis_id') == settings.get('analysis_id')
+                == source.get('analysis_id') == _dict(description).get('analysis_id')
+            and result.get('worker_job_id') == source.get('worker_job_id') == job.get('worker_job_id')
+            and settings.get('worker_job_id', job.get('worker_job_id')) == job.get('worker_job_id')
+            and result.get('event_id') == source.get('event_id') == _dict(description).get('event_id')
+            and result.get('scene_sha256') == source.get('scene_sha256')
+            and settings.get('scene_sha256', source.get('scene_sha256')) == source.get('scene_sha256')
+            and result.get('provider_job_id') == source.get('provider_job_id')
+        )
+        if valid:
+            revisions.append(row)
+            seen.add(identifier)
+        else:
+            rejected.append('stored_report_review_identity_mismatch')
+    # Reviewed copies precede the source; the API exposes supported policies only.
+    return list(reversed(revisions)) + [original], rejected
+
+
+def normalize_case(job, event_id=None, analysis_id=None, report_id=None):
     identifiers = event_ids(job)
     if event_id is None:
         event_id = identifiers[0] if identifiers else None
@@ -144,8 +210,14 @@ def normalize_case(job, event_id=None, analysis_id=None):
     scene = _dict(payload.get('team_event') or payload.get('description'))
     reports = _reports(job, description, analysis_id)
     # Prefer the agreed team report when legacy and team reports coexist.
-    report = next((item for item in reports if _dict(_dict(item.get('state')).get('result'))
+    original = next((item for item in reports if _dict(_dict(item.get('state')).get('result'))
                    .get('schema_version') == TEAM_REPORT), reports[-1] if reports else None)
+    revisions, review_errors = _report_revisions(job, description, original)
+    report = revisions[0] if revisions else None
+    if report_id is not None:
+        report = next((item for item in revisions if item.get('report_id') == report_id), None)
+        if report is None:
+            raise ValueError('selected_report_revision_not_in_case')
     report_json = _dict(_dict(_dict(report).get('state')).get('result')).get('report_json')
     report_json = _dict(report_json)
     evidence = next((item for item in _list(job.get('evidence_events'))
@@ -164,6 +236,8 @@ def normalize_case(job, event_id=None, analysis_id=None):
                  else '사고 후보 · ' + worker_id[:8] if event_id else '영상 작업 · ' + worker_id[:8],
         'status': status, 'status_label': STATUS_LABELS.get(status, '상태 확인 필요'),
         'scene': scene, 'description': description, 'reports': reports, 'report': report,
+        'report_revisions': revisions, 'report_review_errors': review_errors,
+        'report_review': _dict(_dict(report).get('review')),
         'analysis_id': _dict(description).get('analysis_id'),
         'summary': summary, 'observations': _list(scene.get('evidence') or scene.get('observations')),
         'uncertainties': _list(scene.get('uncertainties')),

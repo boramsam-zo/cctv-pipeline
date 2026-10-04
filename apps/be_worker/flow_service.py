@@ -317,6 +317,15 @@ def view(conn, identifier=None):
                             or report_fingerprint(payload) != progress.get('result_sha256')):
                         raise WorkerError('team_view_report_identity_changed')
                     validate_report(payload,source['team_event'])
+                    from .report_review import load_reviews
+                    try:
+                        reviews = load_reviews(spool()/row['directory_id'], item, source)
+                        if reviews:
+                            item['quality_reviews'] = reviews
+                    except (WorkerError, ValueError, KeyError, TypeError, OSError) as exc:
+                        # An unavailable review never hides its preserved source.
+                        item['quality_reviews'] = []
+                        item['quality_review_error'] = getattr(exc, 'code', 'stored_report_review_invalid')
             descriptions += new_descriptions
             reports += new_reports
         complete = bool(descriptions) and len(reports) == len(descriptions) and all(r['state']['status']=='report_stored' for r in reports)
@@ -388,7 +397,7 @@ def selection_views(conn, identifier=None):
         for member in group['children']:
             task=tasks[member['task_id']]
             row=rows[task['worker_job_id']]
-            selection_jobs.validate(task,row)
+            selection_jobs.validate_stored(task,row,directory=spool()/checked_id(row['directory_id']))
             if any(task[k]!=v for k,v in member.items()) or task['purpose']!=group['purpose'] or row['state']['input_sha256']!=group['input_sha256']:
                 raise WorkerError('selection_membership_mismatch')
             item=dict(jobs[task['worker_job_id']],task_id=task['task_id'],purpose=task['purpose'],

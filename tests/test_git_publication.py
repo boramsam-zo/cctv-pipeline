@@ -65,6 +65,24 @@ class PublicationTests(unittest.TestCase):
         self.assertNotIn(value, str(raised.exception))
         self.assertFalse((self.base / 'publication').exists())
 
+    def test_operational_destinations_are_removed_only_from_document_copy(self):
+        original = ('i-1234567890abcdef0 https://abcdefghijklm-8000.proxy.runpod.net '
+                    'Pod abcdefghijklm ssh 8.8.4.4 http://127.0.0.1:8501 10.0.0.1')
+        source = self.put('docs/operations.md', original)
+        code = self.put('apps/example.py', '# ' + original)
+        self.prepare()
+        tree = self.base / 'publication/tree'
+        text = (tree / 'docs/operations.md').read_text()
+        self.assertEqual(source.read_text(), original)
+        self.assertEqual((tree / 'apps/example.py').read_bytes(), code.read_bytes())
+        for value in ('i-1234567890abcdef0', 'abcdefghijklm', '8.8.4.4'):
+            self.assertNotIn(value, text)
+        self.assertIn('YOUR_EC2_INSTANCE_ID', text)
+        self.assertIn('YOUR_RUNPOD_ID-8000.proxy.runpod.net', text)
+        self.assertIn('203.0.113.10', text)
+        self.assertIn('http://127.0.0.1:8501', text)
+        self.assertIn('10.0.0.1', text)
+
     def test_symlink_in_allowlisted_source_is_not_followed(self):
         target = self.put('docs/guide.md', 'original')
         (self.root / 'apps').mkdir()

@@ -57,7 +57,20 @@ def _model_session(value):
     return isinstance(value, dict) and value.get('schema') == MODEL_SESSION_SCHEMA
 
 
+def marker_from_state(value):
+    from . import report_continuation
+    fields = (report_continuation.FIELDS if report_continuation.selected(value) else
+              MODEL_SESSION_FIELDS if _model_session(value) else {'schema', 'name'})
+    result = {k: value[k] for k in fields}
+    if 'max_jobs' in value:
+        result['max_jobs'] = value['max_jobs']
+    return _validate_marker(result)
+
+
 def _validate_marker(value):
+    from . import report_continuation
+    if report_continuation.selected(value):
+        return report_continuation.validate_marker(value)
     if _model_session(value):
         require(set(value) == MODEL_SESSION_FIELDS, 'test_session_marker_invalid')
         name = value['name']
@@ -124,6 +137,9 @@ def _binding_profile(binding):
 
 def validate(p, *, expected_marker=None):
     marker = current_marker() if expected_marker is None else _validate_marker(expected_marker)
+    from . import report_continuation
+    if report_continuation.selected(marker):
+        return report_continuation.validate_state(p, marker)
     is_model = _model_session(marker)
     keys = {'schema', 'name', 'started_at', 'deadline_at', 'stopped', 'bindings', 'claims'}
     if is_model:
@@ -220,6 +236,9 @@ def get(conn, *, lock=False):
     require(row is not None, 'test_session_not_started')
     result = validate(deepcopy(row['payload']), expected_marker=marker)
     require(current_marker() == marker, 'test_session_marker_changed_during_read')
+    from . import report_continuation
+    if report_continuation.selected(marker):
+        report_continuation.check_origin(conn, marker)
     return result
 
 
@@ -231,7 +250,8 @@ def active(conn, p):
     marker = current_marker()
     require(p['name'] == marker['name'] and p.get('max_jobs', MAX_JOBS) == marker.get('max_jobs', MAX_JOBS),
             'test_session_identity_changed')
-    if _model_session(p) or _model_session(marker):
+    from . import report_continuation
+    if _model_session(p) or _model_session(marker) or report_continuation.selected(marker):
         # Pin every field, not merely the session name/cap, between reads.
         validate(p, expected_marker=marker)
     now = clock(conn)
@@ -252,8 +272,13 @@ def write(conn, p):
 
 def initialize(conn, started_at, deadline_at):
     marker = current_marker()
+    from . import report_continuation
+    bindings = {}
+    if report_continuation.selected(marker):
+        report_continuation.check_origin(conn, marker)
+        bindings = {marker['source']['worker_job_id']: report_continuation.binding(marker)}
     initial = dict(marker, started_at=started_at, deadline_at=deadline_at,
-                   stopped=False, bindings={}, claims=[])
+                   stopped=False, bindings=bindings, claims=[])
     validate(initial, expected_marker=marker)
     with conn.transaction():
         active(conn, initial)
@@ -279,7 +304,12 @@ def stop(conn):
 def check_admission(conn, sha, size, versions, purpose):
     p = get(conn, lock=True)
     active(conn, p)
-    if _model_session(p):
+    from . import report_continuation
+    if report_continuation.selected(p):
+        require(tuple(versions) == ('B',) and purpose == 'full_report'
+                and sha == p['source']['input_sha256'] and size == p['source']['input_bytes'],
+                'report_continuation_admission_not_approved')
+    elif _model_session(p):
         require(isinstance(versions, (list, tuple)) and tuple(versions) in (('B',), ('R2',), ('B', 'R2'))
                 and purpose == p['purpose'], 'test_session_model_selection_not_approved')
         require(sha == p['approved_input_sha256'], 'test_session_input_not_approved')
@@ -293,6 +323,12 @@ def check_admission(conn, sha, size, versions, purpose):
 
 def row_binding(row, value, day, *, policy=None):
     policy = current_marker() if policy is None else policy
+    from . import report_continuation
+    if report_continuation.selected(policy):
+        report_continuation.check_row(policy, row)
+        require(value == policy['generation_settings'] and day is None,
+                'report_continuation_settings_changed')
+        return row['worker_job_id'], report_continuation.binding(policy)
     is_model = _model_session(policy)
     s = row['state']; wid = checked_id(row['worker_job_id'])
     try:
@@ -329,6 +365,8 @@ def bind_job(conn, row, value, day):
         b['event_ids'] = previous['event_ids']
         require(b == previous, 'test_session_existing_binding_preserved')
         return previous
+    from . import report_continuation
+    require(not report_continuation.selected(p), 'report_continuation_prebound_job_only')
     # Changing windows must not grant a second attempt to an old request. This
     # runs under admission/dispatch locks in the caller's existing transaction.
     if _model_session(p):
@@ -389,6 +427,9 @@ def claim(conn, row, event_id, kind, request_sha256, model=None):
     with conn.transaction():
         p = get(conn, lock=True)
         observed = active(conn, p)
+        from . import report_continuation
+        if report_continuation.selected(p) and kind == 'scene':
+            require(p['deadline_at'] - observed >= 120, 'report_continuation_insufficient_call_time')
         require(not _model_session(p) or p['purpose'] == 'full_report',
                 'test_session_generation_not_approved')
         wid = checked_id(row['worker_job_id'])

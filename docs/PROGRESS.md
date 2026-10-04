@@ -1,5 +1,60 @@
 # 진행 기록
 
+## 2026-10-05 — 보고 근거 관련성 검수·원본 보존·BE/UI 게시
+
+사용자 최신 요청으로 관련성 검수와 최신 BE/UI Git 추가 게시를 진행했다. 원본 장면/검색/보고를 보존하고 추가 모델 실행 없이 별도 검수본을 만드는 범위다. 기존 ‘관련성 검수/게시 별도 잔여’ 상태를 이번 승인으로 대체했다.
+
+- 원인: 기관 문자열 `경찰` 포함만으로 운전자 의무/보행자 조건 문서가 후보로 연결됐고, 앞 2문장 발췌가 조건/열거항을 잘랐다. 구조화 관찰 상태·확인되지 않은 장소/횡단 조건·조치 주체를 함께 확인하고 제공 문서 청크 전체를 보존했다. 미관찰과 판단 불가는 구분한다. 법령의 실제 적용/현행성 판단은 별도다.
+- `review_saved_report`는 저장 관찰·검색 trace/원문을 그대로 두고 근거 연결만 다시 구성한다. `report_review`는 원본 envelope/장면/정책 SHA를 고정한 별도 sidecar를 저장하고 원본 DB행/Markdown을 덮어쓰지 않는다. 손상/다른 사건/미지원 정책은 원본을 남기고 검수본 표시를 보류한다.
+- 실제 원본 `8d7f90fa-f6d8-5d56-9d70-f9954263f6b3`의 SHA `8ed6ae9f…93e4`·입력/장면·원문 파일 일치. 검수본 `75bb59ba-cff1-5019-83bf-49b00e810ca6`, 결과SHA `0fb62959…bf2f`, 6절/문서5→4. 제외 문서 `scenario-traffic-15-3e48b1298a69`(보행자 조건·운전자 의무)는 제외 원문/사유로 남기고 표시근거에서 제거했다. 참조R번호는 남은 문서에 맞춰 재연결했다.
+- MLflow run `16a8f6851f5742638370d8d92b17e8f7`, experiment2/cctv-model-executions, FINISHED/succeeded, purpose report_review/new_model_calls0. 관찰SHA/Params/Tags/Registry와 artifact 목록·크기 대조 완료. 원격 artifact bytes를 별도로 다운로드/재해시한 것으로 쓰지 않는다. 검수에 추론시간·정답 없는 accuracy/F1을 만들어 넣지 않았다.
+- 새 GPU/VLM/E5/외부검색0. 승인 두 GPU작업각1attempt 유지, B VLM1/R2 VLM0, 원본/장면DB각1행 유지. 5.85MB 입력 파일도 원본 SHA와 일치했다.
+- 첫 소스 배포 계획은 BE/UI Compose 이력 분기와 secrets→Docker bind 표현 차이에서 안전 중단했다. 각 기존 순서를 유지해 병합하고 비밀값을 읽지 않은 채 경로/RO설정을 대조한 v3 계획만 적용했다. API/worker/UI source RO변경, 이미지/env/메모리/DB/MLflow 보존·업무행 불변·정상SIGINT·lifecycle ID갱신 확인. 실패계획 원문 보존.
+- 실제 UI GET에서 과거 완료 보고 설정의 코드SHA를 현재 코드와 비교하여 조회를 막는 회귀를 발견했다. 저장 조회만 schema/해시형식/프로필/GPU·task ID/불변 task 영수증으로 검증하는 `validate_stored`를 추가했다. 새 실행·재개·worker의 현재 코드 일치 검사는 유지한다. GET에서 파일 생성/chmod/잠금은 없다. 재배포 전 별도 worker프로세스·읽기전용DB로 실제 선택7개/작업7개/검수본1개 호환을 확인했다.
+- 로컬 최초 BE/UI/RAG700개 중668통과/격리PostgreSQL32skip. 조회보완 후 BE/UI677개 중645통과/같은32skip, 변경 없는 RAG31통과 포함 최종676통과. 신규 관련성/sidecar/선택전환/과거조회 변조·호환 검사를 포함하며 모델/실제DB 호출0. Git 선별본의 기존15시험이 비공개 corpus/index에 의존하던 문제는 테스트 자료만 합성자료로 격리해 해결했다.
+
+원문 근거는 `artifacts/mlops/report-relevance-20261005-01`의 source-freeze/배포계획·apply/검수계획·apply/review-attestation/offline-view-tests에 보존한다. 최종 API/worker 조회호환 배포 후 업무행 불변·UI/DB/MLflow 보존·lifecycle2개 ID갱신과 실제/selections 조회를 확인했다. 실제 브라우저에서 검수본 기본/최초 원문 전환·동일 사건/주석 이미지·6절/R1~R4·제외사유·두 데스크톱 폭 넘침0을 확인했다. Git 게시 결과는 후속 완료 기록으로 연결한다. 메모리 증설/축소·추가 학습·새 실행창·서버/Pod 종료는 수행하지 않았다.
+
+## 2026-10-05 — 저장 GPU 결과로 장면 분석1회·6절 보고1건 생성
+
+사용자가 ‘네, 장면 분석1회와 보고 생성·검증 진행’으로 기존 첫검증의 새VLM0 한도를 이번 후속1회로 변경했다. 명시 승인 전에는 코드/검사/EC2 source-only 반영/읽기계획까지만 수행했다. 신규후속창은 `mlops-session-20261005-02`이며 원본01과 B/R2 비교작업은 보존한다. B worker29136c3813d9417088a39b3e8447c48a의 기존GPU근거13파일/SHA를 고정하고, Gemini gemini-3.5-flash-lite/4fps 1회·CPU E5 검색/템플릿보고1회만 접수했다. 새GPU/자동retry/새학습/외부embedding/보고LLM호출0.
+
+로컬 구현은 report_continuation 정책·worker/selection/hour_session 경계와 두 activation helper를 재사용하는 최소연결이다. 새전용15시험이 통과했다. BE전체 최초실패 중 loopback접근16개는sandbox, 후반19건은 기존수동SceneJobTests fixture의 doCleanups 미호출로 남은 trial mock이었다. cleanup1줄보완 후 실제직접CLI 상대import회귀1개를 절대import로 수정했다. loopback허용 최종51모듈556개 중524통과/격리PostgreSQL32skip, 실패0,19.666초. 이전실패원문도보존했다. 실제DB검사32개를 통과로 계산하지 않는다.
+
+61개파일/488,917B를새EC2전용release에 RO mount했다. archiveSHA02d26fdf…44ce1/manifestSHAef57929c…7d18. 유휴/advisorylock/신규업무baseline/비공개원복정보 확인→API/worker SIGINT종료(exit130)→동일image/UID/env/memory로재생성→worker유휴/API/UIhealth 및 전체업무행불변 확인. UI/DB/MLflow컨테이너는유지하고 lifecycle의API/worker ID만갱신했다. 새서비스/DBschema변경/모델호출0. Compose가컨테이너삭제후생성실패하는경우의 missing-container 자동restore는지원하지않아 보존된Compose/private설정으로수동복구가필요하지만 이번배포는정상완료했다.
+
+최초 기본계획은 E5가 mount되지않는API에서 team_rag_local_model_not_prepared로중단했다. 기존E5가있는worker로실행위치를옮겨 hash만검사하고 계획SHA08694da1e5d8fdb917784b32d06b2e6d691aded299be7bed6065365f3c778b7c로통과했다. 모델재다운로드/새mount/guard완화0. 사용자승인후exactSHA apply1회로 task32e3d128ec89d56ec108227f424f3c21/selection41439a88c04243ac951828a4b26da7c9를접수했다. 보고ID8d7f90fa-f6d8-5d56-9d70-f9954263f6b3가생성됐고, 관제에서sameworker/model·영상/VLM·6절·GPU1/VLM1·MLflow저장완료·복사/Markdown버튼활성·1절anchor이동을확인했다. 1600×900/1920×1080 scrollWidth는각1600/1920,가로넘침0. viewport복원·새보고화면캡처보존,영상/보고원문다운로드0.
+
+보고 내용품질은 기능성공과구분한다. 보행자관찰이없는데보행자보호조항R3가현장대응참고에포함돼관련성검수가남는다. 카메라/위치/후보시각미제공경고와날짜필터미지원도그대로표시한다. 자동재검색·내용교체·두번째보고생성은하지않았다. R2는GPU비교만완료했고보고생성은안했다. 정확도/F1미기록.
+
+메모리관측은5서비스running/OOMKilled0/restart0,worker peak939,671,552B/limit939,524,096B 및 memory.events.max2418/oom0이다. cgroup사용량에는파일캐시등이포함되고상한근접회수이력이있어2GiB안전성을확정하지않는다. 해당시점host MemAvailable1,945,669,632B는전체실행최저여유값이아니다. MLflow peak654,061,568B. 최초observer의UI/DB이름오류2개는실제이름으로보정한02근거와분리했다. 자원크기/한도·Pod/EC2중지변경0.
+
+최종 읽기검사01은 같은inputSHA의기존10월2일작업c2f5dc50까지포함한3행을이번B/R2만의2행으로단정하여실패했다. 원본실패영수증을보존하고v2에서원본세션bindings의정확한두worker를대조·과거1행을분리·후속승인시각이후새행0을확인했다. 검사기만보정했고추론/보고재실행0. 02최종결과full_report_verified: 원본01세션SHA불변,source13파일불변,comparison2개완료유지,scene1/report1 DB/파일일치·6절·근거5개. MLflow full_report run a0330b21a31249a19983e67cdb4b07bd/experiment2 FINISHED·succeeded, 모델x3d_s operating-epoch7/Registry1·입력/설정/관측해시·보고참조일치·artifactmetadata존재. 후속pipeline_seconds21.936902이며기존GPU시간과분리한다. accuracy/F1없음. 완료된승인범위외추가실행없이종료한다.
+
+근거: artifacts/mlops/report-continuation-20261005-01의 offline-tests-final-v2,source-freeze,rollout-apply-result,report-plan-01/02,user-approval,report-apply-result,report-browser-verification,report-memory-01/02 및 후속 completion-attestation. 이번BE/UI 변경의 추가Git게시0. 실행창/claims초기화0. 900초는접수허용시간이며과금상한/Pod자동종료/hard timeout이아니다.
+
+## 2026-10-05 — 새 Runpod X3D-S/R2 실제 추론·MLflow 기록 완료
+
+승인된 privateS3 R2 객체125,379,501B를Pod에1회다운로드(122.633초)하여원본c40c150e…78b46해시와대조했다. SDK재시도0·Mac가중치복사0·캐시단계모델로딩0. 이후start_pod_api→activate_mlops_session→first-gpu-check를순차1회실행하여 mlops-session-20261005-01/API900초·2건·건당300초를생성했고현재EC2URL과새session만연결했다. 각단계의exclusiveintent/receipt를보존했다.
+
+B worker29136c3813d9417088a39b3e8447c48a·provider57eb484bb71d40b6916bd4d443d1f632, R2 worker201a4be66cc64611b4d087bd2d6b0654·providerf0fc19ec8ff440e38cfffb0e8ddf7b87. 두작업모두handoff_ready/comparison_completed, POST1씩, Podattempt1씩/총admissions2, 자동GPU재실행0. GPU작업시간B11.248843초/R2 10.918299초;childwall12.929066/12.206601초;service46.325006/45.624767초로측정범위를구분한다. 각6창/후보1이며새학습/Gemini/외부embedding0. R2 GPUpeakallocated2,806,616,576B/reserved3,990,880,256B는GPU메모리이며EC2RAM이아니다.
+
+EC2결과회수와MLflow recorded를확인했다. B run80787c28118041c0a2549646bfd6b700/R2 c517ff443f47434db82f75b9945ffd63. 기존업무행/장면/보고보존·정확도/F1미기록. Podv1검사기는원본localmanifest와게시용변환manifest의SHA를직접같다고가정해실패했으며실패영수증을보존했다. v2에서는실제publisher변환을메모리재현하여대조하고새GPU/S3호출없이성공을확인했다. 따라서검사기보정은모델재실행이아니다.
+
+근거: artifacts/mlops/pod-connect-20261005-01/{r2-cache-preparation,pod-api-start-result,ec2-model-activation-result,first-gpu-admissions-result,gpu-observation-03,pod-execution-verification-v2}.json. 새보고는미생성이다. 비교전용세션을보고용으로바꾸거나기존binding을다른세션으로우회하지않고,성공B근거하나를재사용하는명시적보고후속전용연결을준비한다. 새로운VLM실행전사용자승인필요. EC2/Pod는계속실행중이며900초API한도는Pod자동종료가아니다.
+
+## 2026-10-05 — 새 Pod SSH 복구·최신 관제 원격 적용·MLflow 화면
+
+사용자가 새 Pod/API/direct TCP SSH를 제공하고 기존 EC2 시작·UI 터널 결과를 전달했다. 기본 id_ed25519는 없고 기존 CCTV 키는 암호 잠금 상태였다. 키 생성 이력(9월28일)만 확인했으며 암호를 읽거나 추정하지 않았다. 사용자가 직접 ssh-add를 완료하여 Identity added를 확인한 뒤 기존 키로 직접 SSH가 성공했다. 새 키/Pod 생성·기존키 삭제0. Pod 식별·서비스 bundle25개·모델 카탈로그·RTX2000Ada를 읽기로 확인했다.
+
+기존 API 토큰/S3 AWS 인증을 새 Pod에 복원하는 최초 요청은 자동승인 검토가 구체적 수신 Pod 전송 승인 부족으로 실행 전 차단했다. 사용자가 의미 설명 후 명시 승인하여 검증된 SSH stdin으로 private 파일4개를0700디렉터리/0600에 복원했다. 값 출력/채팅/Git/개인키 전송0. 복원은 API 인증/S3 권한 실제 사용 성공과 구분한다.
+
+원격 UI가 analysis로 고정돼 최신 관제 화면을 보지 못한 배포 간극을 수정했다. app/control_room/analysis_app/control_data 네 파일만 연결 변경하고 기존 관제 CSS/보고/알림은 보존했다. 116파일 새ZIP SHA8ca642ee…e471을 기존 경로와 분리하여 검증·stage하고, UI만 같은 이미지/768MiB로 교체했다. 새 source·테마RO mount 및 control_room 기본값을 적용하고 다른4서비스 동일성을 확인했다. 정상SIGINT종료와 복구경로를 준비했고 라이프사이클 UI identity도 갱신했다. 로컬90시험, 실제GET전용AppTest3렌더(GET30/기존B보고1·6절/영상1/예외0/POST0), 브라우저1600×900·1920×1080 가로넘침0·모델폼이동/R2선택 표시를 확인했다. R2를 폼에서 선택한 것과 기존B보고 조회를 분리하며 새R2보고 생성으로 표시하지 않는다.
+
+MLflow helper에 localhost5001→검증한 내부DockerIP5000터널을 추가했다. 외부포트/SG 변경0·기존8501터널보존, 14오프라인가드·실제GET200·Models의두v1·검증전실행0개를 확인했다. 명령과 SSH agent 설명은 LOCAL_SETUP에 반영했다. 현재 EC2/Pod는 사용 중이며 임의중지0. Git추가게시0.
+
+직접 근거: artifacts/mlops/pod-connect-20261005-01/{pod-preflight,private-runtime-restored,ui-rollout-result,ui-live-control-apptest-readonly,ui-browser-verification}.json 및 같은폴더스크린샷, artifacts/mlops/ec2-upgrade-20261005-01/mlflow-ui-access-20261005-01/live-verification.json. 첫GPU/신규종단보고 결과는 후속 별도 근거로 기록한다.
+
 ## 2026-10-04 — 운영 X3D-S 선택 확정·남은 실행 조건 정리
 
 사용자가 현재 운영 X3D-S와 앞서 제안한 제한 범위를 확정했다. current_status/계획의 활성 범위를 운영 X3D-S epoch7+R2 epoch7, B YOLO 고정으로 정리하고 이전 세 모델/비교 X3D 제안은 이력으로 구분했다. R2 실파일 해시 완료와 새 런타임 호환 미검증을 유지했다.
@@ -611,7 +666,7 @@ read_only:on/COMMIT인 사용자 PostgreSQL 출력을 원본JSON으로 보존했
 
 ## 2026-10-02 — EC2 연결 설정 출력 수신·Runpod 검사 위치 정정
 
-- 실제 결과: ec2_connection_settings_read 수신. 두 BE 서비스 running/설정 valid, S3 버킷/리전 expected_matches true, token readable/valid/p6_format_valid true, 서비스 간 configurations_equal/tokens_equal true. runpod_url만 양쪽 false여서 ready_for_connection_check false다. 기대값은 사용자 확인 dcf93kzcicrp0l Pod 주소이며 실제 저장 URL은 보안 출력 원칙에 따라 받지 않았다. 주소 불일치를 확인했지만 네트워크 요청은 없었으므로 실제 연결 실패로 판단하지 않는다.
+- 실제 결과: ec2_connection_settings_read 수신. 두 BE 서비스 running/설정 valid, S3 버킷/리전 expected_matches true, token readable/valid/p6_format_valid true, 서비스 간 configurations_equal/tokens_equal true. runpod_url만 양쪽 false여서 ready_for_connection_check false다. 기대값은 사용자 확인 YOUR_RUNPOD_ID Pod 주소이며 실제 저장 URL은 보안 출력 원칙에 따라 받지 않았다. 주소 불일치를 확인했지만 네트워크 요청은 없었으므로 실제 연결 실패로 판단하지 않는다.
 - 범위: 토큰 일치는 EC2 API와 worker 간 비교다. Runpod 토큰 일치·인증·S3 권한은 여전히 미확인이다. 사용자 출력상 API/DB/S3/모델/외부 요청·설정변경·서비스 재시작0. ec2-connection-read-user-result-01.json에 수신 전체 필드와 판정을 기록했다.
 - 실패 원인: Mac 프로젝트 경로와 pbcopy 명령을 Runpod root 터미널에서 실행했다. 두 번 모두 cd와 script 입력 파일 경로 오류가 났으므로 실제 Runpod probe는 미실행이다. 기존 코드 결함이나 원격 환경 미설치로 처리하지 않고 실행 위치를 다시 안내한다. Runpod 스크립트 SHA는 이전 로컬 검증 영수증과 같아 통과한 7검사를 반복하지 않았다.
 - 다음 한 작업: Mac 새 로컬 터미널에서 명령을 클립보드로 복사 → 기존 Runpod 터미널에 붙여넣기 → p6_runpod_settings_read 출력 수신. EC2 읽기는 반복하지 않는다. 앱/배포 ZIP/원격 설정/기존 결과 변경0, 에이전트 원격/모델 호출0. 이후 실제 부족 설정 보완과 유한 상한/인증/버튼 검증을 이어간다.
@@ -635,7 +690,7 @@ read_only:on/COMMIT인 사용자 PostgreSQL 출력을 원본JSON으로 보존했
 
 ## 2026-10-02 — Runpod 서비스 파일 검증 통과·EC2 P6 적용 명령 준비/20시험
 
-- 실제 수신: service_bundle_verified/15파일/manifest feeccc4dbdc79aa6304ff517f24c6cfa764af05d7c1fc86c36e22e4c839229b8/모델 0/service_started false. 로컬 context 및 빌드 영수증과 일치했다. base_image는 P4 상속 이미지다. `service-files-user-result-01.json`에 기록했다. 현재 터미널 식별자가 직전 로그와 달라 원인을 단정하지 않았고, 현 터미널의 파일 검증과 정확한 registry pull digest 확인을 구분했다. 사용자가 알려준 현재 8000 주소는 `https://dcf93kzcicrp0l-8000.proxy.runpod.net`이며 endpoint-user-result-01.json에 저장했다. 접속 요청·인증·모델 실행은 하지 않았다.
+- 실제 수신: service_bundle_verified/15파일/manifest feeccc4dbdc79aa6304ff517f24c6cfa764af05d7c1fc86c36e22e4c839229b8/모델 0/service_started false. 로컬 context 및 빌드 영수증과 일치했다. base_image는 P4 상속 이미지다. `service-files-user-result-01.json`에 기록했다. 현재 터미널 식별자가 직전 로그와 달라 원인을 단정하지 않았고, 현 터미널의 파일 검증과 정확한 registry pull digest 확인을 구분했다. 사용자가 알려준 현재 8000 주소는 `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net`이며 endpoint-user-result-01.json에 저장했다. 접속 요청·인증·모델 실행은 하지 않았다.
 - 변경 이유/구현: 기존 EC2는 BE P5/UI stage6 코드라 P5 helper의 기존 UI start 방식으로는 새 화면이 반영되지 않는다. `apply-ec2-p6-01.py`는 기존 흐름을 재사용하면서 BE 이미지 p6-v1/수신 ID94fb5d…d23b1을 고정하고 3개 앱의 P6 코드 마운트·UI 재생성을 확인한다. 기존 이미지·DB·spool·비밀 경로·환경/포트·네트워크를 유지한다. 새 코드 48파일과 이미지 ID가 다르거나 진행 작업/신규 선택 데이터가 있으면 변경 전에 중단한다.
 - 실제 검사: `/opt/local/bin/python3 -B artifacts/be-worker/selection-p6-20261002-01/test-rollout-01.py` 최종 20시험 통과/1.556초. Docker/DB/HTTP는 대역, 임시 파일·Bash 환경·flock 및 실제 순수 generation_settings/profile A/B 구성은 로컬 실행이다. 원격 exec에 전달할 Python 문자열도 compile했다. 최초 20시험 중 실패2/오류1은 대역 Compose가 `--profile cctv-ui`를 up 대상 서비스로 잘못 읽은 fixture 오류였다. up 뒤 인자만 처리하도록 수정한 2차 20시험 통과/1.591초, A/B 설정 검사 추가 후 최종 3차 통과했다. 각 attempt JSON/log와 이전 성공 영수증을 보존했다. 최종 helper SHA a171325d8d0c0c7c1036330c50ee6c30bb06104098daa436698e2910707cb0ea, 근거 rollout-local-tests-02.json.
 - 보존 확인: 적용 중 DB advisory/spool 잠금, 새 worker idle 이후 UI 기동·최종 조회까지 재잠금을 유지한다. 7업무 테이블 전후 행수/MD5를 비교한다. /jobs·/selections GET, UI health 및 UI 컨테이너에서 API GET만 사용하며 POST·/connection·S3/모델 요청은 없다. service_state의 정상 heartbeat 쓰기를 명시한다. 실패하면 앱3개만 정지하고 DB를 유지한다. 이전 환경과 실제 컨테이너 설정은 0700 폴더/0600 파일로 보존하며 ENV만 복원해서 서로 다른 기존 UI/BE 코드 경로를 잃지 않도록 한다. 독립 읽기 감사에서 실제 차단 결함은 없었다.
@@ -1206,7 +1261,7 @@ enqueue/dispatch/collect/list/scene-fetch/scene-describe/scene-probe, export/키
 
 ## 2026-09-29 — EC2 실행 위치로 전환·AWS 읽기 확인
 
-사용자가 Mac Docker 대신 기존 Terraform의 EC2를 기준으로 진행하도록 요청했다. EC2는 서버, Compose는 서버 내부 앱 실행 방식임을 구분하고 Mac 우선 재개 지침을 현재 기준에서 해제했다. AWS describe-instances와 list-instance-profiles-for-role 읽기 결과는 running/t3.small/3.36.76.85/프로필 미연결 및 hanwha-cctv-ec2-role 프로필 존재다. 최초 샌드박스 엔드포인트 접근 실패 뒤 허용된 읽기 재시도로 확인했으며 서버 시작·역할 연결·비용 설정 변경은 하지 않았다.
+사용자가 Mac Docker 대신 기존 Terraform의 EC2를 기준으로 진행하도록 요청했다. EC2는 서버, Compose는 서버 내부 앱 실행 방식임을 구분하고 Mac 우선 재개 지침을 현재 기준에서 해제했다. AWS describe-instances와 list-instance-profiles-for-role 읽기 결과는 running/t3.small/203.0.113.10/프로필 미연결 및 hanwha-cctv-ec2-role 프로필 존재다. 최초 샌드박스 엔드포인트 접근 실패 뒤 허용된 읽기 재시도로 확인했으며 서버 시작·역할 연결·비용 설정 변경은 하지 않았다.
 
 현행 main.tf와 변수/부트스트랩에서 DB만 준비하고 BE/전원 상태를 배포하지 않는 것을 확인했다. private SSH 도우미의 이전 IP를 현재 IP로 갱신하고 HostKeyAlias로 기존 검증 키·StrictHostKeyChecking=yes를 유지했다. 이전 파일과 원본 조회 요약을 artifacts/infra/cpu-rag-ec2-resume-20260929-01/에 보존했다. Terraform README·BE 안내의 최신 실행 위치 및 계획/상태/학습 기록을 갱신했다. Bash 구문 확인, 모델/성능 비교 대상 없음.
 
@@ -4967,7 +5022,7 @@ python3 -m unittest discover -s tests/rag -v →5시험통과(0.004초), index.p
 - 전용 Ed25519 키를 Git 제외 private/에 생성(개인키0600/상위0700). AWS에는 공개키만 등록했고 키값/비밀번호/API키를 출력하지 않았다. Terraform 사용자 데이터에는 비밀값 없음. SSH 지문은 AWS GetConsoleOutput의 지문과 ssh-keyscan 결과를 대조해 known_hosts를 고정했다.
 - 사전 검사: RunInstances 첫 CLI는 --min-count/--max-count 구문 오류였고 --count1로 바로잡은 dry-run은 허용됐다. ImportKeyPair dry-run도허용. Terraform validate 통과. 첫 mock은 AWS 보안그룹 설명의 작은따옴표 금지로 실패해 수정. 다음 mock은 Terraform list/tuple 비교 및 OptionalComputed unknown 검사 문제를 길이/contains와 명시적 빈프로필로 수정했고2개 run 통과했다. 실패 로그도 보존했다.
 - SSH 최종 plan은2생성/1수정/삭제0. 추가 JSON 검증기의 profile after-field 직접접근은 필드생략으로 KeyError가 났고, apply 요청이 이미 시작된 뒤 configuration의 빈값·IAM리소스0으로 바로잡아 검증했다. 이후 작은 유형 plan은 전체 검증 후 apply했다. 이는 검증 스크립트 문제이며 역할이 연결됐다는 뜻이 아니다.
-- 첫 apply에서 SSH키·보안그룹은 성공했지만 t3.medium EC2 생성은 InvalidParameterCombination/Free Tier 유형 제한으로 거부됐다. dry-run은 권한검사이며 이 런타임 제한의 보장이 아니었다. AWS eligible 목록의 x86 t3.small(2vCPU/2GiB)로 축소, 기존 공개키·보안그룹을 보존한 새plan1생성/0변경/0삭제 확인 후 생성 성공(i-02017b92281737f53). Pricing API $0.026/h·IPv4 $0.005/h·gp3 20GiB $1.824/월로 약 $24.454/730시간. 할인/크레딧·세금·API·S3·전송·Runpod 미포함.
+- 첫 apply에서 SSH키·보안그룹은 성공했지만 t3.medium EC2 생성은 InvalidParameterCombination/Free Tier 유형 제한으로 거부됐다. dry-run은 권한검사이며 이 런타임 제한의 보장이 아니었다. AWS eligible 목록의 x86 t3.small(2vCPU/2GiB)로 축소, 기존 공개키·보안그룹을 보존한 새plan1생성/0변경/0삭제 확인 후 생성 성공(YOUR_EC2_INSTANCE_ID). Pricing API $0.026/h·IPv4 $0.005/h·gp3 20GiB $1.824/월로 약 $24.454/730시간. 할인/크레딧·세금·API·S3·전송·Runpod 미포함.
 - cloud-init 실제193초, errors/recoverable_errors없음. Ubuntu24.04 x86_64, Docker29.8.1/Compose5.5.1/PG16.15/pgvector0.8.6. 전송ZIP30,356bytes의 SHA/파일 manifest를 원격에서검증하고 /opt/cctv-rag-compose-20260927에 새로해제. 개인키·Terraformstate·비밀값은전송하지않았다.
 - 원격 bash -s 방식의 첫명령은 Docker가 셸stdin을소비해 check후잔여명령이실행되지않았고 exit0만으로성공판정하지않았다. 로그에서누락을확인한뒤 finish-deploy.sh 파일을실행해 나머지 load/verify만완료했다. 기존DB/앱을삭제하거나재임베딩하지않았다.
 - 실제load verified_rows2/committedtrue, 전체본문/메타데이터동일/각768차원·float4오차최대1.893317763679292e-8·저장문서벡터자기검색통과. 원본입력 SHA144eb6d1…768139 유지, Gemini 호출0. 이는로컬과같은두벡터의저장검증이며새질문검색품질/영상모델비교가아니다.
@@ -5060,7 +5115,7 @@ python3 -m unittest discover -s tests/rag -v →5시험통과(0.004초), index.p
 
 ## 2026-09-27 — EC2 일시 중지 명령 안내
 
-- 사용자 EC2를 잠시 중지하자고 결정. 기존 사용자 CLI 실행 원칙을 유지해 에이전트가 대신 계정 명령을 실행하지 않았다. 배포 verification.json에서 i-02017b92281737f53/ap-northeast-2/t3.small을 확인하고 main.tf의 삭제 보호/디스크 보존 설정을 읽었다.
+- 사용자 EC2를 잠시 중지하자고 결정. 기존 사용자 CLI 실행 원칙을 유지해 에이전트가 대신 계정 명령을 실행하지 않았다. 배포 verification.json에서 YOUR_EC2_INSTANCE_ID/ap-northeast-2/t3.small을 확인하고 main.tf의 삭제 보호/디스크 보존 설정을 읽었다.
 - Mac에서 cctv 프로필로 aws ec2 stop-instances, wait instance-stopped, describe-instances의 State.Name을 확인하는 순서를 안내했다. force/skip-os-shutdown/terminate/destroy는 사용하지 않으며 EBS/DB·S3·Runpod를 유지한다.
 - 로컬 기록 변경만이며 원격 중지·재조회0. 사용자 stopped 결과 미수신이므로 중지 완료로 표시하지 않는다. 다음은 실제 출력 확인이며 기존 앱/인프라 TODO와 재개 시 IP 확인 조건을 유지한다.
 
@@ -5650,7 +5705,7 @@ read-restarted-pod-command-01.sh를 준비해 Bash/Python구문 확인. nvidia-s
 
 ## 2026-10-03 — 새 Runpod 주소 수신·저장소 구분과 첫 확인 준비
 
-- 사용자 새 주소: `https://nbtmqum7v7f5ck-8000.proxy.runpod.net/`. 이전 `dcf93kzcicrp0l` Pod 재시작 안내를 새 Pod 확인으로 변경했다. 사용자 제공 주소이며 실제 원격 접속/이미지/볼륨은 미확인이다.
+- 사용자 새 주소: `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net/`. 이전 `YOUR_RUNPOD_ID` Pod 재시작 안내를 새 Pod 확인으로 변경했다. 사용자 제공 주소이며 실제 원격 접속/이미지/볼륨은 미확인이다.
 - 로컬 코드 읽기에서 hour launcher/activation/private installer/payload/EC2 기본 URL helper의 이전 Pod 고정을 확인했다. 공개 p6-service 이미지 digest037355…는 재사용 가능하다. 구 명령을 그대로 실행하지 않도록 LOCAL_SETUP/current_status/TODO를 갱신했다. 기존 원본/명령은 보존했다.
 - `artifacts/be-worker/hour-session-20261002-01/read-new-pod-command-01.sh` 추가: GPU/df/findmnt와 파일 존재·공개 service manifest SHA만 확인. 새 Pod ID 일치를 표시한다. 비밀 내용·모델 import·네트워크·쓰기·API 기동 없음. Bash `-n`/내장 Python AST 통과. 원격에서 실제 실행은 아직 없다.
 - Runpod 공식 저장소/Network volume 문서를 확인했다. Container disk는 임시, Volume disk는 같은 Pod stop/start에 보존되지만 terminate시 삭제, Network volume은 Pod와 독립 보존/생성 때 연결·데이터센터 제약이 있다. 볼륨/과금 변경은 수행하지 않았다. 이미지에는 코드/모델, S3에는 완료 근거, EC2 DB에는 보고/상태가 있다는 현재 구성과 구분해 설명했다.
@@ -5668,7 +5723,7 @@ read-restarted-pod-command-01.sh를 준비해 Bash/Python구문 확인. nvidia-s
 ## 2026-10-03 — 사용자 A4500 재사용 결정
 
 - 사용자: “바뀌는게 엄청많은거야? 그러면4500으로 변경할게”. 현재RTX2000Ada 지원 확대 대신 기존A4500 환경으로재개한다. 모델 재학습은 필요없지만 GPU지원 확대에는검사/기록/이미지재빌드·실추론검증이필요하다고설명했다.
-- 다음: 사용자새A4500 Pod에 게시된p6-service이미지지정·GPU1대·선호0.4달러/시간이하현재화면확인. 새주소/실GPU/이미지확인출력수신후비밀/EC2주소/기동명령을새ID에맞춘다. nbtmqum7v7f5ck는RTX2000Ada주소로이력보존.
+- 다음: 사용자새A4500 Pod에 게시된p6-service이미지지정·GPU1대·선호0.4달러/시간이하현재화면확인. 새주소/실GPU/이미지확인출력수신후비밀/EC2주소/기동명령을새ID에맞춘다. YOUR_RUNPOD_ID는RTX2000Ada주소로이력보존.
 - GPU생성/중지·이미지pull·코드수정/배포·모델호출은에이전트미실행. 기존1시간승인·EC2설치·DB결과보존.
 
 
@@ -5698,7 +5753,7 @@ read-restarted-pod-command-01.sh를 준비해 Bash/Python구문 확인. nvidia-s
 - 사용자 화면 RTX A4500 x1/시스템RAM62GB/container30GB, 주소 w3zhjl0uoq0kxg 수신. CPU RAM을 GPU VRAM으로 기록하지 않았다. 사용자 VRAM20000MiB 조건 제외 요청을 반영했다.
 - apps/runpod_image/service_job.py에서 용량 문턱만 제거, A4500/GPU1개·메모리 출력 양의ASCII정수/기존계약 유지. 모델/전처리/추론 상한은 그대로다. 관련 ASGI/상태18검사0.158초, 서비스패키지7검사0.423초 통과. 첫 .venv 검사 시 starlette 부재로 import단계 실패 후 기존 .venv-results-viewer 사용, 설치0.
 - 새 artifacts/runpod/service-vram-20261003-01 서비스16파일 ZIP42805바이트/SHAdf6c20e2…89b29be 준비. 기존 게시context와 다른 앱 파일은service_job.py1개뿐. 기존context15파일해시·고정실행helper/가중치보존 대조. 신규manifest eb0f89aa…5719f. verification-01.json 및 change-receipt-01.json 근거.
-- read-new-pod-command-01.sh를 새ID로갱신하고 이전 nbtmqum7v7f5ck용 사본보존. Bash구문/내장PythonAST 통과. 명령은 읽기확인만하며 이미지설치/API실행을하지않는다.
+- read-new-pod-command-01.sh를 새ID로갱신하고 이전 YOUR_RUNPOD_ID용 사본보존. Bash구문/내장PythonAST 통과. 명령은 읽기확인만하며 이미지설치/API실행을하지않는다.
 - 다음: 사용자 Edit Pod에서 게시p6-service-v1지정→이미지파일확인. 이후 API시작전에 수정서비스/manifest와새ID의비밀복원·EC2URL·기동/활성화명령 연결. 현재 Docker빌드/게시/원격변경/모델호출0,공개이미지에는기존조건이남아있음. 새 GPU실추론/인증/시간창은미검증이다.
 
 
@@ -6226,3 +6281,95 @@ OpenAI Docs의 [Run long horizon tasks with Codex](https://developers.openai.com
 - 실제 게시 tag: `dahyeguk/cctv-runpod-ab:sha-9707c6ba0123f7d5cae1e33ae415cbca678b3ba4`. 불변 이미지 주소: `dahyeguk/cctv-runpod-ab@sha256:ce806774fde5eb047da54532646b2580d6552cc2a9bec4788c77cb5e6b7c4bc1`. Hub API의 활성 tag/digest 및 Linux amd64를 독립 확인했다. 별도 platform manifest는5587e455…이며 전체 이미지 digest와 구분한다.
 - 이미지 주소 Summary 단계 성공과 username/digest 입력의 마스킹 해제는 로그로 확인했다. 완성 주소는 GITHUB_STEP_SUMMARY에 기록되므로 stdout에 조립된 한 줄이 없으며, 렌더링된 Summary 화면의 시각 검증은 하지 않았다. 원본은 actions-node24-success.log/json·hub-node24-run.json·node24-actions.json이다. 독립 읽기 검토에서도 일치했다.
 - 남은 조건: EC2 t3.small 유지·중지/종류 변경/삭제0. MLflow 실제 서버/등록·EC2 배포/DB migration은 메모리 조건으로 보류. Pod 적용/실제 GPU 호환·신규 VLM/분석부터 보고서까지의 종단 실행은 미실행이다. MOPS1/4만 완료 처리하고 MOPS0/2/3/5의 실제 운영 검증은 남긴다. 이후 문서만 기록하는 커밋은 새 이미지 빌드를 유발하지 않는다.
+
+
+## 2026-10-05 — c7i-flex.large 프리티어·교체 가능성 및 Pod 적용 순서 확인
+
+사용자 첨부는 c7i-flex.large·2vCPU·4GiB·프리티어 사용 가능·Linux0.09576USD/시간이다. AWS 공식 EC2 Free Tier/플랜/유형 변경 문서를 대조하고 읽기 API로 후보와 현재 인스턴스의 x86_64, EBS/HVM/ENA, 무료 플랜 ACTIVE를 확인했다. 무료 표시는 한정된 크레딧을 사용하는 대상이며 무기한 사용량 면제를 의미하지 않는다. 첨부 단가의30일 상시 계산은 서버만68.9472USD 상당이고 다른 자원은 별도다. 실제 청구가 발생했다는 뜻이 아니다. 크레딧/기간 만료 시 Free 플랜은 종료되며 임의로 유료 플랜 전환하지 않는다.
+
+기존 인스턴스 유형 변경이면 이전small이 별도 서버로 남지 않아 중복 서버 삭제가 필요하지 않다. 변경에는 정지/시작과 현재 비EIP 공인주소 갱신 반영이 필요하다. 이번에 중지·유형 변경·삭제·신규 생성·Pod 시작은 하지 않았다. 자원 변경 완료로 기록하지 않는다. 근거는 artifacts/mlops/implementation-20261004-01/c7i-flex-feasibility.json이다.
+
+독립 읽기 검토에서 이미지 기본pod명령은 관리 환경만 시작하고 모델 API는 별도 helper를 거침을 확인했다. EC2/MLflow 준비 후 사용자 Pod 생성/이미지 적용→비밀 설정→API 시작→EC2 연결 순서를 안내한다. 이미지 템플릿 입력과 GPU Pod 과금 시작을 구분하고,900초 API 세션은 Pod 자동 정지가 아니므로 지금 미리 켜둘 필요는 없다. 코드 수정·모델/보고 재실행·Git push 없음.
+
+
+## 2026-10-05 — 임시4GiB·조건부2GiB 복귀 및 사용 시 기동 방식 논의
+
+사용자가 임시4GiB 사용 후2GiB 복귀, 필요할 때만 생성/다시 생성하는 방식을 질문했다. AWS Stop/Start 및 Runpod Manage/Storage/Pricing 공식 문서를 재확인했다. EC2 stopped는 컴퓨팅 비용이 멈추지만 EBS와 별도 저장 자원 비용은 남는다. 현재 EC2의 DB·spool·설정과 예정된 MLflow SQLite/volume을 보존하기 위해 stop/start를 권하며, EC2 전체 삭제·재생성의 자동복구는 준비 완료로 주장하지 않는다. Runpod stop은 저장 비용이 남고 terminate는 일반 Pod volume/컨테이너 데이터를 지우므로 외부 저장 확인이 선행된다. network volume을 유지하면 Pod 종료 후에도 저장 비용은 계속된다.
+
+임시4GiB는 기능 연결/메모리 측정 단계이며 설치 완료만으로2GiB를 충분하다고 판단하지 않는다. 승인 범위의 실제 분석·VLM/RAG·보고·MLflow 부하 및 OS 여유/컨테이너 제한을 확인하고2GiB 복귀 여부를 결정해야 한다. 새 VLM/평가/학습 실행 승인을 확대하지 않는다. 중지 시 새 제출·실행 중 작업이 없어야 하며 결과/보고/메타데이터 저장 상태를 확인한다. Runpod 결과/근거를 모두 회수했다면 GPU를 먼저 종료하고 EC2의 보고 처리를 마치는 방향도 가능하다. 현재900초 API 창은 Pod 과금 자동 정지 기능이 아니다.
+
+독립 읽기 검토에서 PostgreSQL의 EBS bind mount·persistent spool·MLflow named volume·복구 한계를 확인했다. 이번은 설명/기록만이며 EC2/Pod 생성·중지·종류 변경·삭제·모델 호출·자동화 생성·Git push0이다.
+
+
+## 2026-10-05 — 임시 증설 착수 전 유휴 확인·가용영역 제약 발견
+
+- 사용자 임시 증설/조건부 축소·사용 시 기동 운영안 수락 및 후속 진행 요청에 따라 기존 EC2/MLflow 준비 범위를 설명했다. 독립 검토는 복구 절차/배포 준비만 담당하고 root가 원격 변경을 소유한다.
+- 실제 SSH 읽기: 기존4컨테이너 running/OOMfalse. queue handoff_ready6, flow completed1, full_report completed3/paused1이며 활성 처리0. RAM1906MiB/available524MiB, root19GiB 중11GiB여유, DB65MiB/spool47MiB/input3MiB. 기존 Docker image/9개 Compose override/UID10001·EBS bind mount/비밀 설정 경로를 보존하도록 확인했다. 초기 DB 컨테이너 이름/셸인용/flows컬럼 조회 오류는 읽기 실패이며 실제 이름 cctv-db-1과 status컬럼을 사용한 원문 읽기로 바로잡았다. DB쓰기/작업상태변경0.
+- 실제 AWS 읽기: c7i-flex.large의2a 제공목록은 빈 배열. 서울 전체 교차조회에서2b/2d만 제공, m7i-flex.large8GiB는2a~2d/free-tier=true, t3.medium4GiB는free-tier=false. ModifyInstanceAttribute DryRunOperation은 권한 통과일 뿐 실제 변경/제공위치 검증 성공이 아니다. 따라서 stop/modify/start를 실행하지 않았다.
+- 공식 Price API: Seoul/Linux/Shared/OnDemand m7i-flex.large0.1177100000USD/시간(effective2026-09-01). 현재 구역8GiB/다른 구역4GiB이전/2GiB보류 선택을 사용자에게 질문했다. 이전4GiB단순변경 안내의 구역조건 누락을 명시 정정했다. 근거 availability-preflight.json·host-current-4g-preflight.json·m7i-flex-price.json.
+- 미실행: DB/spool백업 생성, EC2중지/사양변경/삭제/새생성, MLflow/BE설치·등록/DB migration, 새Pod/GPU/VLM/보고 생성. 대안 선택 전 자원 변경 보류이며 자동 승인 거절이 원인이 아니다. 로컬배포준비는 계속 가능하다.
+
+
+**자원 선택 대기 중 완료한 독립 준비:** 기존 EC2 CPUimage ID와 ZIP116파일/현재소스 해시일치, UID10001·기존9개Compose순서·mount/network를 읽기대조했다. 기존배포묶음에등록CLI가없고일반등록CLI는로컬가중치바이트읽기를요구하므로, 이미확인한R2바이트감사/S3게시영수증SHA와실행시S3HEADchecksum을대조한뒤참조만등록하는초안을 artifacts/mlops/ec2-upgrade-20261005-01/prepared/register_verified_references.py에준비했다. 기본offlineplan네트워크0,증거변조거부/같은binding재사용/다른binding보존/0600권한4가드통과. 실제Registry호출/권한성공/배포는미검증이며--apply전S3권한과고정MLflow이미지digest확인이필요하다. docstring은업무PostgreSQL쓰기0과MLflow등록쓰기를구분했다. 원격설치/등록/파일전송0, 사용자자원대안선택이필요한지점에서대기한다.
+
+
+## 2026-10-05 — 사용자 콘솔 맥락 확인·가용영역 ID 재대조
+
+사용자는 c7i-flex.large가 사이트에서 활성이라고 정정했다. 콘솔이 기존 인스턴스 유형변경인지 새 인스턴스시작인지 질문했고 사용자가 ‘새 인스턴스 시작’이라고 확인했다. 이어 직접기존EC2를중지해확인해야하는지질문해 단순확인을위해중지할필요는없다고안내했다. 새생성가능과기존위치제자리변경가능을구분한다. UI맥락확인전8GiB로전환을서둘러권한점은정정하며사용자4GiB선호를유지한다.
+
+DescribeInstances 재조회는기존small/running/2a. DescribeSubnets와DescribeInstanceTypeOfferings(location-type=availability-zone-id)를교차해현재apne2-az1/c7i제공apne2-az2·az4를확인했다. 위치조회는순간GPU/EC2여유용량조회가아니며DryRun은권한만검사한다. 원문 az-id-crosscheck.json. AWS공식move-ec2-instance절차처럼AMI/스냅샷을통한기존환경복제와주소/서비스/데이터검증이필요하므로새생성은단순규격변경보다시간이추가된다. 아직실제백업/AMI/스냅샷/서버생성/중지/변경/삭제/모델호출0. 추측한작업시간을보장하거나8GiB변경승인으로해석하지않는다.
+
+
+## 2026-10-05 — c7i-flex.large 지원구역 복제이전 실행 승인
+
+사용자 “그럼그렇게해줘”로2b/2d이전승인. 2b기존subnet/VPC/SG/role/key/IMDSv2를재사용하고사용자질문의b/c를b/d로바로잡았다. 네트워크새생성0,기존서버유휴·일관성백업후중지/비공개AMI복제,새서버검증전원본삭제0으로진행한다. AWS create-image/run-instances DryRunOperation은권한확인성공이며실제기동성공으로표시하지않는다. 기존20GiB encrypted gp3/3000IOPS/125MiBps 및DeleteOnTermination=false/termination protection을보존한launch초안을만들었다. root가원격변경을소유하고독립검토는읽기만수행한다. 사용자추가작업은EC2준비후수동Pod생성단계까지없다.
+
+
+**백업/중지 실행:** 새backup-for-migration.py는동일PG advisorylock·활성작업0확인후앱3개를중지했다. 독립검토로부분docker stop실패시복구누락을사전수정(paused=True를호출직전)했고원격실행에추가실패없음. EC2내root전용백업 DBdump151167B/SHA cbd04311…40cff, input-spool45003005B/SHA88012774…e5017, config-private3960B, fingerprint55607B를생성했다. pg_restore --list목차검사통과·백업전후DB/파일fingerprint불변이며실제DB복원시험은아니다. GPU/VLM0.
+
+**자동승인거절/대안:** 선택적인DB/CCTV input-spool백업의Mac추가복사는자동승인검토가민감자료·로컬목적지의구체적승인부재를이유로차단했다. 명령은실행되지않았고이를다른경로로우회하지않았다. 사용자에게이유를안내하고기존EC2내비공개백업/중지된원본/같은AWS계정내비공개AMI복제방식으로승인된이전을계속한다. 원격DB정상종료·sync후기존instance stop을실행했고현재stopping이다. 삭제0.
+
+
+**AMI/사전준비:** 원본 stopped 확인 후 private AMI 생성1회·encrypted20GiB gp3 snapshot진행중이다. 새run-instances초안은원본UbuntuAMI에서실제복제AMI로교체했으나실제기동전이다. AWSConsoleOutput의host fingerprint를ssh-keyscan과대조후에만신뢰하는helper,원본DB/input/spool수량·hash만출력하는clone검사helper,변조/기존파일덮어쓰기거부하는sourceZIPstage와BE/UI rollout초안을 독립검토했다. 원격사전준비실행은아직이다. 새EC2용ZIP은UI의'X3D 후보 시각'→'사고 후보 시각'한문구만반영해원본ZIP을보존했으며SHA3cac7e9b…6a9d4/115manifest를전부대조했다. 해당R2저장UI검사1회 예외/POST0. UI롤아웃은analysis모드명시로저장관제snapshot미포함문제를피하고기존report조회경로를유지한다.
+
+
+**새EC2기동:** 스냅샷completed100%/AMIavailable·Publicfalse와원본stopped를확인후동일ClientToken으로RunInstances1회성공. c7i-flex.large가실제2b/running,새root20GiB암호화gp3,원본2a/stopped를확인했다. 식별자는비공개 new-instance-identity.json/run-instances-private.json에보존. 최초AWSConsoleOutput은SSH지문준비전이라trust등록·SSH실행을멈췄으며검사생략없이부팅로그준비후재확인한다. 아직DB데이터동일성/서비스복구/MLflow성공은미확인이다.
+
+
+**복제검증/서비스복구:** AWS system/instance/EBS 상태검사모두ok. AWSConsoleSSH지문과실제키대조후접속했다. DB만먼저실행한clone검사에서10테이블32행/257파일51455249B의SHA·개수완전일치,누락/추가/변경0,DB/영상Macexport0. 기존API/UI/worker명시기동후4개running/OOMfalse,queue handoff6·full_report완료3/paused1보존. 새4GiB인식3812MiB,기동직후가용3143MiB이며실제보고부하기준은아니다. CPUclient이미지1e0a3df6…221eb빌드/패키지불변검사성공.
+
+**MLflow 초기실패·해결진행:** 공식3.16.1 amd64digest고정이미지를받아초기384MiB상한에서OOM/exit137반복을확인했다.768/1280상한에서도기본jobrunner가추가프로세스를실행해불안정했다. 공식tag소스의MLFLOW_SERVER_ENABLE_JOB_EXECUTION기본true와GenAI6종Huey소비자를확인하고이번Registry/tracking범위에필요없는jobrunner/periodic tasks만false로설정했다. 이후2프로세스/재시작0/cgroup peak355553280B/OOM0·컨테이너내healthOK. 최종768MiB상한으로구성하고검증중이다. 초기실패영수증/설정은보존했다. 내부전용Docker network는선언한hostport가실제생성되지않아localhost실패했으며,host→내부IP와컨테이너health200으로분리확인했다. 외부접근을추가하지않고무효ports항목을제거해내부전용을유지한다. 실제모델등록/BE배포는다음단계다.
+
+
+## 2026-10-05 — MLflow 모델 참조 등록·BE/UI 반영 및 실제 저장 보고 조회 검증
+
+**목적·완료 경계:** 승인한 c7i-flex.large 4GiB 복제 환경에서 MLflow의 실제 모델 참조 등록, 기존 BE의 SDK/Registry 연결, 분석 화면의 B/R2 선택과 저장 보고 조회까지 확인했다. 이는 새 영상의 Runpod 분석·VLM·보고 생성 완료와 다르다. 이번 기록 시점의 사용 시 시작/미사용 시 중지 절차와 실제 stop/start 검증은 별도 준비 중이며 완료로 표시하지 않는다.
+
+**MLflow 기동 실패와 최종 구성:** 앞선384MiB OOM/exit137 및 상한 조정 이력을 보존했다. 공식3.16.1 소스 확인 후 이번 범위에 필요 없는 GenAI job runner/periodic tasks만 껐고, HTTP Registry/tracking·SQLite 영속 volume·artifact 저장·workers1은 유지했다. 최종 상한768MiB, 내부 network전용/host port없음이며 등록 직전 재시작0·OOM0·현재357105664바이트/peak367136768바이트를 확인했다. 이는 당시 유휴 메모리 관측이며2GiB 복귀나 분석·보고 동시 부하의 안전성을 입증하지 않는다. [최종 기동 관측](../artifacts/mlops/ec2-upgrade-20261005-01/mlflow-stable-before-registration.json)·[공식 소스 조사](../artifacts/mlops/ec2-upgrade-20261005-01/mlflow-memory-source-audit.json)·[최초 실패](../artifacts/mlops/ec2-upgrade-20261005-01/mlflow-initial-memory-failure.json).
+
+**등록 실패 원인·권한 보존:** 첫 등록 시도는 EC2 IAM role을 사용해야 하는 환경에서 metadata credential provider를 비활성화한 실행 설정 때문에 NoCredentials로 중단했고 Registry 쓰기0이었다. 기존 role을 정확히 재사용한 읽기 probe에서도 GetPublicAccessBlock 권한은 없었다. EC2 권한을 늘리거나 검사를 생략하지 않고 기존 Mac AWS 자격 증명으로 현재 PAB/HEAD를 읽어 비공개4항목·정확한 key/크기/SHA metadata/S3 checksum/AES256을 다시 확인했다. 현재 조회 영수증을 이전 원본 바이트 감사/게시 영수증과 대조하고, 명시한SHA·UTC시각(3600초 이내/미래120초 이내)을 Registry 호출 직전에 재검증하는 경로를 추가했다. 원문 실패 기록·기존 helper와 새 v2 실행을 구분해 보존했다. 가중치 복사/다운로드·새 바이트 해시 계산·IAM 권한 확대0이며, 현재 S3 metadata 확인을 새 원격 전체 바이트 검증으로 표현하지 않는다.
+
+**실제 등록 결과:** 최종 등록 실행에서 X3D-S `operating-epoch7`와 R2 `sotad-head-epoch7`가 각각 실제 Registry 숫자 버전`1`로 등록됐다. 바인딩 소유자10001/권한0600, 모델·계약 해시와 기존 출처 참조를 고정했다. X3D는 기존 이미지 내 가중치, R2는 기존 비공개S3 객체를 참조하며 EC2에 가중치를 복제하지 않았다. 등록 과정은 GPU/모델0·가중치 업로드/다운로드0이다. 최종 소비한 현재 S3 조회 영수증 SHA는`ace4654d9461c8e3ef6ad2c560f156be4a635e1f9f2ad2d6d9a13bc60d3bfa22`, 당시 age217.201276초다. [registry-registration.json](../artifacts/mlops/ec2-upgrade-20261005-01/registry-registration.json)·[현재 S3 조회 원문](../artifacts/mlops/ec2-upgrade-20261005-01/prepared/r2-live-s3-verification.json)·[새 검증 경로 오프라인8가드](../artifacts/mlops/ec2-upgrade-20261005-01/prepared/registration-attestation-verification.json).
+
+**BE 반영·업무 원문 보존:** 기존 CPU image를 고정한 파생 이미지`sha256:1e0a3df6580d5ec7d678b1e02d1b2f5bb25d946aa9be85fcc5e12f0b6e1221eb`에서 기존 패키지 불변·mlflow-skinny 추가를 확인했다. 기존9개 Compose를 보존한 overlay로 API/worker를 반영하고 메모리512/896MiB를 유지했다. 실제 SDK import, 내부 Registry 읽기, API의 두 모델 선택 목록, worker의 새 idle 상태를 확인했다. DB 변경은 승인한 version/settings 제약과 worker heartbeat에 한정했고 기존 업무 행은 불변이었다. 보류 작업 재개·새 Pod 호출·모델 호출0, 새 실행기록/run 또는 신규 보고 생성 성공은 아직 검증하지 않았다. [CPU 이미지 빌드](../artifacts/mlops/ec2-upgrade-20261005-01/cpu-image-built.json)·[be-rollout-success.json](../artifacts/mlops/ec2-upgrade-20261005-01/be-rollout-success.json).
+
+**UI 최소 변경·배포:** `analysis_app.py`의 R2에도 적용되던 ‘X3D 후보 시각’을 ‘사고 후보 시각’으로 한 곳만 바꾸고 기존 줄바꿈을 보존했다. 관련 로컬 R2 저장근거 AppTest1회에서 중립 문구/예외0/POST0을 확인했다. 기존10월4일 ZIP/manifest를 보존하고 새10월5일 ZIP(1098879바이트/SHA`3cac7e9bd6947ee87f1c30d93eeb952903b9701e3e03170a14737a0d5c96a9d4`, manifest115항목/ZIP116파일)을 만들었다. 변경 ZIP 항목은 이 UI 소스와 manifest뿐이다. 저장 관제 snapshot이 번들에 없으므로 `CCTV_UI_VIEW=analysis`를 명시하고 새 UI source mount를 연결했다. 기존 UI 이미지·UID·768MiB·localhost8501·network와 다른 서비스는 보존했다. 최초 반영 후 비교는 Docker의 미지정 DNS 표현`[]`/`null`만 달라 실패했으며, 실제 DNS 설정 변경이 없음을 대조해 동일 표현으로 정규화한 읽기 검증을 완료했다. 이 원문 실패를 덮어쓰거나 재배포 성공으로 바꾸지 않았다. [새 묶음](../artifacts/be-worker/mlops-deployment-20261005-01/preparation.json)·[ui-readback-success.json](../artifacts/mlops/ec2-upgrade-20261005-01/ui-readback-success.json).
+
+**실제 UI AppTest·실행 횟수:** 현재 EC2 UI 컨테이너의 실제 source/Streamlit1.64.0과 BE GET을 사용했다. 검사 프로세스에서 내부`be-api:8080`의 허용 경로 GET만 허용하고 POST/PUT/DELETE·`/connection`·외부 socket을 차단했다. 첫 AppTest1회(GET12)는 저장 Markdown과 표시 문자열의 끝 개행 차이를 그대로 비교해 검사 실패했다. Streamlit `clean_text`의 dedent/strip 처리를 기대값에 동일 적용한 v2 AppTest1회(GET13)에서 B/R2 라벨·R2 선택, 기존 저장 보고1개·6절의 동일 내용 표시, 예외0/오류 요소0을 확인했다. 두 시도 원문을 모두 보존하며 새 모델 실행2회로 세지 않는다. 최종 보고 표시 문자열SHA는`70c5095a655be38f3e73411d37dff22d622136af6405678256f044a4d5d0be3d`다. 기존 GPU/scene 호출 수는 전후 불변, 실제 비GET/외부 요청0이며 보고 원문·영상·DB 덤프는 Mac으로 가져오지 않았다. [첫 검사](../artifacts/mlops/ec2-upgrade-20261005-01/ui-live-apptest-readonly.json)·[v2 최종 검사](../artifacts/mlops/ec2-upgrade-20261005-01/ui-live-apptest-readonly-v2.json).
+
+**미실행·다음 경계:** R2 선택은 앞으로 접수할 모델 선택값이고 이번6절 보고는 이미 저장된 과거 결과다. 새 R2 추론으로 만든 보고라고 설명하지 않는다. 이번 AppTest는 실제 서비스의 headless 동작 검사이며 브라우저의 배치/재생 시각 검증이 아니다. 새 Pod 생성·이미지 적용·실제 GPU 로딩/추론·새 VLM/보고 생성·정확도/F1 계산은 하지 않았다. 실제 영상부터 보고서까지의 새 종단 완료는 남아 있고, lifecycle stop/start는 별도 진행 기록으로 확정한다.
+
+
+## 2026-10-05 — 같은 EC2 중지·재시작 실검증 및 최종 비용 대기 상태
+
+승인된 ‘사용할 때만 실행’ 운영을 위해 `prepared/ec2-lifecycle.py`와 `ec2-lifecycle-remote.py`를 준비하고 실제 `stop --apply` → `start --apply` → 읽기 확인 → 최종 `stop --apply`를 수행했다. 대상은 새 2b 서버 한 대로 고정하고 원본 ID 거부, AWS/IMDS 인스턴스·AMI 식별, 기존 SSH 지문 확인, 로컬 동시실행 lock을 유지한다. 삭제·재생성·규격 변경·Pod 조작·예약 자동화는 없다.
+
+중지 전에 활성/불확실 작업 0과 PG advisory lock을 확인하고 10테이블 업무 hash를 저장한다(worker heartbeat 제외). API/worker/UI는 검증한 Python entrypoint에 SIGINT를 보내며 자동 SIGKILL을 사용하지 않았다. API/worker exit130은 KeyboardInterrupt 정상 경로, UI/MLflow/DB exit0이며 OOM/137은 없었다. MLflow SQLite와 PostgreSQL을 먼저 정상 종료한 뒤 EC2 Stop을 수행했다. 원격 root0600 state에 같은 컨테이너 ID/image·업무 hash를 보존한다.
+
+실제 재시작에서는 DB를 먼저 열어 동일 hash 확인 → MLflow health → worker 새 idle/paused 작업 보존 확인 → API/UI 순으로 복구했다. 5개 서비스 running, 업무 행 불변, 두 Registry v1의 READY/가중치 해시 일치, host port0, OOM/재시작0을 확인했다. 모델/GPU/VLM 호출0이다. 원격 AppTest 후 검증이므로 새 분석 또는 기존 TR0~TR7 모델 실행을 반복하지 않았다.
+
+재시작 직후 관측은 host 총3,903,760KiB/가용2,825,968KiB, MLflow current537,161,728B/peak540,282,880B/limit805,306,368B·oom0, root 여유9,708,969,984B였다. 이 관측은 전체 보고 부하 시험이 아니며 2GiB 복귀가 안전하다는 근거로 쓰지 않는다. 기존 SSH/tunnel 진입점은 새 인스턴스의 현재 공인 IP를 조회하는 `ec2-ssh.py`로 연결했고, 이전 스크립트를 원본 별도 파일로 보존했다. 공통 SSH 실제 접속 확인, helper4개 AST 확인을 수행했다. UI tunnel은 이번에 열지 않았다.
+
+최종 중지도 데이터 불변·5서비스 정상 종료로 통과했고 원본/새 서버 모두 stopped임을 AWS 읽기 API로 확인했다. 두 서버의 public IP는 없으며 원본/새 EBS와 AMI/스냅샷/S3를 보존했다. 저장 비용은 남는다. 전체 새 GPU→VLM→보고 완료 전에 복구본을 지우지 않았으며 2GiB 축소도 하지 않았다. 사용법은 LOCAL_SETUP 맨 위에 갱신했다. 이번 운영/문서 보완은 Git 추가 push0이고 기존 Hub digest를 바꾸지 않았다.
+
+근거: [첫 중지](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-stop-01.json), [시작](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-start-01.json), [Registry·자원 읽기](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-readback-01.json), [최종 중지](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-stop-final.json), [최종 AWS 상태](../artifacts/mlops/ec2-upgrade-20261005-01/final-resource-state.json). 다음은 사용자 Pod 이미지 적용/정보 수신 후 이미 합의한 B/R2 짧은 GPU 연결 검증이다. 새 VLM 포함 보고 생성은 그 제한 검증과 별도로 남는다.

@@ -1,5 +1,6 @@
 """Read-only UI behavior, using stored real results and isolated API doubles."""
 from copy import deepcopy
+import io
 import os
 from pathlib import Path
 import unittest
@@ -10,6 +11,7 @@ from streamlit.testing.v1 import AppTest
 from apps.cctv_ui.control_data import load_saved_snapshot
 from apps.cctv_ui import control_demo as demo
 from tests.cctv_ui.test_control_panels import rendered_report
+from tests.cctv_ui.test_app import Replies, job as analysis_job
 
 APP = Path(__file__).resolve().parents[2] / 'apps/cctv_ui/app.py'
 B = '9ef3054db80346c29225fa45eb7ac8ed'
@@ -39,6 +41,71 @@ class ControlRoomTests(unittest.TestCase):
             self.assertFalse(app.exception)
             self.assertEqual(request.call_count, 0)
             self.assertFalse(app.get('file_uploader'))
+
+    def test_live_control_room_without_snapshot_navigates_to_models_and_back(self):
+        saved = deepcopy(load_saved_snapshot())
+        selected = next(j for j in saved['jobs'] if j['worker_job_id'] == B)
+        replies = Replies([selected], report_pipeline={'pipeline_id': 'team-rag-v1',
+            'document_reference_date_supported': False,
+            'analysis_models': [{'selection': 'B'}, {'selection': 'R2'}]})
+        def response(path, data=None, **kwargs):
+            if path.endswith('/source'):
+                replies.calls.append((path, data))
+                return b'0000ftyp-test-original'
+            return replies(path, data, **kwargs)
+        with patch.dict(os.environ, {'CCTV_API_URL': 'http://be-api:8080', 'CCTV_UI_DATA_MODE': 'api'}), \
+                patch('apps.cctv_ui.control_data.load_saved_snapshot', side_effect=AssertionError('snapshot unavailable')), \
+                patch('apps.cctv_ui.client.request', side_effect=response):
+            app = AppTest.from_file(str(APP), default_timeout=15).run()
+            self.assertFalse(app.exception)
+            app.button(key='control_open_' + B).click().run()
+            before = rendered_report(app)
+            self.assertEqual(before.count('<section '), 6)
+            self.assertEqual(len(app.get('video')), 1)
+            app.button(key='control_new_analysis').click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['analysis_selection'], 'B')
+            # AppTest does not retain the browser page hash after switch_page.
+            app.switch_page('analysis_app.py')
+            app.session_state['analysis_selection'] = 'R2'
+            app.run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['analysis_selection'], 'R2')
+            app.button(key='analysis_control_home').click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['control_selected_job'], B)
+            self.assertEqual(app.session_state['control_source'], 'api')
+            self.assertEqual(rendered_report(app), before)
+        self.assertFalse(replies.posts)
+        self.assertFalse(any(path == '/connection' for path, _ in replies.calls))
+
+    def test_explicit_r2_submit_opens_that_job_in_live_control_room(self):
+        pending = analysis_job('f' * 32, version='R2', stage='queued')
+        pending['post_attempts'] = 0
+        replies = Replies([pending], report_pipeline={'pipeline_id': 'team-rag-v1',
+            'document_reference_date_supported': False,
+            'analysis_models': [{'selection': 'B'}, {'selection': 'R2'}]})
+        upload = io.BytesIO(b'0000ftyp-local-test'); upload.name = 'test.mp4'
+        with patch('apps.cctv_ui.client.request', side_effect=replies), \
+                patch('streamlit.file_uploader', return_value=upload), \
+                patch('apps.cctv_ui.client.fetch_media', return_value=None):
+            app = AppTest.from_file(str(APP), default_timeout=15).run()
+            app.button(key='control_new_analysis').click().run()
+            self.assertFalse(app.exception)
+            self.assertFalse(replies.posts)
+            app.switch_page('analysis_app.py')
+            app.session_state['analysis_selection'] = 'R2'
+            app.selectbox(key='analysis_purpose').select('full_report')
+            next(b for b in app.button if b.label == '분석 시작').click().run()
+            self.assertEqual(len(replies.posts), 1)
+            self.assertEqual(replies.posts[0][0], '/selections?selection=R2&purpose=full_report')
+            app.button(key='analysis_control_job_' + pending['worker_job_id']).click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['control_source'], 'api')
+            self.assertEqual(app.session_state['control_selected_job'], pending['worker_job_id'])
+            self.assertEqual(rendered_report(app), '')
+            self.assertEqual(len(replies.posts), 1)
+        self.assertFalse(any(path == '/connection' for path, _ in replies.calls))
 
     def test_selected_real_b_shows_checks_six_sections_two_videos_and_annotation(self):
         with patch('apps.cctv_ui.client.request', side_effect=AssertionError('network forbidden')) as request:

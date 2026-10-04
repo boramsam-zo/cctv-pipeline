@@ -35,6 +35,17 @@ class SavedControlDataTests(unittest.TestCase):
         self.assertEqual(snapshot['stats']['attention_count'], 1)
         self.assertEqual(snapshot['stats']['report_count'], 6)
 
+    def test_selection_tracking_is_preserved_without_replacing_saved_job_body(self):
+        original = {'worker_job_id': 'a' * 32, 'reports': [{'report_id': 'stored'}]}
+        selected = {'worker_job_id': 'a' * 32, 'reports': [],
+                    'mlflow': {'model_id': 'r2plus1d_18', 'model_version': 'epoch7', 'status': 'pending'}}
+        rows = data.unique_jobs([original], [{'jobs': [selected]}])
+        self.assertEqual(rows[0]['mlflow'], selected['mlflow'])
+        self.assertEqual(rows[0]['reports'], original['reports'])
+        self.assertNotIn('mlflow', original)
+        original['mlflow'] = {'status': 'recorded'}
+        self.assertEqual(data.unique_jobs([original], [{'jobs': [selected]}])[0]['mlflow'], original['mlflow'])
+
     def test_submission_hours_use_kst_and_are_distinct_from_incident_time(self):
         stats = self.saved['stats']
         self.assertEqual(stats['hour_counts'], {10: 2, 14: 3, 15: 1})

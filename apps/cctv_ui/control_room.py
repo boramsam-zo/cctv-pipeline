@@ -1,4 +1,4 @@
-"""Read-only control room for recorded CCTV results. No analysis submission path."""
+"""Read stored CCTV results; navigate to the separate, explicit analysis form."""
 from datetime import datetime, timezone
 import math
 import os
@@ -381,6 +381,23 @@ def detail(job, mode):
                                    format_func=lambda i: ('동료 6절 보고' if by_id[i].get('payload', {}).get('schema_version') == 'cctv-team-scene-v1' else '기존 저장 보고') + ' · ' + i[:8],
                                    key=analysis_key, persist_state='session')
     case = normalize_case(job, event_id, analysis_id=analysis_id)
+    revisions = case['report_revisions']
+    if len(revisions) > 1:
+        revision_ids = [row['report_id'] for row in revisions]
+        by_report = {row['report_id']: row for row in revisions}
+        revision_key = 'control_report_revision_' + job['worker_job_id'] + '_' + str(case['analysis_id'])
+        if st.session_state.get(revision_key) not in revision_ids:
+            st.session_state[revision_key] = revision_ids[0]
+        selected_report = st.segmented_control('보고 판', revision_ids, required=True,
+            format_func=lambda i: ('관련성 검수본' if by_report[i].get('review') else '최초 생성본')
+                + (' · ' + i[:8] if len(revision_ids) > 2 else ''),
+            key=revision_key, persist_state='session')
+        case = normalize_case(job, event_id, analysis_id=analysis_id, report_id=selected_report)
+    if case['report_review_errors']:
+        st.warning('일부 보고 검수본의 원본·사건 연결 또는 내용 검증을 확인할 수 없어 표시에서 제외했습니다.')
+    if case['report_review']:
+        st.caption('저장된 관찰·검색 결과를 재사용 · 새 모델 실행 없음 · 최초 원문 보존'
+                   + f" · 관련성 검수로 제외한 근거 {case['report_review']['excluded_count']}개")
     with st.container(key='control_case_strip', border=True, gap='xsmall'):
         with st.container(horizontal=True, vertical_alignment='center'):
             st.subheader(case_title(case), width='stretch')
@@ -430,18 +447,34 @@ def detail(job, mode):
         render_observations(case)
     with st.expander('처리 기록 · 저장 식별 정보'):
         st.caption('작업 ID: ' + job['worker_job_id'])
+        tracking = job.get('mlflow') or {}
+        if tracking:
+            st.caption('사고 모델: ' + str(tracking.get('model_id') or '미기록')
+                       + ' · ' + str(tracking.get('model_version') or '버전 미기록'))
+            labels = {'recorded': '저장 완료', 'pending': '기록 대기 · 저장 결과와 보고는 확인할 수 있습니다.',
+                      'in_progress': '분석 종료 후 기록', 'not_submitted': '분석 제출 전 중단 · 실행 기록 없음'}
+            tracking_label = '원본 실행 MLflow: ' if case['report_review'] else 'MLflow: '
+            st.caption(tracking_label + labels.get(tracking.get('status'), '기록 상태 확인 필요'))
+            review_tracking = (case.get('report') or {}).get('mlflow') or {}
+            if case['report_review'] and review_tracking:
+                st.caption('검수본 MLflow: ' + labels.get(review_tracking.get('status'), '기록 상태 확인 필요'))
         st.json({'input_sha256': job.get('input_sha256'), 'GPU 제출 기록': job.get('post_attempts'),
                  'VLM 호출 기록': job.get('scene_calls'), 'GPU 처리 기록': (job.get('metrics') or {}).get('timings'),
                  '보고 ID': [r.get('report_id') for r in job.get('reports', [])]})
 
 
 default_mode = os.environ.get('CCTV_UI_DATA_MODE') or ('api' if os.environ.get('CCTV_API_URL') else 'saved')
+if st.session_state.pop('control_refresh_pending', False):
+    api_snapshot.clear()
 with st.container(key='control_shell', gap='small'):
     with st.container(horizontal=True, vertical_alignment='center', key='control_header'):
         st.title('CCTV 사고 관제', width='stretch')
+        if st.session_state.get('cctv_navigation_enabled') and st.button(
+                '새 영상 분석', icon=':material/upload_file:', key='control_new_analysis', type='primary'):
+            st.switch_page('analysis_app.py')
         mode = st.selectbox('조회 자료', ['saved', 'api'], index=1 if default_mode=='api' else 0,
                             format_func=lambda m: '저장 확인 기록' if m=='saved' else '운영 API 저장 결과',
-                            key='control_source', label_visibility='collapsed', width=180)
+                            key='control_source', label_visibility='collapsed', width=180, persist_state='session')
         if st.button('조회 새로고침', icon=':material/refresh:', key='control_refresh'):
             api_snapshot.clear()
             original_bytes.clear()

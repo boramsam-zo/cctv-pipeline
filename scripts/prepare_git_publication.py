@@ -7,6 +7,7 @@ not read. A separate manifest records copies and path anonymization by digest.
 import argparse
 from collections import Counter
 import hashlib
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -42,8 +43,10 @@ PUBLICATION_NOTICE = """## 이 Git 게시본의 재현 범위
 이 저장소는 실행 코드·설정 예시·공유 문서를 선별한 복사본입니다. 원본 프로젝트와 기존 Git main 이력은 보존하며, 이 디렉터리 생성은 commit/push 또는 배포가 아닙니다.
 
 - `.github/workflows/runpod-image.yml`의 CPU 계약/서비스/패키징 검사를 checkout에서 실행할 수 있습니다. 실제 GPU 추론·학습·EC2 배포는 CI 검사가 수행하지 않습니다.
+- `.github/workflows/source-checks.yml`은 BE 보고 재사용·관제 UI·문서 관련성의 합성 CPU 검사를 실행합니다. BE/UI/보고 코드만 바뀌면 기존 Runpod 이미지를 다시 게시하지 않습니다.
 - 전체 과거 테스트는 Git에서 제외한 `artifacts/`와 평가 원본을 참조합니다. 따라서 이 checkout만으로 과거 전체 테스트나 저장 관제 화면을 모두 재현할 수 있다고 주장하지 않습니다.
 - 원본 영상·저장 사건 snapshot·모델 가중치·비밀 설정·개인 가상환경·실행 결과는 제외했습니다. 개인 절대경로는 이 게시 복사본에서만 프로젝트 상대경로 또는 중립 경로로 바꿨습니다.
+- 문서의 실제 EC2 식별자·공인 IP·Runpod 주소도 게시 복사본에서만 예시로 바꿨습니다. 운영 명령에는 사용 중인 서버 식별자를 넣어야 하며 원본 운영 문서는 별도로 보존합니다.
 - Runpod 이미지는 고정된 기존 P6 이미지의 모델/의존성을 재사용합니다. 신규 R2 모델은 Git/이미지 context에 넣지 않고 승인한 비공개 S3에서 Pod로 준비합니다.
 - `apps/team_rag/data/chunks.jsonl`·`index.sqlite`는 보고서 검색의 필수 자원입니다. Git 게시본에서는 제외했지만 EC2 배포 묶음에는 같은 경로/바이트로 포함하고 기존 EC2 자원·E5 모델 mount를 보존해야 합니다. 생략을 빈 검색 결과나 보고 성공으로 처리하지 마세요. 공개 재배포 권리를 확인한 것으로 간주하지 않습니다.
 - 기존 저장 결과를 조회할 때는 기존 EC2 API/DB 또는 승인된 로컬 snapshot을 연결하세요. 제외된 데이터를 다운로드하거나 분석을 자동 실행해 대체하지 않습니다.
@@ -135,6 +138,34 @@ def sanitize(text, root):
     return text, project + homes + volumes
 
 
+def sanitize_operational_docs(text, name):
+    """Keep operational destinations out of shared docs, without editing code."""
+    if not name.endswith('.md'):
+        return text, 0
+    count = 0
+    def address(match):
+        nonlocal count
+        try:
+            public = ipaddress.ip_address(match.group()).is_global
+        except ValueError:
+            public = False
+        if public:
+            count += 1
+            return '203.0.113.10'
+        return match.group()
+    text = re.sub(r'(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])', address, text)
+    text, instances = re.subn(r'\bi-[a-f0-9]{8,17}\b', 'YOUR_EC2_INSTANCE_ID', text)
+    # Replace a concrete Pod ID wherever this document also identifies its
+    # endpoint. Template/example IDs remain documentation, not live targets.
+    pods = set(re.findall(r'https?://([a-z0-9]{13,14})-\d+\.proxy\.runpod\.net', text))
+    pods -= {'syntheticpod', 'yourpodid', 'examplepod'}
+    for pod in sorted(pods):
+        text, replaced = re.subn(r'(?<![A-Za-z0-9])' + re.escape(pod) + r'(?![A-Za-z0-9])',
+                                'YOUR_RUNPOD_ID', text)
+        count += replaced
+    return text, count + instances
+
+
 def secrets(text, name=''):
     result = []
     for kind, pattern in SECRET_PATTERNS.items():
@@ -196,6 +227,7 @@ def prepare(output, root=ROOT):
         except UnicodeDecodeError:
             raise ValueError('non_utf8_source_rejected:' + name) from None
         cleaned, replacements = sanitize(original, root)
+        cleaned, operational_replacements = sanitize_operational_docs(cleaned, name)
         if replacements and name in protected:
             raise ValueError('catalog_source_requires_review:' + name)
         if name == 'README.md':
@@ -208,6 +240,7 @@ def prepare(output, root=ROOT):
         payloads[name] = cleaned.encode('utf-8')
         records[name] = {'source': fingerprint(raw), 'publication': fingerprint(payloads[name]),
                          'private_path_replacements': replacements,
+                         'operational_identifier_replacements': operational_replacements,
                          'mode': '0755' if os.access(source, os.X_OK) and source.suffix == '.sh' else '0644'}
     if findings:
         # Names/categories only. Never return matched text or secret values.

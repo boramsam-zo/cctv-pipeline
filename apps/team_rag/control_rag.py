@@ -13,6 +13,11 @@ from collections import Counter
 from functools import lru_cache
 from pathlib import Path
 
+try:
+    from .relevance import source_relevance, REVISION as RELEVANCE_REVISION
+except ImportError:  # Existing direct-script entry point.
+    from relevance import source_relevance, REVISION as RELEVANCE_REVISION
+
 ROOT = Path(__file__).resolve().parent
 MODEL = "intfloat/multilingual-e5-small"
 STATES = ["observed", "not_observed", "unknown"]
@@ -228,7 +233,11 @@ def observed_features(event):
             if isinstance(value, dict) and value.get("state") == "observed"]
 
 
-def check_source(doc, plan, ts):
+def check_source(doc, plan, ts, *, event=None):
+    if event is not None:
+        relevance = source_relevance(doc, event, plan["agency_key"])
+        if not relevance["accepted"]:
+            return False, "; ".join(relevance["reasons"])
     meta = doc.get("metadata") or {}
     actors = meta.get("actors") or []
     aliases = {"police": ["경찰"], "fire_rescue": ["소방", "구조", "구급"],
@@ -290,7 +299,7 @@ def retrieve(database, event, contacts, *, model_path=None, budget_check=None):
             for doc in docs:
                 if not any(plan["agency_match"] in a for a in (doc.get("metadata") or {}).get("agencies", [])):
                     continue
-                valid, reason = check_source(doc, plan, scope_ts)
+                valid, reason = check_source(doc, plan, scope_ts, event=event)
                 checks[doc["chunk_id"]] = {"accepted": valid, "reason": reason}
                 if valid:
                     candidates.append(doc)
@@ -349,7 +358,9 @@ def retrieve(database, event, contacts, *, model_path=None, budget_check=None):
                             "actors": (d.get("metadata") or {}).get("actors", []),
                             "application_conditions": (d.get("metadata") or {}).get("application_conditions", []),
                             "verification_status": (d.get("metadata") or {}).get("verification_status"),
-                            "source_version": d.get("version"), "metadata_is_editorial": True}
+                            "source_version": d.get("version"), "metadata_is_editorial": True,
+                            "scenario_tags": (d.get("metadata") or {}).get("scenario_tags", []),
+                            "retrieval_conditions": (d.get("metadata") or {}).get("retrieval_conditions", [])}
         search_trace.append({"agency": plan["agency"], "topics": topic_traces,
                              "condition_actor_checks": checks,
                              "selected": [{"chunk_id": c, "rrf": fused[c], "search": ranks[c]} for c in chosen]})
@@ -361,9 +372,13 @@ def retrieve(database, event, contacts, *, model_path=None, budget_check=None):
             "retrieval": {"model": meta, "db": str(Path(database).resolve()), "vector_search": "SQLite BLOB 저장 후 정규화 벡터 내적 전수검색",
                           "fusion": "weighted_rrf", "weights": {"bm25": .6, "embedding": .4}, "rrf_k": 60,
                           "experimental_cosine_floor": .65, "trace": search_trace,
+                          "relevance_revision": RELEVANCE_REVISION,
                           "date_filter_supported": False, "reference_date": None}}
-    result.update(report_view(result))
-    return result
+    try:
+        from .review import review_saved_report
+    except ImportError:
+        from review import review_saved_report
+    return review_saved_report(result)["report_json"]
 
 
 def verification_needed(event):
@@ -414,11 +429,16 @@ def source_report_use(source):
 def report_view(report):
     """Link displayed responses to retrieved text, retaining raw retrieval separately."""
     sources = {s["chunk_id"]: s for s in report["sources"]}
-    responses, references = [], {}
+    responses, references, excluded = [], {}, []
     for plan in report["agency_notifications"]:
         actions = []
         for cid in plan["legal_basis"]:
             source = sources[cid]
+            relevance = source_relevance(source, report["input"], plan["agency_key"])
+            if not relevance["accepted"]:
+                excluded.append({"chunk_id": cid, "title": source.get("title"),
+                                 "agency_key": plan["agency_key"], **relevance})
+                continue
             if source_report_use(source) == "accident_type_definition":
                 references.setdefault(cid, {
                     **source, "reference_id": f"R{len(references) + 1}",
@@ -448,7 +468,8 @@ def report_view(report):
                           "field_response_reference": actions,
                           "actions": actions,
                           "evidence_status": "retrieved_text" if actions else "insufficient_evidence"})
-    return {"report_format_version": "2.1", "report_template_revision": "team-rag-integration-20261003-v1",
+    return {"report_format_version": "2.1", "report_template_revision": "team-rag-relevance-20261005-v1",
+            "relevance_revision": RELEVANCE_REVISION, "excluded_references": excluded,
             "agency_responses": responses,
             "verification_needed": verification_needed(report["input"]),
             "references": list(references.values())}
@@ -479,12 +500,13 @@ def agency_excerpt(source, agency_key):
 
 
 def summarize_source(text):
-    """Extractive summary: preserve exact source sentences, never invent obligations."""
-    text = re.sub(r"\[[^\]]*\]", "", text)
-    sentences = re.split(r"(?<=[.!?])\s+(?=[가-힣①②③1-9])|\n\s*\n", text)
-    keywords = ["통보", "요청", "출동", "통제", "대피", "피난", "진화", "구호", "구조", "안전", "제거", "협조"]
-    picked = [s.strip() for s in sentences if any(k in s for k in keywords)]
-    return "\n".join((picked or [text.strip()])[:2])
+    """Keep the complete supplied chunk, including qualifications and exceptions.
+
+    Keyword selection used to drop introductory conditions, numbered items or
+    a later exception. The corpus already groups related provisions; display
+    that complete unit and retain its exact text in the reference section.
+    """
+    return text.strip()
 
 
 def agency_plans(event):
@@ -549,6 +571,8 @@ def markdown(report):
             lines.append("- 현장 대응 근거 미확인. 구체 조치 생성 없음.")
         lines.append("")
     lines += ["## 확인 필요 사항", ""] + ["- " + u for u in view["verification_needed"]]
+    for item in view.get("excluded_references", []):
+        lines.append("- 대응 근거 제외 · " + (item.get("title") or item["chunk_id"]) + ": " + "; ".join(item["reasons"]))
     lines += ["", "기관별 대응은 검색된 청크의 발췌·요약이다. 공동 대응 내용은 하단의 조치 주체를 확인한다. 입력 영상 자체를 이 RAG가 다시 판독한 것은 아니다.",
               "", "## 관련 근거", ""]
     for s in view["references"]:

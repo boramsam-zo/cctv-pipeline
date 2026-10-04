@@ -159,7 +159,7 @@ bash apps/be_worker/queue.sh scene-probe \
 
 ```bash
 cd . &&
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 export BE_TARGET_CONFIG=/input/config-new-pod-v1.json
 docker compose -f "$CCTV_COMPOSE_FILE" ps
 bash apps/be_worker/queue.sh list
@@ -225,7 +225,7 @@ Runpod 콘솔의 현재 Pod → Connect → Port 8000 → HTTP Service 주소를
 
 ```bash
 cd . &&
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 export BE_TARGET_CONFIG=/input/config-new-pod-v1.json
 python3 apps/be_worker/worker.py configure \
   --output "$BE_INPUT_DIR/config-new-pod-v1.json" \
@@ -269,7 +269,7 @@ PY
 
 사용자 외부 health에서 http_401/jobs_submitted0 수신. Mac 설정은 새 Pod 형태의 HTTPS 주소이며 이전 Pod 주소와 다르지만 현재 실행 Pod와의 일치는 콘솔에서 확인해야 한다. 401은 요청 대상에서 인증이 거절됐다는 뜻이다. GPU 분석·새 접수는 실행되지 않았다. 분석 API 토큰은 start.sh가 .api-token에 만드는 값이고 Runpod 계정 API 키·Gemini 키·AWS 키와 별개다.
 
-Mac의 이전 토큰은 `artifacts/be-worker/queue-local-v1/secrets-pod-3whxkh444xl3qc-v1/runpod_worker_token`이며 파일 존재44bytes/0600만 확인했다. 새 Pod에 기존 토큰이 복원됐는지 또는 새 토큰이 생성됐는지는 미확인이다. 현재 Pod의 내부 client.py health가 성공한다면 그 Pod의 .api-token을 Mac으로 회수해 BE 파일과 맞춘다. 실행 중인 서버의 토큰 파일을 임의 교체하는 것과 달리 이 방법은 API를 재시작하지 않는다.
+Mac의 이전 토큰은 `artifacts/be-worker/queue-local-v1/secrets-pod-YOUR_RUNPOD_ID-v1/runpod_worker_token`이며 파일 존재44bytes/0600만 확인했다. 새 Pod에 기존 토큰이 복원됐는지 또는 새 토큰이 생성됐는지는 미확인이다. 현재 Pod의 내부 client.py health가 성공한다면 그 Pod의 .api-token을 Mac으로 회수해 BE 파일과 맞춘다. 실행 중인 서버의 토큰 파일을 임의 교체하는 것과 달리 이 방법은 API를 재시작하지 않는다.
 
 **Runpod Jupyter Terminal:**
 
@@ -285,7 +285,7 @@ install -m 600 .api-token /workspace/runpod_worker_token-current
 
 ```bash
 cd . &&
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 export BE_TARGET_CONFIG=/input/config-new-pod-v1.json
 test -s "$HOME/Downloads/runpod_worker_token-current" &&
 cp -p "$BE_SECRETS_DIR/runpod_worker_token" \
@@ -325,7 +325,7 @@ Docker Desktop을 켜고 기존 DB 상태부터 확인한다.
 
 ```bash
 cd .
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 docker compose -f "$CCTV_COMPOSE_FILE" ps
 ```
 
@@ -357,7 +357,7 @@ bash apps/be_worker/queue.sh scene-describe \
 
 ```bash
 cd .
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 python3 apps/be_worker/flow_status.py \
   --spool "$BE_SPOOL_DIR" --worker-job-id "$BE_WORKER_JOB_ID"
 ```
@@ -407,7 +407,7 @@ EC2 상시 통합배포/전체 자동 실행은 후속이다. 백업은 VLM 연�
 
 ```bash
 cd .
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 bash apps/be_worker/queue.sh scene-probe \
   --worker-job-id e2a71c13191b4245a99fa1a9b1b60b6d \
   --event-id event_000
@@ -442,7 +442,7 @@ GPU 재분석·S3 재업로드는 없으며, 기존 검증된 미디어를 사�
 
 ```bash
 cd .
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 bash apps/be_worker/queue.sh scene-describe \
   --worker-job-id e2a71c13191b4245a99fa1a9b1b60b6d \
   --event-id event_000 \
@@ -468,7 +468,7 @@ Mac 터미널에서 기존 Docker Desktop을 켠 상태로 실행한다. 영상 
 
 ```bash
 cd .
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 bash apps/be_worker/queue.sh scene-diagnose \
   --worker-job-id e2a71c13191b4245a99fa1a9b1b60b6d \
   --event-id event_000
@@ -504,7 +504,7 @@ EC2·Runpod를 시작하지 않아도 기존 S3 결과로 진행할 수 있다. 
 
 ```bash
 cd .
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 bash apps/be_worker/queue.sh list
 bash apps/be_worker/queue.sh scene-schema
 bash apps/be_worker/queue.sh scene-fetch \
@@ -671,7 +671,7 @@ bash apps/be_worker/queue.sh recover \
 
 ## 8. 새 Pod로 제출 전 작업 연결
 
-2026-09-28 사용자는 새 Pod `3whxkh444xl3qc`에서 API의 `storage: s3` 응답이 나왔다고 보고했다. Mac에서 읽기 확인한 A는 `e2a71c13191b4245a99fa1a9b1b60b6d`, `prepared`, 제출0회다. 아래는 이 작업을 새 Pod로 연결하는 명령이다. 실제 S3 쓰기 권한과 새 Pod에서의 영상 분석은 아직 확인 전이다.
+2026-09-28 사용자는 새 Pod `YOUR_RUNPOD_ID`에서 API의 `storage: s3` 응답이 나왔다고 보고했다. Mac에서 읽기 확인한 A는 `e2a71c13191b4245a99fa1a9b1b60b6d`, `prepared`, 제출0회다. 아래는 이 작업을 새 Pod로 연결하는 명령이다. 실제 S3 쓰기 권한과 새 Pod에서의 영상 분석은 아직 확인 전이다.
 
 `retarget`은 **제출0회·provider ID 없음·prepared 상태**인 작업만 변경한다. 다른 실행/불확실 작업이 있으면 거절한다. 영상 사본/해시와 기존 S3 목적지를 확인하고 새 주소·토큰으로 `/health`에 접속한 뒤 DB와 파일의 주소를 변경한다. 기존 작업 ID/순서/영상은 유지한다. 중간 실패가 생기면 dispatch를 차단하고 같은 retarget 명령으로 복구한다. 이전 상태는 작업 폴더의 `retarget-*.json`에 비공개로 보존한다. 이 명령은 영상을 전송하지 않는다.
 
@@ -681,10 +681,10 @@ bash apps/be_worker/queue.sh recover \
 
 ```bash
 cd .
-source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
+source artifacts/be-worker/queue-local-v1/use-pod-YOUR_RUNPOD_ID-v1.sh
 ```
 
-새 설정 파일은 `input/config-pod-3whxkh444xl3qc-v1.json`이다. 실제 Connect의8000주소가 `https://3whxkh444xl3qc-8000.proxy.runpod.net`와 일치해야 한다. 다른 Pod를 만들었으면 이 예시를 그대로 실행하지 말고 그 주소로 새 설정을 준비한다.
+새 설정 파일은 `input/config-pod-YOUR_RUNPOD_ID-v1.json`이다. 실제 Connect의8000주소가 `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net`와 일치해야 한다. 다른 Pod를 만들었으면 이 예시를 그대로 실행하지 말고 그 주소로 새 설정을 준비한다.
 
 ### 새 Pod의 앱 토큰을 비공개 파일로 복사
 
@@ -694,7 +694,7 @@ source artifacts/be-worker/queue-local-v1/use-pod-3whxkh444xl3qc-v1.sh
 mkdir -p "$BE_SECRETS_DIR" &&
 chmod 700 "$BE_SECRETS_DIR" &&
 scp -P 32052 -i "$HOME/.ssh/runpod_cctv_ed25519" \
-  root@213.173.110.196:/workspace/cctv-runpod-a4000/.api-token \
+  root@203.0.113.10:/workspace/cctv-runpod-a4000/.api-token \
   "$BE_SECRETS_DIR/runpod_worker_token" &&
 chmod 600 "$BE_SECRETS_DIR/runpod_worker_token" &&
 python3 apps/be_worker/prepare_queue.py \

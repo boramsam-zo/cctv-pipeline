@@ -133,10 +133,7 @@ def preflight_db(conn, candidate, now):
                          (candidate['name'],)).fetchone() is None, 'existing_session_name_preserved')
     history = session_rows(conn)
     for value in history.values():
-        fields = session.MODEL_SESSION_FIELDS if value.get('schema') == session.MODEL_SESSION_SCHEMA else {'schema', 'name'}
-        selected = {k: value[k] for k in fields}
-        if 'max_jobs' in value:
-            selected['max_jobs'] = value['max_jobs']
+        selected = session.marker_from_state(value)
         session.validate(value, expected_marker=selected)
         require(value['stopped'] or now >= value['deadline_at'], 'active_session_preserved')
     busy = conn.execute(

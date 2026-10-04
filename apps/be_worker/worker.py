@@ -67,6 +67,9 @@ def update(directory, state, **values):
 
 
 def submit_once(directory, state, api, trace, *, before_intent=None):
+    from apps.be_worker import hour_session, report_continuation
+    if hour_session.configured() and report_continuation.selected(hour_session.current_marker()):
+        raise WorkerError('report_continuation_gpu_submission_forbidden')
     if state['post_attempts'] != 0 or state['status'] != 'prepared':
         raise WorkerError('submission_must_not_be_repeated')
     from apps.be_worker.mlops_jobs import binding_for, freeze_binding
