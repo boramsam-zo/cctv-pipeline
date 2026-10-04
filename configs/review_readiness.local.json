@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "purpose": "reviewed_input_readiness_only",
+  "protocol_selection": {
+    "column": "split_in_distribution",
+    "task": "binary_segment_classification",
+    "source": "user_message",
+    "recorded_at": "2026-09-21",
+    "raw_response": "첫 기준선은 ACCIDENT의 IID 분할을 참고한 사고/정상 분류 실험으로 진행하고, 지리 기준 일반화 평가는 별도 후속 실험으로 둘게.",
+    "geographical_evaluation": "deferred_separate_experiment",
+    "training_execution_authorized": false,
+    "smoke_sample_ids": ["sample_008", "sample_009", "qmul_001"],
+    "smoke_selection_status": "agent_proposal_for_next_approval_not_user_execution_approval"
+  },
+  "candidate_history": "artifacts/data-check/train-candidates-01/report.json",
+  "received_inspection": "artifacts/data-check/received-three-01/inspection.json",
+  "batches": [
+    {
+      "kind": "accident",
+      "plan": "artifacts/preprocessing/received-input224-link-01/configured_plan.json",
+      "link_report": "artifacts/preprocessing/received-input224-link-01/verification.json",
+      "answers": "configs/received_segments.input224-quality-20260921.answers.json",
+      "quality_report": "artifacts/label-review/input224-accident-dahye-20260921-01/quality_review.json"
+    },
+    {
+      "kind": "qmul",
+      "plan": "configs/qmul_segments.review-20260920-02.json",
+      "link_report": "artifacts/preprocessing/qmul-reviewed-link-01/report.json",
+      "answers": "configs/qmul_segments.input224-quality-20260921.answers.json",
+      "quality_report": "artifacts/label-review/input224-qmul-dahye-20260921-01/quality_review.json"
+    }
+  ]
+}

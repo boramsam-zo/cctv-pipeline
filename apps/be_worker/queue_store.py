@@ -33,7 +33,7 @@ class Store:
     def lock(self, kind):
         # 1: dispatch/enqueue/recovery. 2: collection. No expiry-based takeover
         # can run alongside a slow live owner; PostgreSQL releases on disconnect.
-        key = 1 if kind == 'dispatch' else 2
+        key = {'dispatch': 1, 'collect': 2, 'flow': 3, 'admission': 4}[kind]
         acquired = self.connection.execute('SELECT pg_try_advisory_lock(734821, %s) AS ok', (key,)).fetchone()['ok']
         if not acquired:
             raise WorkerError('queue_worker_already_running')

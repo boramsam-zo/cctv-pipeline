@@ -1,183 +1,151 @@
-# CCTV 분석 파이프라인
+## 이 Git 게시본의 재현 범위
 
-녹화 영상의 **BE 대기열 → Runpod X3D·YOLO → S3 근거 → Gemini 장면 설명 → PostgreSQL 저장**과 **문서 청킹 → 임베딩 → pgvector 검색**을 실행하고 확장하는 코드 저장소다.
+이 저장소는 실행 코드·설정 예시·공유 문서를 선별한 복사본입니다. 원본 프로젝트와 기존 Git main 이력은 보존하며, 이 디렉터리 생성은 commit/push 또는 배포가 아닙니다.
 
-[아키텍처·시퀀스](ARCHITECTURE.md)에서 서비스 역할과 요청 순서를 볼 수 있다. AWS 자원 생성은 별도 [cctv-infra](https://github.com/boramsam-zo/cctv-infra)의 Terraform으로 관리한다.
+- `.github/workflows/runpod-image.yml`의 CPU 계약/서비스/패키징 검사를 checkout에서 실행할 수 있습니다. 실제 GPU 추론·학습·EC2 배포는 CI 검사가 수행하지 않습니다.
+- 전체 과거 테스트는 Git에서 제외한 `artifacts/`와 평가 원본을 참조합니다. 따라서 이 checkout만으로 과거 전체 테스트나 저장 관제 화면을 모두 재현할 수 있다고 주장하지 않습니다.
+- 원본 영상·저장 사건 snapshot·모델 가중치·비밀 설정·개인 가상환경·실행 결과는 제외했습니다. 개인 절대경로는 이 게시 복사본에서만 프로젝트 상대경로 또는 중립 경로로 바꿨습니다.
+- Runpod 이미지는 고정된 기존 P6 이미지의 모델/의존성을 재사용합니다. 신규 R2 모델은 Git/이미지 context에 넣지 않고 승인한 비공개 S3에서 Pod로 준비합니다.
+- `apps/team_rag/data/chunks.jsonl`·`index.sqlite`는 보고서 검색의 필수 자원입니다. Git 게시본에서는 제외했지만 EC2 배포 묶음에는 같은 경로/바이트로 포함하고 기존 EC2 자원·E5 모델 mount를 보존해야 합니다. 생략을 빈 검색 결과나 보고 성공으로 처리하지 마세요. 공개 재배포 권리를 확인한 것으로 간주하지 않습니다.
+- 기존 저장 결과를 조회할 때는 기존 EC2 API/DB 또는 승인된 로컬 snapshot을 연결하세요. 제외된 데이터를 다운로드하거나 분석을 자동 실행해 대체하지 않습니다.
 
-## 1. 코드 구성
+관련 CPU 검사:
 
-| 경로 | 역할 |
+```bash
+python -m pip install -r apps/runpod_image/requirements-ci.txt
+python -B -m unittest discover -s tests/runpod_image -p 'test_mlops*.py' -v
+python -B -m unittest discover -s tests/be_worker -p 'test_mlops*.py' -v
+python -B -m unittest tests.be_worker.test_mlflow_tracking tests.be_worker.test_register_mlops_models -v
+python -B scripts/prepare_runpod_ci.py --output /path/to/new-build-directory
+```
+
+마지막 경로의 부모 디렉터리는 존재해야 하며 결과 디렉터리는 새 이름을 사용합니다. 이 준비 명령은 Docker 빌드/게시를 수행하지 않습니다.
+
+---
+
+# CCTV 사고 의심 분석·검토 프로젝트
+
+**2026-09-29 동료 공유:** [파이프라인 안내](docs/pipeline-guide/README.md)와 실제 실행 코드·Compose·합성시험을 [게시용 폴더](artifacts/team-handoff/pipeline-guide-20260929-01/repository/)에 함께 준비했다. 최신 사용자 요청으로 기존 문서전용 구성을 확장했다. 공유 문서는 README/ARCHITECTURE 두 개이며 실제 키·가중치·영상·DB/spool·운영 이력은 따로 보관한다. [소스 ZIP v8 — EC2 접속·DB 확인 절차 보완](artifacts/team-handoff/pipeline-guide-20260929-01/cctv-pipeline-source-v8.zip).
+
+## 팀 서비스 개발 안내 — 2026-09-27 Gemini 반영
+
+새 팀원은 [PRD v0.2](PROJECT_BRIEF.md) → [공통 API·데이터 계약](docs/contracts/service_contract.md) → [역할별 문서](docs/roles/README.md) 순서로 읽는다. 최신 서비스 설계는 Streamlit·FastAPI·S3·Runpod A4000·YOLO11s·X3D-S·Gemini API·RAG·보고·사람 검토다. BE가 Gemini에 실제 장면을 보내 텍스트 설명을 받고 첫 사고 의심 알림에 함께 제공한다. 별도 vLLM 서버는 사용하지 않는다. X3D-S가 후보 구간을 찾고 YOLO가 해당 장면의 객체 정보를 제공한다.
+
+문서 개정과 실제 구현·배포·모델 품질 검증은 구분한다. 현재 확인된 상태는 [재개 요약](docs/current_status.md), 다음 작업은 [계획](IMPLEMENTATION_PLAN.md), 공유 방법은 [팀 안내](docs/team_handoff.md)를 따른다. 아래 기존 개인 모델 실험·화면·Colab 기록은 당시 이력이며 새 서비스의 구현 완료를 뜻하지 않는다.
+
+> **2026-09-25 현재 진행 안내:** 최신 목표·TODO는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)의 상위 계획, 실제 완료/다음 작업은 [current_status](docs/current_status.md) 최상단을 따른다. 아래 날짜별 상태와 “다음 작업”은 당시 이력이며 최신 실행 지시가 아니다. 기능동작·품질합격·후반웹 전달을 구분한다.
+
+**2026-09-22 최신 — T9 확대33구간 실제 학습 완료:** 사고30·정상3으로 MPS/head 5epoch·165업데이트, 입력준비24.78초/학습명령109.56초. 관련184시험·저장/재개/재로딩/고정BN 확인. [33구간 보고서](artifacts/training/t9-expansion-20260922-01/report.html) · [명령·모델·한계](docs/training.md). 새모델성능평가와사용자확인은대기. 다음은동일예약3구간의참고비교 제안만이다. 아래8구간은보존된이력이다.
+
+**2026-09-22 최신 — 8구간 실제 학습 완료:** 기존사람검수5개+CSV파생사고3개로 MPS/head 5epoch·40업데이트, 성공전체30.89초. 저장/재개/재로딩 확인, 관련75시험 통과. [입력·학습 보고서](artifacts/training/source-real-iid-20260922-01/report.html)·[명령/새모델/한계](docs/training.md). 기존모델보존, 새모델 성능비교/독립검증/사용자보고서확인은미실행·대기다. 다음은동일예약3구간의참고비교 제안만이며 아래는이전이력이다.
+
+**2026-09-22 최신:** 사용자 Colab 결과 수신으로 세 구간 참고 비교 완료를 확인했다(독립성 미확인, 독립 검증 아님). 사용자 결과 확인 보고 수신. 다음은 Drive 새 학습자료 연결이며 기존CSV에서 미검수 후보10개를 준비했다. [결과·후보·다음 입력](docs/training.md). 아래는 이전 이력이다.
+
+**2026-09-22 최신:** 세 구간 품질 승인 완료. 독립성 미확인을 표시하는 참고 비교 코드·38시험·최종 Colab03 묶음 준비 완료. 실제 Colab 예측은 아직 미실행이다. [새 ZIP 업로드 위치와 셀 순서](docs/training.md)를 따른다. 아래는 이전 단계 이력이다.
+
+**2026-09-22 최신 Colab 입력 연결:** 정상1·사고2구간을 기존 검수PNG에서 배열로 연결하고143.3MB ZIP을 생성했다. 관련31시험·실제로더 확인 완료. **실행승인/품질/독립성 조건 pending으로 실제평가는 미실행**이며 준비묶음이다. [정확한3구간·최신파일·셀안내](docs/training.md)를 따른다. 아래 이전 미확보/빈ZIP 기록은 당시 이력이다.
+
+**2026-09-22 M4 결과 화면:** 기존 학습·연속 분석·검수 후보·시험 이벤트·독립 검증 상태를 구분하는 **읽기 전용 Streamlit 화면**을 구현했다. 승인된 별도환경 설치와 고유21개 관련 시험/localhost 응답 확인 완료, 사용자 직접 확인은 대기다. [화면 실행과 확인 순서](LOCAL_SETUP.md#결과-확인용-streamlit-실행--m4-2026-09-22)·[실제 결과](docs/current_status.md)를 본다. 기존 HTML은 보존했으며 새 모델 실행은 없다. 시험 서버는 종료한 상태다.
+
+**2026-09-22 M3 코드·시험 예시 완료:** 새 의심 예측 묶기·동일예측 중복 방지·입력중단 처리를 구현하고 관련26개 고유 테스트 및 CPU 제한 예시를 확인했다. [시험용 결과 보고서](artifacts/events/m3-synthetic-20260922-01/demo-final/report.html), [실제 상태/남은 조건](docs/current_status.md)을 본다. 실제 이벤트 규칙 적용·독립 검증은 미실행이며 기존 모델/데이터를 바꾸지 않았다. Colab은 선택 환경이고 이번 기능 시험에는 사용하지 않았다.
+
+**2026-09-22 M1 실행 완료:** 로컬 평가 연결 두 항목 보완·관련52개 시험·T9 두 후보 부분 디코딩/각16장 검수 준비를 완료했다. 사람 정답/품질·독립성 및 정상2원본은 대기다. [검수 보고서](artifacts/data-review/t9-devval-20260922-01/report.html)와 [현재 상태](docs/current_status.md#m1-local-complete)를 본다. 새 학습·실제 모델 추론·Colab 실행은 없었다.
+
+**2026-09-22 기획 초안:** [PRD/전체 요약](PROJECT_BRIEF.md), [요구사항 정의서](docs/requirements.md), [여섯 마일스톤·역할·첫 작업 묶음](IMPLEMENTATION_PLAN.md)을 작성했다. 전체 계획은 미승인이다. 사용자 결정은 개인 진행·첫 HTML/원본 확인·후반 최종 웹·무료 연습과 점진적 비용 절감으로 반영했다. 과거 팀명/분담/일정은 아래 이력이며 현재 전제가 아니다. 기존 승인 규칙은 유지한다. 기존학습/추론은재사용하며T9사고후보2개는파일존재확인/검수대기다. 새평가경로의코드보완점과최신사실은[현황](docs/current_status.md)을따른다.
+
+**2026-09-22 실행 장소 방침:** 개발·검수는 로컬에서 이어가며, 모델 평가·이후 학습은 Mac 부하를 줄이기 위해 Colab GPU도 선택한다. 로컬 실패가 선행 조건은 아니다. 현재는 기존 모델의 독립 검증 준비이며 새 학습·업로드는 실행하지 않았다. [Colab 평가 노트북](notebooks/evaluate_r3d18_colab.ipynb)과 [파일 묶음·셀 실행 안내](docs/training.md#colab-evaluation)를 따른다. 아래 날짜별 기록은 보존한다.
+
+**2026-09-21 최신: 첫 실제 자료 제한 학습 완료.** 공식 가중치를확인하고MPS에서사고008·009와QMUL정상3구간으로5epoch/25업데이트를수행했다. 전체23.35초, 누적학습 루프16.90초이며저장·체크포인트재개·최종재로딩을확인했다. 특징부/BN은유지되고마지막 분류층은변했다. 독립 검증은미수행이다. [실제파일·구간·시간·모델·한계](docs/training.md#2026-09-21--첫-실제-자료-제한-학습-완료-iid-참고학습-전용)를따른다. 다음하나는학습원본/사건과겹치지않는검증용정상·사고자료확보/검수(제안만)다. 아래가중치/학습미실행표시는이전이력이다.
+
+**2026-09-21 최신: 사용자 IID 선택 반영과 실제 A 후보 입력 목록 점검 완료.** 과거 train/train 후보와 007~009는 파일명이 다르고, 당시 두 기록과 현재 CSV 해시는 동일하다. 008·009는 실제 IID train, 007은 test로 학습·튜닝 제외다. A에는 사고2·QMUL 정상3구간이 있으며 처음에는 008·009·qmul_001만 제안한다. QMUL3구간은 원본1개, 사고 사건 관계는 미확인으로 함께 유지한다. 관련31개 테스트 통과/실제0.467초, 학습은 실행하지 않았다.
+
+A는 **입력 후보 확보**, B는 **독립 평가 자료 부족**으로 나눠 기록했다. A의 최신 두 출처 연결·명세/공식 가중치·실행 승인은 남아 있지만 B 부족 자체로 A를 막지 않는다. 현재 학습 설정은 예전 pending 자료를 그대로 가리키므로 바로 학습할 수 있는 명령이라고 안내하지 않는다. 다음 하나는 A 전용 입력 연결과 제한 실행 준비(제안만)다. [파일별 분할·A/B 조건·명령·상한](docs/experiments/2026-09-19_readiness.md#2026-09-21--iid-선택-반영과-a-학습-후보-목록-확인-완료). 아래 ‘평가 방식 선택 대기’ 등은 이전 이력이다.
+
+**CCTV-only · 모델 실험 우선 · 3개 화면은 미정**
+
+2026-09-21 현재: [학습·평가 분리 준비 점검](docs/experiments/2026-09-19_readiness.md#2026-09-21--승인-입력의-학습평가-분리-준비-점검-완료)을 기존 CLI의 기록 전용 모드로 구현·실행했다. 관련55개 테스트 통과, 실제0.473초, 사고3·정상3/품질confirmed6은 유지했으며 학습은held다. QMUL은 정상 원본1개이고 새 사고008·009는 선택할 공식 분할에 따라train/test가 다르다. **다음 하나는 공식 평가 방식 선택 기록(제안만)**이다. 아래 ‘다음 준비 점검’ 등은 이전 이력이며 실제 학습·다운로드는 수행하지 않았다.
+
+2026-09-21 현재: 다혜의 사고 007~009·QMUL 3구간 **224픽셀 품질 검수 답변 반영을 완료**했다. 기존 코드 재사용, 품질 테스트 21개 통과, 확인·저장 네 명령 전체 0.655초, 여섯 구간 모두 confirmed다. 기존 사고/정상 정답과 원본·미리보기는 유지했다. [확인할 파일·실행 결과](docs/preprocessing_link_check.md#224픽셀-품질-답변-반영-완료--2026-09-21). 다음 하나는 기존 자료의 C-2 학습·평가 분리 준비 점검(제안만)이며 실제 학습은 아직 보류다. 아래 ‘대기/다음’은 답변 수신 전 이력이다.
+
+2026-09-21 최신: [검수 준비 상태 확인](docs/preprocessing_link_check.md#검수-준비-상태만-확인하기--2026-09-21)을 기존 기록기에 추가했다. 관련 테스트 41개 통과, 실제 읽기 전용 확인 0.373초, 여섯 항목 모두 답변 대기(종료 3)다. 구체적인 사람 답변을 받으면 기존 코드로 반영하며, 새 답변 없이 양식 생성/코드 보완을 반복하지 않는다. 실제 학습은 미실행이다. 아래는 이전 이력이다.
+
+2026-09-21 최신: [224픽셀 품질 검수 기록](docs/preprocessing_link_check.md#224픽셀-입력-품질-검수-기록--2026-09-21)의 코드·36개 테스트·실제 여섯 양식 생성을 완료했다. 기존 사고/정상 정답은 유지하고, 사람 식별성 답변은 대기다. 실제 기록 준비 0.363초, 새 추출·모델·학습 없음. 다음 하나는 구체적인 검수 답변을 연결해 현재 품질 단계를 마무리하는 작업이다. 아래는 이전 이력이다.
+
+2026-09-21 최신: [007~009의 224픽셀 입력 연결](docs/preprocessing_link_check.md#007009의-224픽셀-입력-연결--2026-09-21)을 실제 완료했다. 원본·구간·16개 PTS·사고 정답을 유지하고 `[3,16,224,224]` float32 배열을 기존 로더에서 확인했다. 관련 테스트 35개 통과, 실제 3.667초. 원본과 기존 검수·모델·설정은 보존했다. 다음 하나는 기존 224픽셀 미리보기의 사람 식별성 확인이며 실제 학습은 미실행이다. 아래는 이전 작업 이력이다.
+
+2026-09-21 최신: [007~009 입력 품질 확인](docs/preprocessing_link_check.md#새007009의-입력-품질과-검수본-재사용--2026-09-21)을 완료했다. 기존 512픽셀 PNG를 재사용해 ID·원본 시각·로더 순서·사고 정답을 확인했고, 사용자가 잘림·누락 없음/추가 장면 불필요를 답했다. 관련 테스트 22개 통과, 실제 점검 1.675초, 영상 재디코딩·새 미리보기·학습은 0이다. 다음 하나는 같은 구간의 224픽셀 입력 연결 점검이다. 아래는 이전 이력이다.
+
+2026-09-21 후속 최신: 다혜가 새007~009를 사고/미리보기 식별 가능으로 답해 [구간 검수 기록](docs/reviews/2026-09-21_dahye.md)에 연결했다. 새 기록 코드의20개 테스트와 실제저장(0.046초)을 완료했다. 정답은 `[1,1,1]`, 입력 품질 일부는 미응답, 학습 사용은false다. 다음 하나는 남은 입력 품질 확인이다. 아래 미확정 표현은 이 답변 전 작업 이력이다.
+
+2026-09-21 최신 완료: 사용자가 추가한 [새 사고 후보007~009](docs/data_inventory.md#17-새로-받은-사고-후보-007009-수신과-부분-검사--2026-09-21)의 CSV 연결·부분 디코딩·각16장 미리보기를 확인했다. 관련 코드 테스트37개 통과, 실제 검사/미리보기 두 명령 합계3.760초. 구간 정답은 미확정이며 실제 학습은 하지 않았다. 007은 test/test, 008·009는 IID train/geographical test라 평가 프로토콜을 정하기 전 학습용으로 확정하지 않는다. 다음 하나는 새3구간의 사람 검수 기록 반영이다. 아래는 이전 작업 당시의 이력이다.
+
+2026-09-21 후속 완료: [공식 train 후보 경로 점검](docs/data_inventory.md#15-공식-train-후보-목록과-미확보-자료--2026-09-21)의 코드와 제한 테스트41개를 통과했다. 기존 사고6개는 test/test이고 새 train/train 후보3개는 미확보다. 목록만 생성했으며 영상 수신/디코딩·정답 검수·학습은 다음 조건을 충족해야 한다. 정확한 파일명·실행 명령·추가 자료는 링크에 있다.
+
+**현재 작업:** 2026-09-20, B 연결 점검 후 승인된 다음 작업 하나로 [C-1의 224픽셀·분류층 연산/비용 점검](docs/local_model_check.md)을 구현·테스트하고 실제 Mac MPS에서 완료했다. 준비 순전파 1회·업데이트 1회·eval 3회이며 임시 가중치/테스트 입력만 사용했다. M1 Max/64GB 로컬 우선·필요 시 Colab·R3D-18 단독 기준선을 적용한다. YOLO·ByteTrack·웹·DB·작업 큐는 추가하지 않는다. [최신 C~E 요청문 v2](CODEX_LOCAL_R3D18_C_TO_E_v2.md)는 단계별 기준이며 모든 단계의 실행 승인이 아니다. [최신 현황과 다음 작업 하나](docs/current_status.md)를 참고한다.
+
+세 구간의 사고 검수와 승인 라벨을 연결한 배열 3개 생성·읽기 확인은 완료됐다. 새 48프레임의 픽셀·시각이 기존 검수 출력과 일치한다. 실제 사고 학습·성능 평가는 아직 미실행이며 공식 test·학습 미승인 상태를 유지한다. 아래 날짜별 내용은 진행 당시 기록이다.
+
+2026-09-19 후속 검토: 지금은 구간별 정답·분할 준비가 먼저다. [224픽셀·배열 변환·직접 라벨 검수 설명](docs/preprocessing_review.md), [실험 준비 상태와 다음 실험 제안](docs/experiments/2026-09-19_readiness.md)에 현재 실행 가능 범위와 미확인 사항을 정리했다.
+
+2026-09-19 C-2: [첫 학습 코드](docs/training.md)와 단위 테스트를 작성했다. 실제 구간 정답·원본/사건 분할이 준비되지 않아 학습·가중치 다운로드는 보류했다. [전처리 직접 확인](docs/preprocessing_review.md), [테스트 구성과 명령](docs/tests.md), [동료 공유 요약](docs/team_handoff.md)을 참고한다.
+
+2026-09-18 현재 실행 환경은 **Mac 로컬 우선, 필요 시 Colab**이다. 아래 초기 인수인계 범위는 당시 이력이며, 이후 승인된 샘플 전처리와 이번 작은 로컬 연산 점검의 결과는 [진행 기록](docs/PROGRESS.md), [로컬 모델 점검](docs/local_model_check.md)에 있다. 동료에게 공유할 요약은 [팀 공유 문서](docs/team_handoff.md)를 참고한다. 실제 사고 학습·성능 평가와 서비스 구현은 아직 진행하지 않았다.
+
+초기 인수인계 패키지는 v0.1의 범위를 수정한 문서 묶음이었다. 이후 현재 저장소에 검사·전처리·학습 코드와 로컬 실행 기록이 추가되었으며, 실제 사고 학습 모델은 아직 없다. 아래 패키지 적용 순서는 초기 이력으로 보존한다.
+
+## 이번 변경의 핵심
+- STATS19와 부상 중증도 예측 제외는 유지한다.
+- 먼저 녹화 CCTV 영상/구간의 사고 여부를 판별하는 모델 실험을 진행한다.
+- 초기 승인 범위는 **환경·선택 샘플 2~3개·라벨 점검**이었다. 현재 작업 범위와 완료 여부는 위 최신 현황을 따른다.
+- 사용자/관제/경찰의 3개 화면, 제보·자동 등록·검토 상태 관리는 **후속 서비스 후보**다.
+- React·FastAPI·PostgreSQL·Redis·Celery·Docker·AWS는 지금 필수 설치 대상이 아니다.
+- 사고 시점·구간, 충돌 유형·위치·추적·검색·실시간·재학습은 필요와 라벨을 확인한 후 선택한다.
+- 전처리·모델·설정·실험 버전은 초기부터 간단히 기록한다. MLOps용 별도 서버는 지금 만들지 않는다.
+
+## 사용 순서
+1. ZIP을 별도 폴더에 푼다. 기존 인수인계와 코드를 삭제하지 않는다.
+2. 새 프로젝트이면 이 폴더의 문서를 프로젝트 루트에 둔다. 기존 저장소이면 파일별 변경을 비교해 병합하고 팀의 보안·테스트 규칙을 보존한다.
+3. README만 바꾸지 말고 AGENTS.md·PROJECT_BRIEF.md·LOCAL_SETUP.md·IMPLEMENTATION_PLAN.md·CODEX_START_PROMPT.md를 함께 맞춘다. 과거 문서는 과거안으로 구분한다.
+4. 기존 루트·하위 AGENTS.md 또는 AGENTS.override.md에 과거 화면 강제 조건이 남아 있는지 확인한다. 관련 범위 문구만 수정하며 권한·보안 규칙을 임의로 완화하지 않는다.
+5. LOCAL_SETUP.md에 실제 데이터 경로를 채운다. 미기입 항목을 가짜 경로로 채우지 않는다.
+6. 처음 시작하는 요청은 CODEX_START_PROMPT.md를 사용한다. 이미 환경을 확인했고 자료를 준비했다면 DATA_CHECK_PROMPT.md를 사용한다. 둘은 중복 작업을 두 번 실행하라는 뜻이 아니다.
+7. 새 작업에서 최신 문서를 읽고 ‘화면 미정·S0 점검 우선’으로 이해했는지 짧게 요약하게 한다.
+8. S0 결과를 확인한 뒤 다음 단계의 범위를 별도 요청한다.
+
+## 파일별 역할
+| 파일 | 역할 |
 |---|---|
-| `apps/be_worker/` | PostgreSQL 대기열, Runpod 제출·polling, S3 인계, VLM·DB 연결 |
-| `apps/runpod_worker/` | 인증 API, GPU X3D·YOLO 추론, CPU 클립·프레임 생성, S3 업로드 |
-| `apps/runpod_worker/handoff/` | 기존 배포 묶음에서 가져온 모델 추론·시간 구간 코드 |
-| `apps/scene_description/` | 실제 근거 미디어 검증, Gemini 호출, 사고 의심·유형 검증, DB 저장 |
-| `apps/rag_index/` | 청킹, Gemini 임베딩, pgvector 적재·검색 |
-| `infra/compose/rag/` | PostgreSQL·pgvector와 내부 Docker 네트워크 |
-| `scripts/` | 새 로컬 환경 준비, Runpod ZIP 생성, 합성 테스트 |
-| `examples/` | 설정 예제와 합성 문서·청크 JSONL |
-| `models/expected.json` | 모델 담당자가 관리하는 가중치 파일명·크기·SHA256. BE API 연동 시 다운로드 불필요 |
+| AGENTS.md | 최신 범위·안전한 개발·라벨·평가 규칙 |
+| PROJECT_BRIEF.md | 지금 목표, 나중 후보, 미정 화면·서비스 구분 |
+| LOCAL_SETUP.md | 설치를 최소화한 준비와 실제 파일 경로 입력 |
+| IMPLEMENTATION_PLAN.md | S0 점검부터 모델·구간·서비스 확장까지 단계별 승인 기준 |
+| CODEX_START_PROMPT.md | 최신 범위로 첫 작업을 시작하는 요청 |
+| DATA_CHECK_PROMPT.md | 자료를 준비한 뒤 선택 영상만 점검시키는 요청 |
+| README.md | 적용·병합 순서와 변경 요약 |
+| CODEX_LOCAL_R3D18_C_TO_E_v2.md | 최신 C-1/C-2/D/E-1/E-2 요청·검증 기준. 단계별 승인 후 적용 |
+| docs/current_status.md | 코드·테스트·실제 실행을 구분한 현재 상태와 다음 작업 하나 |
 
-명령은 단계별 CLI다. `dispatch` 다음에 `collect`, `scene-fetch`, `scene-describe`를 각각 실행한다. 문서 검색도 별도 CLI이며, 장면 설명에서 검색 문장을 만들고 최종 보고를 생성하는 코드는 팀의 후속 연결 지점이다. 목표 도식의 웹 화면·접수 API는 이 저장소에 포함하지 않는다.
+## 기존 코드가 이미 있다면
+화면이 미정이 되었다고 기존 UI·API·DB 코드를 지우지 않는다. 모델 코어와 별도로 보존한 뒤 현재 단계에서는 실행·확장을 보류한다. 전면 리팩터링보다 샘플 검사와 작은 모델 실험에 필요한 변경만 진행한다.
 
-## 2. 로컬 BE·DB 준비 — Mac 또는 Linux 개발 터미널
+`artifacts/`는 실행별 미리보기·배열·JSON 보고서·테스트 로그를 보관하는 로컬 결과 폴더다. 원본은 `data/`, 코드는 `src/`·`scripts/`, 해석은 `docs/`로 구분한다. 기존 결과는 덮어쓰지 않으며 artifacts는 Git 제외 상태다. [역할과 확인 방법](docs/LEARNING_LOG.md)을 참고한다.
 
-필요 도구: Python 3.12 이상, Docker Compose v2, 실행 중인 Docker 엔진. S3 접근에는 기존 AWS CLI v2 프로필을 사용한다. 모든 명령은 저장소 루트에서 실행한다.
+## 현재 권장 흐름
+자료·정답·전처리/분할 준비 → 미완료 C-1/C-2 보완과 승인된 기준 학습 → D 기준 검증 → E-1 순차 분석 → E-2 로컬 이벤트 기록 → D에서 한 항목씩 개선 → 모델·규칙 고정 후 별도 최종 평가. 긴 튜닝을 끝내야만 E-1/E-2를 시작하는 순서가 아니다. 각 단계는 별도 승인하며 화면·서비스는 미정이다.
 
-아래는 **새 개발 환경**을 만드는 절차다. 기존 작업을 이어갈 때에는 그 작업의 DB·spool·비밀 설정을 함께 유지한다. 새 환경을 만들면 기존 작업 이력이 자동으로 들어오지 않는다.
+자료 부족·검사 실패를 숨기지 않는다. 모델이 없는 단계에서는 예측값을 만들지 않는다. ‘파일을 읽었다’와 ‘모델이 사고를 잘 찾는다’는 다른 완료 기준이다.
 
-```bash
-python3 scripts/prepare_pipeline_local.py
-source runtime/local/use-local.sh
+## 참고
+- Codex 프로젝트 지침 적용: https://developers.openai.com/codex/guides/agents-md
+- Codex 작업 요청 가이드: https://developers.openai.com/codex/prompting
+- 사용자 제공 데이터 출처: https://www.kaggle.com/datasets/picekl/accident
 
-docker compose -f "$CCTV_COMPOSE_FILE" up -d --wait db
-bash apps/be_worker/queue.sh schema
-bash apps/be_worker/queue.sh scene-schema
-bash apps/be_worker/queue.sh build
-bash apps/rag_index/compose.sh build
-bash apps/rag_index/compose.sh schema
-```
+위 링크는 사용법·출처 참고다. 이 패키지 생성 과정에서 ACCIDENT 파일이나 사용자 Mac 환경을 검증한 것은 아니다. 모델과 라이브러리 사용은 실제 실행 시 공식 문서·호환성을 확인한다.
 
-설정 스크립트는 `runtime/local/`에 DB 비밀번호·입력·spool 경로를 준비하며 서비스를 시작하지 않는다. 같은 경로에서 다시 실행해도 DB 비밀번호를 바꾸지 않는다. 새 터미널에서는 `source runtime/local/use-local.sh`부터 실행한다.
+## 2026-09-18 S0 점검 기록
 
-DB는 외부 5432 포트를 열지 않는다. DB 파일은 `runtime/local/data/postgresql`, BE 실행 기록·근거·설명은 `runtime/local/spool`에 남는다. 개발 종료 시 `docker compose -f "$CCTV_COMPOSE_FILE" stop db`로 중지할 수 있다.
+이후 로컬 ACCIDENT 영상 3개와 원본 CSV/YAML을 검사했다. 파일 연결과 일부 디코딩은 성공했고, 프레임 수 차이·정상 정답 부족·test 분할 지정 등을 기록했다. 상세 결과와 재실행 명령은 [docs/data_inventory.md](docs/data_inventory.md), 실제 작업·테스트 기록은 [docs/PROGRESS.md](docs/PROGRESS.md)를 참고한다. 학습과 서비스 구현은 진행하지 않았다.
 
-## 3. BE에서 운영 중인 Runpod API 연결
+## 선택 샘플 전처리
 
-Runpod GPU 서비스는 모델 담당자가 운영한다. BE 담당자는 전달받은 HTTPS 분석 API를 호출한다. 아래 명령은 모두 **BE 개발 PC**에서 실행하며, Runpod 설치·가중치 배포·GPU 변경은 모델 담당자가 관리한다. 저장소의 Runpod 소스는 처리 흐름과 입출력을 이해하는 참고 코드로 함께 보관한다.
-
-### 모델 담당자에게 받을 정보
-
-| 항목 | 용도 |
-|---|---|
-| Port 8000의 HTTPS API 주소 | 영상 제출·작업 상태 조회 |
-| 분석 API Bearer 토큰 | 해당 API 인증. 비공개 경로로 전달받아 로컬 secret에 저장 |
-| S3 버킷·리전·근거 prefix | 분석 결과 회수. 리전은 `ap-northeast-2`, prefix는 `cctv-evidence` |
-| S3 읽기 권한 | BE가 해당 근거 경로의 `s3:GetObject`를 수행할 계정 또는 역할 |
-
-BE에는 분석 API 토큰을 전달한다. Runpod 콘솔 계정·관리 API key·SSH 키는 이 연동의 필수 항목이 아니다. Gemini 설명까지 실행할 때에는 별도 Gemini API 키를 BE에 설정한다.
-
-### 요청과 결과가 오가는 방식
-
-| 순서 | BE 요청 / Runpod 처리 | 응답·결과 |
-|---|---|---|
-| 1 | `GET /health`로 인증·S3 모드 확인 | `status: ok`, `storage: s3` |
-| 2 | `POST /jobs`에 MP4 바이트 전송 (`Content-Type: video/mp4`) | HTTP 202, `job_id`, `status: queued` |
-| 3 | Runpod: X3D 후보 → YOLO 객체 → 원본 전후 클립·프레임 → S3 업로드 | GPU 분석 1건씩 처리, 근거와 manifest 저장 |
-| 4 | `GET /jobs/{job_id}`로 주기적 조회 | `queued` → `running` → `succeeded` 또는 `failed` |
-| 5 | 성공 응답의 `s3.bucket`, `s3.region`, `s3.manifest_key` 사용 | BE가 S3 JSON·클립·프레임을 검증해 회수 |
-| 6 | BE에서 Gemini에 실제 근거 입력 | 설명 JSON 검증·DB 저장 |
-
-모든 분석 API 요청에 Bearer 인증이 필요하다. 첫 POST 응답은 접수 결과이고, 분석 결과는 작업 ID로 이어서 조회한다. S3에는 후보 시각·객체 정보 JSON과 실제 미디어가 함께 있으며, BE에서 원본 영상을 다시 잘라낼 필요가 없다. 기존 `RunpodAPI`가 요청 형식·인증·상태 검증을 처리한다.
-
-### BE 연결 설정
-
-모델 담당자가 전달한 분석 API 토큰을 다음 명령의 숨김 입력으로 저장한다. `cctv`는 본인의 AWS CLI 프로필 이름으로, 버킷은 실제 전달받은 이름으로 바꾼다.
-
-```bash
-source runtime/local/use-local.sh
-python3 apps/be_worker/prepare_queue.py \
-  --directory "$BE_SECRETS_DIR" --aws-profile cctv
-python3 apps/be_worker/worker.py configure \
-  --output "$BE_INPUT_DIR/config.json" \
-  --s3-bucket 'replace-with-your-private-bucket' --s3-region ap-northeast-2
-```
-
-`configure`의 입력 안내에 Runpod 8000 HTTPS 주소를 넣는다. 기존 설정은 덮어쓰지 않는다. 참고 형식은 `examples/runpod-config.json`이다. 임시 AWS 자격 증명이 만료되면 프로필을 갱신한 뒤 준비 명령을 다시 실행한다. health 성공은 실제 GPU 추론·S3 권한 검사까지 완료했다는 의미는 아니다.
-
-### 로컬 BE와 공용 EC2
-
-동료 PC의 BE도 같은 Runpod HTTPS API를 호출할 수 있다. 공동 시연·상시 실행에서는 **CPU EC2에 BE·PostgreSQL·spool을 함께 두고** 공용 대기열과 결과를 관리한다. EC2 재시작 후에는 이 코드와 비밀 설정·DB/spool 연결을 배포하고 확인한다.
-
-BE가 Runpod로 요청하는 데 필요한 것은 외부 HTTPS 연결이다. 이 통신만을 위해 EC2의 8000·5432를 외부에 열 필요는 없다. 별도 웹 접수 API를 제공할 때에는 그 서비스의 접근 설정을 구성한다. EC2 인스턴스 역할로 S3를 읽는 배포에서는 컨테이너의 역할 자격 증명 접근도 확인한다.
-
-## 4. 영상 한 건 실행 — 개발 PC
-
-분석할 MP4를 `runtime/local/input/A.mp4`에 둔다. 현재 입력 상한은 120초·200MiB다. 영상은 BE가 Runpod에 직접 제출한다. S3에는 Runpod가 만든 근거 클립·프레임·JSON·manifest를 저장한다.
-
-```bash
-bash apps/be_worker/queue.sh enqueue \
-  --video /input/A.mp4 --config /input/config.json --request-key demo-a-v1
-bash apps/be_worker/queue.sh dispatch --seconds 300 --slots 1
-bash apps/be_worker/queue.sh list
-bash apps/be_worker/queue.sh collect --seconds 60
-bash apps/be_worker/queue.sh list
-```
-
-`/input`은 컨테이너 안의 경로다. `request-key`는 동일 접수의 중복을 막는 값이며 새 영상에는 다른 값을 준다. 여러 영상을 enqueue할 수 있고 `--slots 1`은 Runpod에 한 건씩 배정한다. 300초는 이번 dispatch의 대기 상한이지 GPU 작업 제한 시간이 아니다. 상한 뒤에는 저장된 상태로 dispatch를 이어간다.
-
-`handoff_ready`와 `event_count`가 있으면 출력의 실제 `worker_job_id`를 다음 명령에 사용한다. `no_candidates`이면 VLM에 보낼 사건 근거가 없어 이 단계에서 끝난다. 분석 실패를 사고 없음으로 취급하지 않는다.
-
-```bash
-export WORKER_JOB_ID='여기에_출력된_worker_job_id'
-export EVENT_ID='event_000'
-
-bash apps/be_worker/queue.sh scene-fetch \
-  --worker-job-id "$WORKER_JOB_ID" --event-id "$EVENT_ID"
-
-python3 apps/be_worker/prepare_queue.py --directory "$BE_SECRETS_DIR" --gemini
-bash apps/be_worker/queue.sh scene-describe \
-  --worker-job-id "$WORKER_JOB_ID" --event-id "$EVENT_ID" \
-  --model gemini-3.5-flash-lite
-```
-
-`scene-fetch`는 S3에서 실제 클립·프레임을 받고 SHA256을 검증한다. `scene-describe`는 Gemini API를 호출하고 검증된 결과를 `cctv_scene.descriptions`에 저장한다. 생성 모델 ID는 계정에서 사용할 영상 입력 지원 모델에 맞춘다. API 호출에는 계정 요금과 할당량이 적용된다.
-
-설명 결과의 `accident_suspicion`과 `incident_types`는 서로 다른 필드다. 다른 차량과의 충돌이 관측되지 않아도 차량 전도 같은 사고 유형이 있을 수 있다. 설명·관측 근거를 최종 사고 확정 판정과 구분하여 사용한다.
-
-저장된 실행 흐름은 네트워크 요청 없이 확인할 수 있다.
-
-```bash
-python3 apps/be_worker/flow_status.py \
-  --spool "$BE_SPOOL_DIR" --worker-job-id "$WORKER_JOB_ID"
-```
-
-실패·응답 불명 상태에서는 저장된 요청·응답과 작업 ID를 먼저 확인한다. GPU 재접수나 Gemini 반복 호출로 복구하지 않는다. S3 업로드만 실패했다면 모델 담당자가 기존 결과를 업로드해 복구한 뒤, BE에서 `recover-s3 --worker-job-id …`로 회수한다. Gemini 성공 후 DB 저장만 실패한 경우에는 기존 결과를 재사용한다.
-
-## 5. 문서 청킹·임베딩·검색 — 개발 PC
-
-`examples/documents.jsonl`은 형식 검사에 쓰는 **합성 문서**다. 실제 법령·매뉴얼은 담당자에게 원문과 문서 ID·제목·조항/페이지·출처 URL·시행일·버전을 받는다. `document_id`는 버전별로 구분하고, 폐지·개정 전 자료에는 `effective_to`(종료일 미포함)를 지정한다.
-
-문서 JSONL은 한 줄에 문서 하나, 각 문서의 `sections`에는 `section`과 원문 `content`를 넣는다. PDF·웹 수집/텍스트 추출은 입력 전에 수행한다. 청킹 CLI는 섹션 경계를 유지하며 긴 본문을 문자 수로 나누고 원문 위치와 SHA256을 남긴다. 법령 의미에 따른 자동 해석·OCR은 하지 않는다.
-
-```bash
-python3 apps/rag_index/chunk.py \
-  --input examples/documents.jsonl --output "$CCTV_INPUT_DIR/chunks.jsonl"
-bash apps/rag_index/compose.sh check --input /input/chunks.jsonl
-```
-
-이미 청크 JSONL을 전달받았다면 첫 명령을 건너뛰고 `check`로 형식을 검사한다. 필수 필드는 `chunk_id`, `document_id`, `content`, `embedding_input`, `content_sha256`, `source_url`, `effective_from`이며, 제목·조항·버전 정보도 함께 보관한다. 예시는 `examples/chunks.jsonl`이다.
-
-Gemini 키를 준비한 뒤 문서 임베딩을 생성한다. 문서 벡터는 저장해 재사용하며 검색마다 문서 전체를 다시 임베딩하지 않는다.
-
-```bash
-python3 apps/be_worker/prepare_queue.py --directory "$BE_SECRETS_DIR" --gemini
-bash apps/rag_index/compose.sh embed \
-  --input /input/chunks.jsonl --output /output/embedded-v1.jsonl
-bash apps/rag_index/compose.sh load --input /output/embedded-v1.jsonl
-bash apps/rag_index/compose.sh search \
-  --query '차량 전도가 관측된 상황에서 확인할 사항' --date 2026-09-29
-```
-
-`gemini-embedding-001`, 768차원, 동일 프로필을 문서와 검색 질의에 사용한다. 마지막 명령은 **질의 임베딩 1회 → pgvector 유사도 검색 → 본문·출처·거리 JSON**을 반환한다. `--date`는 검색에 적용할 실제 기준일로 지정한다. 검색은 최대 5개이며, 자료가 2개이면 2개만 반환할 수 있다. 검색 결과는 법적 판단이나 최종 보고가 아니다.
-
-임베딩은 기존 출력에 덮어쓰지 않는다. 성공한 JSONL과 `.complete.json`을 함께 유지하고, 부분 실패 파일을 완료된 벡터 자료로 적재하지 않는다.
-
-## 6. 개발·확장 기준
-
-- BE 제출·polling: `job_queue.Coordinator`, `runpod_api.RunpodAPI`.
-- 미디어→설명→DB: `scene_jobs.SceneJobs` → `scene.describe` → `db` 저장 함수.
-- 문서: `chunk.write_chunks` → `index.embed_file` → `index.load` → `index.search`.
-- 후속 연결: 장면 결과에서 검색 문장을 구성해 `index.search`에 전달하고, 관련 본문·출처와 장면 설명으로 보고를 생성한다. 기존 결과의 ID·모델·출처를 유지한다.
-- LangSmith: `tracing.py`의 허용 필드 기반 기록과 `worker.py trace`를 선택적으로 사용한다. 모든 큐 단계의 자동 추적을 의미하지 않는다.
-- Pod 교체: 모델 담당자가 새 API 주소·토큰과 S3 준비 상태를 전달한다. BE DB/spool은 별도 보관한다. 아직 제출되지 않은 `prepared` 작업만 새 설정으로 `retarget`할 수 있다. 완료된 S3 근거는 기존 provider 작업 ID로 이어서 사용한다.
-
-합성 테스트는 클라우드 호출·GPU 추론·운영 DB 변경 없이 실행한다. HTTP 테스트에는 로컬 loopback 포트가 필요하다.
-
-```bash
-python3 -m venv .venv-dev
-.venv-dev/bin/pip install -r requirements-dev.txt
-.venv-dev/bin/python scripts/check_pipeline.py
-```
-
-코드를 바꾸면 테스트·실행 명령·입출력 계약도 함께 갱신한다. 키·실영상·가중치·DB/spool·Terraform state와 개인 운영 기록은 `runtime/` 등 비공개 경로에 두고 Git에 올리지 않는다. 진행 현황은 팀에서 별도로 공유한다.
+후속 승인 범위에서 소수 구간 전처리와 미리보기 생성을 구현했다. 생성 당시 세 샘플은 미확정이었고, 이후 [세 구간 사고 검수](docs/reviews/2026-09-19_dahye.md)를 완료했다. 2026-09-20에는 승인 라벨을 연결한 배열 생성과 기존 로더 읽기까지 확인했다. [최신 결과·명령](docs/preprocessing_link_check.md)과 생성 당시 [전처리 이력](docs/preprocessing.md)을 구분한다. 모델 학습과 전체 프레임 추출은 진행하지 않았다.

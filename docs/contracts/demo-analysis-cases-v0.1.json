@@ -1,0 +1,379 @@
+{
+  "schema_version": "handoff-proposal-v0.1",
+  "is_demo": true,
+  "description": "6개 화면 상태용 가상 API 응답. 실제 영상·모델·예측·정답·근거 파일은 포함하지 않습니다. cases는 예시 모음이며 실제 API 목록 응답 형식이 아닙니다.",
+  "cases": [
+    {
+      "schema_version": "handoff-proposal-v0.1",
+      "is_demo": true,
+      "job_id": "demo-waiting",
+      "run_id": null,
+      "status": "awaiting_external_run",
+      "execution_mode": "external_notebook",
+      "video": {
+        "source_video_id": "demo-video-only",
+        "duration_seconds": 30.0,
+        "camera_id": null,
+        "recorded_at": null,
+        "asset_id": null
+      },
+      "coverage": {
+        "scheduled_windows": 29,
+        "predicted_windows": 0,
+        "unclassified_windows": 0,
+        "pending_windows": 29
+      },
+      "models": {
+        "objects": {
+          "family": "YOLO",
+          "version": null,
+          "weights_sha256": null
+        },
+        "accident": {
+          "family": null,
+          "version": null,
+          "weights_sha256": null
+        },
+        "preprocessing_version": "demo-only",
+        "decision_rule_version": "demo-only",
+        "candidate_policy_version": "demo-only"
+      },
+      "stages": {
+        "objects": "not_started",
+        "accident": "not_started",
+        "vlm": "not_started",
+        "rag": "not_started",
+        "report": "not_started"
+      },
+      "candidates": [],
+      "errors": []
+    },
+    {
+      "schema_version": "handoff-proposal-v0.1",
+      "is_demo": true,
+      "job_id": "demo-no-candidates",
+      "run_id": "demo-run-no-candidates",
+      "status": "completed",
+      "execution_mode": "external_notebook",
+      "video": {
+        "source_video_id": "demo-video-only",
+        "duration_seconds": 30.0,
+        "camera_id": null,
+        "recorded_at": null,
+        "asset_id": null
+      },
+      "coverage": {
+        "scheduled_windows": 29,
+        "predicted_windows": 29,
+        "unclassified_windows": 0,
+        "pending_windows": 0
+      },
+      "models": {
+        "objects": {
+          "family": "YOLO",
+          "version": null,
+          "weights_sha256": null
+        },
+        "accident": {
+          "family": null,
+          "version": null,
+          "weights_sha256": null
+        },
+        "preprocessing_version": "demo-only",
+        "decision_rule_version": "demo-only",
+        "candidate_policy_version": "demo-only"
+      },
+      "stages": {
+        "objects": "completed",
+        "accident": "completed",
+        "vlm": "skipped",
+        "rag": "skipped",
+        "report": "skipped"
+      },
+      "candidates": [],
+      "errors": []
+    },
+    {
+      "schema_version": "handoff-proposal-v0.1",
+      "is_demo": true,
+      "job_id": "demo-unclassified",
+      "run_id": "demo-run-unclassified",
+      "status": "partial",
+      "execution_mode": "external_notebook",
+      "video": {
+        "source_video_id": "demo-video-only",
+        "duration_seconds": 30.0,
+        "camera_id": null,
+        "recorded_at": null,
+        "asset_id": null
+      },
+      "coverage": {
+        "scheduled_windows": 29,
+        "predicted_windows": 25,
+        "unclassified_windows": 4,
+        "pending_windows": 0
+      },
+      "models": {
+        "objects": {
+          "family": "YOLO",
+          "version": null,
+          "weights_sha256": null
+        },
+        "accident": {
+          "family": null,
+          "version": null,
+          "weights_sha256": null
+        },
+        "preprocessing_version": "demo-only",
+        "decision_rule_version": "demo-only",
+        "candidate_policy_version": "demo-only"
+      },
+      "stages": {
+        "objects": "completed",
+        "accident": "completed",
+        "vlm": "skipped",
+        "rag": "skipped",
+        "report": "skipped"
+      },
+      "candidates": [],
+      "errors": []
+    },
+    {
+      "schema_version": "handoff-proposal-v0.1",
+      "is_demo": true,
+      "job_id": "demo-explanation-pending",
+      "run_id": "demo-run-explanation-pending",
+      "status": "running",
+      "execution_mode": "external_notebook",
+      "video": {
+        "source_video_id": "demo-video-only",
+        "duration_seconds": 30.0,
+        "camera_id": null,
+        "recorded_at": null,
+        "asset_id": null
+      },
+      "coverage": {
+        "scheduled_windows": 29,
+        "predicted_windows": 29,
+        "unclassified_windows": 0,
+        "pending_windows": 0
+      },
+      "models": {
+        "objects": {
+          "family": "YOLO",
+          "version": null,
+          "weights_sha256": null
+        },
+        "accident": {
+          "family": null,
+          "version": null,
+          "weights_sha256": null
+        },
+        "preprocessing_version": "demo-only",
+        "decision_rule_version": "demo-only",
+        "candidate_policy_version": "demo-only"
+      },
+      "stages": {
+        "objects": "completed",
+        "accident": "completed",
+        "vlm": "not_started",
+        "rag": "not_started",
+        "report": "not_started"
+      },
+      "candidates": [
+        {
+          "event_id": "demo-event-001",
+          "start_seconds": 12.0,
+          "end_seconds": 16.0,
+          "label": "suspected_accident",
+          "score": 0.8,
+          "score_type": "demo_uncalibrated_max_window_score",
+          "evidence": {
+            "clip_asset_id": null,
+            "source_offset_seconds": 12.0
+          },
+          "object_observations": [
+            {
+              "source_time_seconds": 13.0,
+              "class_name": "car",
+              "bbox_format": "xyxy_normalized_original",
+              "bbox": [
+                0.15,
+                0.4,
+                0.35,
+                0.65
+              ],
+              "score": 0.9
+            }
+          ],
+          "vlm": {
+            "status": "not_started",
+            "summary": null,
+            "evidence_times_seconds": []
+          },
+          "retrieval": {
+            "status": "not_started",
+            "corpus_kind": "guidance",
+            "citations": []
+          },
+          "report": {
+            "status": "not_started",
+            "text": null
+          },
+          "human_review": {
+            "status": "unreviewed",
+            "note": null
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "schema_version": "handoff-proposal-v0.1",
+      "is_demo": true,
+      "job_id": "demo-with-draft",
+      "run_id": "demo-run-with-draft",
+      "status": "completed",
+      "execution_mode": "external_notebook",
+      "video": {
+        "source_video_id": "demo-video-only",
+        "duration_seconds": 30.0,
+        "camera_id": null,
+        "recorded_at": null,
+        "asset_id": null
+      },
+      "coverage": {
+        "scheduled_windows": 29,
+        "predicted_windows": 29,
+        "unclassified_windows": 0,
+        "pending_windows": 0
+      },
+      "models": {
+        "objects": {
+          "family": "YOLO",
+          "version": null,
+          "weights_sha256": null
+        },
+        "accident": {
+          "family": null,
+          "version": null,
+          "weights_sha256": null
+        },
+        "preprocessing_version": "demo-only",
+        "decision_rule_version": "demo-only",
+        "candidate_policy_version": "demo-only"
+      },
+      "stages": {
+        "objects": "completed",
+        "accident": "completed",
+        "vlm": "completed",
+        "rag": "completed",
+        "report": "completed"
+      },
+      "candidates": [
+        {
+          "event_id": "demo-event-002",
+          "start_seconds": 12.0,
+          "end_seconds": 16.0,
+          "label": "suspected_accident",
+          "score": 0.8,
+          "score_type": "demo_uncalibrated_max_window_score",
+          "evidence": {
+            "clip_asset_id": null,
+            "source_offset_seconds": 12.0
+          },
+          "object_observations": [
+            {
+              "source_time_seconds": 13.0,
+              "class_name": "car",
+              "bbox_format": "xyxy_normalized_original",
+              "bbox": [
+                0.15,
+                0.4,
+                0.35,
+                0.65
+              ],
+              "score": 0.9
+            }
+          ],
+          "vlm": {
+            "status": "completed",
+            "summary": "가상 설명: 두 차량의 움직임을 검토할 필요가 있습니다.",
+            "evidence_times_seconds": [
+              13.0
+            ],
+            "limitations": [
+              "화면 상태 시연용 문장입니다."
+            ]
+          },
+          "retrieval": {
+            "status": "insufficient_evidence",
+            "corpus_kind": "guidance",
+            "citations": []
+          },
+          "report": {
+            "status": "completed",
+            "text": "가상 보고 초안: 원본 장면 확인 필요. 적용할 문서 근거는 확보되지 않았습니다."
+          },
+          "human_review": {
+            "status": "unreviewed",
+            "note": null
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "schema_version": "handoff-proposal-v0.1",
+      "is_demo": true,
+      "job_id": "demo-failed",
+      "run_id": "demo-run-failed",
+      "status": "failed",
+      "execution_mode": "external_notebook",
+      "video": {
+        "source_video_id": "demo-video-only",
+        "duration_seconds": 30.0,
+        "camera_id": null,
+        "recorded_at": null,
+        "asset_id": null
+      },
+      "coverage": {
+        "scheduled_windows": 29,
+        "predicted_windows": 0,
+        "unclassified_windows": 0,
+        "pending_windows": 29
+      },
+      "models": {
+        "objects": {
+          "family": "YOLO",
+          "version": null,
+          "weights_sha256": null
+        },
+        "accident": {
+          "family": null,
+          "version": null,
+          "weights_sha256": null
+        },
+        "preprocessing_version": "demo-only",
+        "decision_rule_version": "demo-only",
+        "candidate_policy_version": "demo-only"
+      },
+      "stages": {
+        "objects": "not_started",
+        "accident": "failed",
+        "vlm": "not_started",
+        "rag": "not_started",
+        "report": "not_started"
+      },
+      "candidates": [],
+      "errors": [
+        {
+          "stage": "accident",
+          "code": "DEMO_MODEL_LOAD_FAILED",
+          "message": "모델 로드 실패 화면용 가상 오류",
+          "retryable": true
+        }
+      ]
+    }
+  ]
+}

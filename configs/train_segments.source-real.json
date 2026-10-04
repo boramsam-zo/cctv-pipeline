@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "purpose": "source_annotation_limited_training_no_validation",
+  "official_split_column": "split_in_distribution",
+  "validation_segments": [],
+  "test_segments": [],
+  "preparation_manifest": "configs/train_inputs.colab.json",
+  "preparation_manifest_sha256": "3ff4bd6e3de0962d1c8774d29442b490677ff906fa3668a78e3c331cd7ecf641",
+  "sample_ids": [
+    "sample_008",
+    "sample_009",
+    "qmul_001",
+    "qmul_002",
+    "qmul_003",
+    "sample_010",
+    "sample_011",
+    "sample_012"
+  ],
+  "authorization": {
+    "source": "user_message",
+    "recorded_at": "2026-09-22",
+    "training_authorized": true,
+    "conservative_groups_authorized": true,
+    "raw_response": "그래줄래 얼른 학습해서 진행해보려고하느데 과정이 너무 많은걸까",
+    "scope_basis": "Proceed with the previously proposed 8 saved inputs; head only; 3 probe steps within 60s count toward 5 epochs/40 total updates; whole training command capped at 300s; local MPS; preserve prior model and evaluation reservations.",
+    "config_sha256": "f8161bc1e00e2dead7098ca8d0eea755822a2d44c9995419f693a4730e73cfed",
+    "max_epochs": 5,
+    "max_steps": 40,
+    "max_seconds": 300,
+    "probe_steps": 3,
+    "probe_max_seconds": 60
+  }
+}

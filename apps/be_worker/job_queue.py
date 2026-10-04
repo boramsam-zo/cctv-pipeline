@@ -4,6 +4,7 @@ Gemini runs only via explicit scene-describe, never in dispatch/collect.
 An uncertain submission occupies a slot until its ID is reconciled.
 """
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 from pathlib import Path
@@ -41,17 +42,30 @@ def fingerprint(path):
     return sha.hexdigest(), size
 
 
-def enqueue(store, spool, video, config, request_key):
+def enqueue(store, spool, video, config, request_key, *, dispatch_locked=False, analysis_profile=None):
+    """Enrol input; callers using dispatch_locked must own the dispatch lock.
+
+    P5 acquires that session lock outside its queue+flow SQL transaction so an
+    aborted INSERT is rolled back before trying to release the session lock.
+    """
     if not re.fullmatch(r'[A-Za-z0-9_.:-]{1,120}', request_key):
         raise WorkerError('invalid_request_key')
     config = config_checked(config)
     sha, size = fingerprint(video)
-    with store.lock('dispatch'):
+    identity = {}
+    if analysis_profile is not None:
+        from .analysis_profiles import validate_profile, gpu_identity
+        snapshot = validate_profile(analysis_profile)
+        identity = dict(analysis_profile=snapshot, gpu_key=gpu_identity(sha, snapshot)['gpu_key'])
+    with (nullcontext() if dispatch_locked else store.lock('dispatch')):
         previous = store.by_key(request_key)
         if previous:
             state = previous['state']
             if (state['input_sha256'], state['input_bytes'], state['config']) != (sha, size, config):
                 raise WorkerError('request_key_conflict_original_preserved')
+            if any(state.get(name) != value for name, value in identity.items()) or (
+                    not identity and state.get('analysis_profile') is not None):
+                raise WorkerError('request_key_profile_conflict')
             return {'worker_job_id': state['worker_job_id'], 'already_present': True}
         spool = Path(spool)
         spool.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -59,6 +73,8 @@ def enqueue(store, spool, video, config, request_key):
         state = worker.create_job(video, spool / directory_id, config)
         if (state['input_sha256'], state['input_bytes']) != (sha, size):
             raise WorkerError('source_changed_during_enqueue')
+        if identity:
+            worker.update(spool / directory_id, state, **identity)
         # A crash before INSERT leaves an unsubmitted private orphan, never a
         # charged remote job. Do not auto-delete it or infer a submission.
         store.insert(request_key, directory_id, state)
@@ -84,6 +100,12 @@ class Coordinator:
         for key in ('worker_job_id', 'input_sha256', 'input_bytes', 'config'):
             if state[key] != old[key]:
                 raise WorkerError('queue_spool_identity_mismatch')
+        if 'analysis_profile' in state or 'analysis_profile' in old:
+            from apps.be_worker.runpod_api import analysis_identity
+            analysis_identity(state)
+            analysis_identity(old)
+            if any(state.get(key) != old.get(key) for key in ('analysis_profile', 'gpu_key')):
+                raise WorkerError('queue_spool_analysis_identity_mismatch')
         if old.get('provider_job_id') and old['provider_job_id'] != state.get('provider_job_id'):
             if not state.get('provider_job_id') and state['status'] in ('prepared', 'submitting', 'submission_unknown'):
                 # The DB can retain a received ID even if writing its local
@@ -141,6 +163,12 @@ class Coordinator:
                     for key in ('worker_job_id', 'input_sha256', 'input_bytes', 'config'):
                         if state[key] != row['state'][key]:
                             raise WorkerError('queue_spool_identity_mismatch')
+                    if 'analysis_profile' in state or 'analysis_profile' in row['state']:
+                        from apps.be_worker.runpod_api import analysis_identity
+                        analysis_identity(state)
+                        analysis_identity(row['state'])
+                        if any(state.get(key) != row['state'].get(key) for key in ('analysis_profile', 'gpu_key')):
+                            raise WorkerError('queue_spool_analysis_identity_mismatch')
                     if retry:
                         if state['status'] not in ('submission_rejected', 'prepared') or state.get('provider_job_id'):
                             raise WorkerError('unsafe_retry_state')
@@ -151,18 +179,27 @@ class Coordinator:
                     if fingerprint(self.directory(row) / 'input.mp4') != (state['input_sha256'], state['input_bytes']):
                         raise WorkerError('queued_input_changed')
                     api = self.api_factory(state)
-                    api.health()  # A preflight failure creates no submission intent.
-                    intent = dict(state, status='submitting')
-                    self.store.write(row, intent, attempt=True)
+                    if 'analysis_profile' in state:
+                        api.health(expected_profile=state['analysis_profile'])
+                    else:
+                        api.health()  # A preflight failure creates no submission intent.
                     trace = self.trace(row, state, 'run')
+                    intent_started = False
+                    def commit_intent():
+                        nonlocal intent_started
+                        # A connection error may hide a committed write. Never
+                        # replace that possibly committed intent with prepared.
+                        intent_started = True
+                        self.store.write(row, dict(state, status='submitting'), attempt=True)
                     try:
-                        worker.submit_once(self.directory(row), state, api, trace)
+                        worker.submit_once(self.directory(row), state, api, trace,
+                                           before_intent=commit_intent)
                     finally:
                         trace.finish(state)
-                        # 'prepared' means submit_once's preflight failed before
-                        # its local intent/POST. Any later failure retains the
-                        # submitting intent or received provider ID in the DB.
-                        self.store.write(row, state, delay=30 if state.get('error_code') == 'http_429' else 0)
+                        # Pure preflight failures retain zero attempts. Once a
+                        # DB intent starts, prepared cannot prove non-submission.
+                        if not intent_started or state['status'] != 'prepared':
+                            self.store.write(row, state, delay=30 if state.get('error_code') == 'http_429' else 0)
                     if state['status'] != 'waiting':
                         return
                     active += 1
@@ -342,6 +379,13 @@ def main():
     describe_scene.add_argument('--key-file', type=Path)
     describe_scene.add_argument('--retry-failed-analysis-id',
                                 help='Explicitly retry this failed analysis once, preserving its original files')
+    report = commands.add_parser('scene-report')
+    report.add_argument('--worker-job-id', required=True)
+    report.add_argument('--event-id', required=True)
+    report.add_argument('--reference-date', required=True,
+                        help='Document reference date, not the unknown incident date')
+    report.add_argument('--model', default='gemini-3.5-flash-lite')
+    report.add_argument('--key-file', type=Path)
     diagnose_scene = commands.add_parser('scene-diagnose', help='Check saved Gemini model metadata; no generation')
     diagnose_scene.add_argument('--worker-job-id', required=True)
     diagnose_scene.add_argument('--event-id', required=True)
@@ -370,7 +414,12 @@ def main():
                     return (AwsCliReader(state['config']['s3_region'], profile) if profile
                             else InstanceRoleReader(state['config']['s3_region']))
                 coordinator = Coordinator(store, args.spool, api_factory, reader_factory, getattr(args, 'slots', 2))
-                if args.command in ('scene-fetch', 'scene-describe', 'scene-diagnose', 'scene-probe'):
+                if args.command == 'scene-report':
+                    from apps.be_worker.report_jobs import ReportJobs
+                    answer = ReportJobs(coordinator).run(args.worker_job_id, args.event_id,
+                        args.reference_date, args.model,
+                        lambda: worker.secret(args.key_file, 'GEMINI_API_KEY', 'Gemini API key (hidden): '))
+                elif args.command in ('scene-fetch', 'scene-describe', 'scene-diagnose', 'scene-probe'):
                     from apps.be_worker.scene_jobs import SceneJobs
                     scenes = SceneJobs(coordinator)
                     if args.command == 'scene-fetch':
@@ -397,7 +446,7 @@ def main():
                         if time.monotonic() >= end:
                             break
                         time.sleep(min(2, max(0, end - time.monotonic())))
-                if args.command not in ('retarget', 'scene-fetch', 'scene-describe', 'scene-diagnose', 'scene-probe'):
+                if args.command not in ('scene-report', 'retarget', 'scene-fetch', 'scene-describe', 'scene-diagnose', 'scene-probe'):
                     answer = listing(store)
             print(json.dumps(answer, ensure_ascii=False, indent=2))
             return 0

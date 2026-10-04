@@ -1,0 +1,18 @@
+# Merge into the existing BE Compose only after the tracker is verified.
+# Preserve every existing BE network, volume, secret, command, and memory limit.
+# The API resolves registered versions; the worker writes saved observations.
+services:
+  be-api:
+    environment:
+      BE_MLFLOW_TRACKING_URI: http://mlflow:5000
+    networks:
+      - mlflow-tracking
+  be-worker:
+    environment:
+      BE_MLFLOW_TRACKING_URI: http://mlflow:5000
+    networks:
+      - mlflow-tracking
+networks:
+  mlflow-tracking:
+    external: true
+    name: cctv-mlflow-tracking

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "device": "cuda",
+  "batch_size": 1,
+  "num_workers": 0,
+  "train_scope": "head",
+  "learning_rate": 0.001,
+  "momentum": 0.9,
+  "seed": 20260918,
+  "cpu_threads": 4,
+  "max_steps": 40,
+  "max_seconds": 300,
+  "preprocessing": {
+    "version": "r3d-letterbox-kinetics-v1",
+    "frame_count": 16,
+    "image_size": 224,
+    "sampling": "nearest_PTS_to_uniform_bin_centres",
+    "spatial": "letterbox_no_crop",
+    "normalization": "KINETICS400_V1",
+    "layout": "CTHW",
+    "dtype": "float32"
+  },
+  "purpose": "source_annotation_limited_training_no_validation",
+  "max_epochs": 5,
+  "probe_steps": 3,
+  "probe_max_seconds": 60,
+  "max_step_seconds": 30,
+  "max_process_rss_bytes": 8589934592,
+  "max_mps_driver_bytes": 8589934592,
+  "initialization": "project_model_fresh_optimizer",
+  "max_cuda_bytes": 8589934592,
+  "prepared_inputs": "training_inputs.json",
+  "prepared_inputs_sha256": "b41b9bce9202654be6efe26910ac3f8c15dffa647e43f7d85366d0552e5222a7",
+  "initial_model": "initial-model.pt",
+  "initial_model_sha256": "2b0c4818f5aa442ce6eff11a240f319e47ae966b52644c9a0c37c851089f5947",
+  "source_windows": "source_annotation_segments.user.json",
+  "authorization": {
+    "source": "user_message",
+    "raw_response": "그렇게 해줄래?",
+    "training_authorized": true,
+    "scope": "Existing model weights, fresh optimizer, head only, probe 3 steps/60s included in total 5 epochs/40 updates; 300s whole training command. Colab user execution."
+  }
+}

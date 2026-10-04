@@ -1,0 +1,49 @@
+# Merge with existing DB compose and queue.compose.yaml. All processing code is shared.
+services:
+  be-api:
+    extends:
+      file: ${BE_APP_DIR}/queue.compose.yaml
+      service: be-queue
+    profiles: [cctv-ui]
+    entrypoint: [python, -m, apps.be_worker.web_api]
+    environment:
+      BE_TARGET_CONFIG: ${BE_TARGET_CONFIG:-/input/config-ec2-v1.json}
+      # Only admission reads defaults; workers use the saved DB snapshot.
+      BE_GEMINI_SCENE_MODEL: ${BE_GEMINI_SCENE_MODEL-gemini-3.5-flash-lite}
+      BE_GEMINI_REPORT_MODEL: ${BE_GEMINI_REPORT_MODEL-gemini-3.5-flash-lite}
+    restart: unless-stopped
+  be-worker:
+    extends:
+      file: ${BE_APP_DIR}/queue.compose.yaml
+      service: be-queue
+    profiles: [cctv-ui]
+    entrypoint: [python, -m, apps.be_worker.daemon]
+    secrets: [be_gemini_api_key]
+    restart: unless-stopped
+    stop_grace_period: 150s
+  cctv-ui:
+    profiles: [cctv-ui]
+    image: cctv-streamlit:flow-v1
+    build:
+      context: ${BE_APP_DIR}/../cctv_ui
+    environment:
+      CCTV_API_URL: http://be-api:8080
+    user: "${BE_CONTAINER_UID:-10001}:${BE_CONTAINER_GID:-10001}"
+    entrypoint: [python, -m, streamlit, run, /code/apps/cctv_ui/app.py, --server.address=0.0.0.0, --server.port=8501, --server.headless=true, --browser.gatherUsageStats=false, --server.maxUploadSize=200]
+    volumes:
+      - type: bind
+        source: ${BE_APP_DIR}/../cctv_ui
+        target: /code/apps/cctv_ui
+        read_only: true
+        bind: {create_host_path: false}
+    ports: ["127.0.0.1:8501:8501"]
+    networks: [be_egress]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    restart: unless-stopped
+secrets:
+  be_gemini_api_key:
+    file: ${BE_SECRETS_DIR}/gemini_api_key

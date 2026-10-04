@@ -1,0 +1,30 @@
+{
+  "schema_version": "cctv-mlops-deployment-v1",
+  "deployment": "mlops-20261004-v1",
+  "gpu": "NVIDIA CUDA GPU",
+  "image_manifest_sha256": "24305629627fcc66e5599dc640dfb70f7c173e4811c481e2b1c44ee268176ebc",
+  "execution_adapter_sha256": "3247ea95d7a0f1c892633aaeec7d8da16a41bc1647e7b5f4414dcc4980ca8276",
+  "code_files": {
+    "runtime/image_runtime.py": "e3262e4d4e025288fa468e4af034b1f1f026a328b4cdd2cdc3d30e36a697998e",
+    "runtime/job.py": "3247ea95d7a0f1c892633aaeec7d8da16a41bc1647e7b5f4414dcc4980ca8276",
+    "runtime/runner.py": "0c6be2fd50020b98a282119bd2043c929b84ba50fd0cf191e1a6724dee323781",
+    "service/apps/be_worker/__init__.py": "d52eb47b67d993b7859475567c269ed77832e32b42506e2bc82e1fbb658d65a3",
+    "service/apps/be_worker/ab_evidence.py": "9eb21903e58ed49d1745739761b2d34e519980fb64987e209568cdf96aca7fc3",
+    "service/apps/be_worker/analysis_profiles.py": "e5eeca576c799e58f899d89ccfd9a62ca5832359ce32aac0d0f99b14ee11db57",
+    "service/apps/be_worker/common.py": "75de7a8c9b2bba418b07b437cbc3c13225114c37c9509b2d9a099c6bb548090d",
+    "service/apps/be_worker/model_catalog.py": "47fd82b36f14ea5187e01791df1a34bff08391c7d8d284d4d5b6f43e0a078e02",
+    "service/apps/model_compare/__init__.py": "37aaa4d29f92988d7206e5bb33cf232ea88b72a165bf9088a5bcfe487fdab124",
+    "service/apps/model_compare/runner.py": "0c6be2fd50020b98a282119bd2043c929b84ba50fd0cf191e1a6724dee323781",
+    "service/apps/runpod_image/classifier_adapter.py": "7cdcd0f98356345c332db1c6baf463220f2dc87e2925295f340b027fd0ac99f8",
+    "service/apps/runpod_image/classifier_pipeline.py": "eaa42239b4bacd97f0abd8f3985658689d1b49ea21be5dfdedc9518d50d794d2",
+    "service/apps/runpod_image/image_runtime.py": "53eb8827285afbe87acf3cb7f54d6dfbd38b3db0a0a6a0257b097e5e9e0fb895",
+    "service/apps/runpod_image/model_artifact.py": "f2ca40c32446bb6e327546fbf34f39c754665db78d6a18882838c03c5ffd01ff",
+    "service/apps/runpod_image/model_prepare.py": "7dc3373b8ccb7da60ce2aa6252a15b8d04e4007a5a1de5d3921e82f4ffe30ef5",
+    "service/apps/runpod_image/runtime/image_runtime.py": "e3262e4d4e025288fa468e4af034b1f1f026a328b4cdd2cdc3d30e36a697998e",
+    "service/apps/runpod_image/service.py": "856a61786a4f8b9996dc680f7f056c1232b361ce34c6bcdbd73a2149b37a807a",
+    "service/apps/runpod_image/service_job.py": "d025cca93bce3e19219673200a85831249c5c23a8ffacf17d3036f5b1482598a",
+    "service/apps/runpod_image/verify_service_bundle.py": "1966f6466088aa9839f0b77291303d64dc1170e16ed93edb6610ae70d4ea60c1",
+    "service/apps/runpod_worker/storage.py": "f7da8577b70e5606740de5291d9d15caa72c464d39cec901084e3244c9cee8b6",
+    "service/apps/runpod_worker/verify_bundle.py": "45aa8f82e3aec1bff31533f709f1f8af34b4e504e4467a4b3ec3741d10c62e99"
+  }
+}

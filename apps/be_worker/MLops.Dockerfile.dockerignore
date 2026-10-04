@@ -1,0 +1,5 @@
+**
+!MLops.Dockerfile
+!MLops.Dockerfile.dockerignore
+!mlflow_requirements.txt
+!mlops_image_check.py

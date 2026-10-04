@@ -1,0 +1,7 @@
+{
+  "police": {"channel": "경찰 관제 연계망", "address": null},
+  "fire_rescue": {"channel": "119 상황실 연계망", "address": null},
+  "road_manager": {"channel": "카메라별 등록 도로·터널 관리기관", "address": null},
+  "forest": {"channel": "관할 산림기관 상황실", "address": null},
+  "local_government": {"channel": "관할 지자체 재난 상황실", "address": null}
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "cctv-analysis-deployment-v1",
+  "deployment": "rtx2000ada-20261003-v1",
+  "gpu": "NVIDIA RTX 2000 Ada Generation",
+  "image_manifest_sha256": "6f3d40f0898fead315ae90e12dc2ceed66d08a5f5c37030a23af0c92812b69a0",
+  "execution_adapter_sha256": "23f41c8328102cbf775126568eab5d87d1b2f091a77bba62656077c032182522"
+}

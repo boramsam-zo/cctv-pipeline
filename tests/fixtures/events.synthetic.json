@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "purpose": "synthetic_test",
+  "description": "Hand-authored test predictions only. No video, model output, or real accident labels. Repeated objects simulate redelivery. Policy values are not approved for real data.",
+  "context": {
+    "run_id": "synthetic_m3_demo",
+    "source_video_id": "synthetic_video",
+    "model_version": "synthetic_no_model",
+    "preprocessing_version": "synthetic_2s_16frames_contract"
+  },
+  "policy": {
+    "purpose": "synthetic_test",
+    "version": "m3_test_only_v1",
+    "decision_rule": "saved_argmax_normal_on_tie",
+    "confirm_count": 2,
+    "release_count": 2,
+    "max_gap_seconds": 2.0,
+    "merge_rule": "while_open_only",
+    "rearm_rule": "next_positive_after_close",
+    "cooldown_seconds": 0
+  },
+  "rows": [
+    {
+      "window_id": "window_001",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 0.0,
+      "end_seconds": 2.0,
+      "decision_source_time_sec": 2.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_001",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    },
+    {
+      "window_id": "window_001",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 0.0,
+      "end_seconds": 2.0,
+      "decision_source_time_sec": 2.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_001",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    },
+    {
+      "window_id": "window_002",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 1.0,
+      "end_seconds": 3.0,
+      "decision_source_time_sec": 3.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_002",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    },
+    {
+      "window_id": "window_003",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 2.0,
+      "end_seconds": 4.0,
+      "decision_source_time_sec": 4.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_003",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    },
+    {
+      "window_id": "window_002",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 1.0,
+      "end_seconds": 3.0,
+      "decision_source_time_sec": 3.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_002",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    },
+    {
+      "window_id": "window_004",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 3.0,
+      "end_seconds": 5.0,
+      "decision_source_time_sec": 5.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_004",
+      "prediction": 0,
+      "logits": [
+        1.0,
+        -1.0
+      ],
+      "accident_score": 0.11920292202211755
+    },
+    {
+      "window_id": "window_005",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 4.0,
+      "end_seconds": 6.0,
+      "decision_source_time_sec": 6.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_005",
+      "prediction": 0,
+      "logits": [
+        1.0,
+        -1.0
+      ],
+      "accident_score": 0.11920292202211755
+    },
+    {
+      "window_id": "window_006",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 5.0,
+      "end_seconds": 7.0,
+      "decision_source_time_sec": 7.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_006",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    },
+    {
+      "window_id": "window_007",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 6.0,
+      "end_seconds": 8.0,
+      "decision_source_time_sec": 8.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_007",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    },
+    {
+      "window_id": "window_008",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 7.0,
+      "end_seconds": 9.0,
+      "decision_source_time_sec": 9.0,
+      "status": "insufficient_frames_or_time_gap",
+      "frame_count": 0,
+      "model_sha256": null
+    },
+    {
+      "window_id": "window_009",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 8.0,
+      "end_seconds": 10.0,
+      "decision_source_time_sec": 10.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_009",
+      "prediction": 0,
+      "logits": [
+        1.0,
+        -1.0
+      ],
+      "accident_score": 0.11920292202211755
+    },
+    {
+      "window_id": "window_010",
+      "source_video_id": "synthetic_video",
+      "start_seconds": 9.0,
+      "end_seconds": 11.0,
+      "decision_source_time_sec": 11.0,
+      "status": "predicted",
+      "frame_count": 16,
+      "model_sha256": null,
+      "prediction_id": "prediction_010",
+      "prediction": 1,
+      "logits": [
+        -1.0,
+        1.0
+      ],
+      "accident_score": 0.8807970779778823
+    }
+  ]
+}

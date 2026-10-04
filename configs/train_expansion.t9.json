@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "purpose": "bounded_source_training_expansion_preparation",
+  "max_new_videos": 25,
+  "max_seconds": 300,
+  "base_manifest": {
+    "path": "configs/train_inputs.colab.json",
+    "sha256": "3ff4bd6e3de0962d1c8774d29442b490677ff906fa3668a78e3c331cd7ecf641"
+  },
+  "annotation_policy": {
+    "path": "configs/train_annotations.accident.json",
+    "sha256": "5d4e5adb79467c8650a9b34b6bb05b537b73a370e9053ef2f7eec85eef07acdb"
+  },
+  "authorization": {
+    "source": "user_message",
+    "recorded_at": "2026-09-22",
+    "use_source_annotations": true,
+    "raw_response": "지금 그럼 얻허게 하면될까 오늘 내로 학습 하고 진행 과정을 잡으면 좋을거같은데 가능할까?",
+    "scope_basis": "Proceed with the immediately proposed T9 max-25 additional accident videos plus existing 8 inputs, using the already approved CSV-point policy; preparation max300s; head training max5epochs/165updates/300s; no download or upload."
+  }
+}

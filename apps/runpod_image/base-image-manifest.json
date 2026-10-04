@@ -1,0 +1,249 @@
+{
+  "schema_version": "cctv-runpod-image-v1",
+  "default_version": "A",
+  "supported_versions": [
+    "A",
+    "B"
+  ],
+  "gpu": "NVIDIA RTX A4500",
+  "python_version": "3.12.3",
+  "packages": {
+    "torch": "2.8.0+cu128",
+    "torchvision": "0.23.0+cu128",
+    "ultralytics": "8.4.155",
+    "pytorchvideo": "0.1.5",
+    "fvcore": "0.1.5.post20221221",
+    "iopath": "0.1.10",
+    "av": "16.1.0",
+    "numpy": "2.2.6",
+    "opencv-python": "4.12.0.88",
+    "starlette": "1.6.0",
+    "uvicorn": "0.53.0",
+    "boto3": "1.43.103",
+    "parameterized": "0.9.0",
+    "networkx": "3.3"
+  },
+  "base_image": "runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404@sha256:4d1721e62b56d345c83b4fd6090664be6daf9312caab5b2e76f23d8231941851",
+  "platform": "linux/amd64",
+  "source_archives": {
+    "A": "4428fa3ebb2a6044a511712eb1a0b0940640ca880f42837d8a6636a9be3dbff4",
+    "B": "d6ca3e617968f4db1ae3ed23a7ab2210b1ec6d8b11efd07c48481ed2055e678e"
+  },
+  "files": {
+    ".dockerignore": {
+      "bytes": 161,
+      "sha256": "209219d82dbd9f615ea59d7243a21aecd81552104bde7e9b7c0f3d4465ddf435"
+    },
+    "Dockerfile": {
+      "bytes": 1254,
+      "sha256": "5897c36dc7620c1348febdac9a4e398a82486a60ff38e2c9de3471ddf25bca76"
+    },
+    "build_check.py": {
+      "bytes": 4874,
+      "sha256": "c4b830747afdd7b193fa1bb1f062ac9e2d3cd3da0712272127fc38dd4f33a8c3"
+    },
+    "constraints.txt": {
+      "bytes": 97,
+      "sha256": "0476900f5ca25cd02ac89e4f7fe09101626a1c94b004dd5b32145c8783d81b10"
+    },
+    "entrypoint.sh": {
+      "bytes": 503,
+      "sha256": "df9b20fb7c11a0ec7d182d924e09397b0708ee0915cf45fc8cac79de40487886"
+    },
+    "requirements.txt": {
+      "bytes": 350,
+      "sha256": "4faac4c27857bfba2d5d43b3acae9b8f1ef1cc84f82523753000e9a1dd7e2635"
+    },
+    "runtime/image_runtime.py": {
+      "bytes": 19180,
+      "sha256": "5832876d99d468865fe97f5a826f1715b76066e7128cd83e17bc7c2e5cc5db1d"
+    },
+    "runtime/job.py": {
+      "bytes": 18299,
+      "sha256": "766134f063e2f2e5b0e5699078b8662e75fc3493550ad42d2612644c847c93a0"
+    },
+    "runtime/runner.py": {
+      "bytes": 22002,
+      "sha256": "d9472b6583d007e8e22f19216ec3dea4ef1877a646a3503232eb92fbaf469a28"
+    },
+    "sources/cctv-runpod-a4000/README.md": {
+      "bytes": 8231,
+      "sha256": "4972c94efccf9a29a1dcc32cc222c5301b3886f94221c77bb10374849df7143f"
+    },
+    "sources/cctv-runpod-a4000/S3_SETUP.md": {
+      "bytes": 9159,
+      "sha256": "9f12222dc1982f33a832fa6e3e97005a2d5e773d723f4e1ab6a452f05e776f5a"
+    },
+    "sources/cctv-runpod-a4000/bundle-manifest.json": {
+      "bytes": 5509,
+      "sha256": "fb012f70547e4baa6f6594a4f1490339d82ae76f43ccdcba8df0d1937936fd9b"
+    },
+    "sources/cctv-runpod-a4000/client.py": {
+      "bytes": 3201,
+      "sha256": "d608f4f21f66e3fd17f0e93fa80af86d408c9273b641dfe7e45599cb9957da81"
+    },
+    "sources/cctv-runpod-a4000/constraints.txt": {
+      "bytes": 33,
+      "sha256": "ca807aa4f80319b0db143b7428f1bd3840e88fa5065fb78653e9042cdf9ed15f"
+    },
+    "sources/cctv-runpod-a4000/evidence.py": {
+      "bytes": 8182,
+      "sha256": "c2c639876ef577f068182c8e09cdf7adcbf0349ef881b2d861da1f9b0ccfbc1f"
+    },
+    "sources/cctv-runpod-a4000/handoff/README_KO.md": {
+      "bytes": 6713,
+      "sha256": "083fab3aa434e19bd7ba8d2cae9d8461d375da7f582b43d322e0771c2774c030"
+    },
+    "sources/cctv-runpod-a4000/handoff/handoff_example.json": {
+      "bytes": 1056,
+      "sha256": "c67412418bbb32409dd560cedb19524f22a43c92d6dae3850ae4d435cfd61888"
+    },
+    "sources/cctv-runpod-a4000/handoff/infer_one_video.py": {
+      "bytes": 1458,
+      "sha256": "30e647f87d077d87b5c0ae013985b6321a5bd198adde73a6e5cf77dd3e15133a"
+    },
+    "sources/cctv-runpod-a4000/handoff/make_release.py": {
+      "bytes": 1987,
+      "sha256": "98abfd224a34c244c081c63ddc6b2b04dbb81d467257239affe8c212be8c4bef"
+    },
+    "sources/cctv-runpod-a4000/handoff/manifest.json": {
+      "bytes": 1469,
+      "sha256": "eb2f37213b5c3a38e43523ba693579aae1af207f67bd5d757d599412063864a8"
+    },
+    "sources/cctv-runpod-a4000/handoff/models/x3d_s_real_so_tad_epoch7_best_model.pt": {
+      "bytes": 36344683,
+      "sha256": "ca2db4a25c9cd2d859a7143932d911a3351beacc5193de3ada16f3115bea09bf"
+    },
+    "sources/cctv-runpod-a4000/handoff/models/yolo11s_accident_150_e30_best.pt": {
+      "bytes": 19156378,
+      "sha256": "44f7e937068ec8862e30245314ec1cd54d6782e716eec1abc3fcf3ab7b761007"
+    },
+    "sources/cctv-runpod-a4000/handoff/pipeline.py": {
+      "bytes": 11368,
+      "sha256": "18a5a2bca54395332e227b6e75f4aef11e8b703140e48d0ae7221f1ffca35d60"
+    },
+    "sources/cctv-runpod-a4000/handoff/requirements.txt": {
+      "bytes": 170,
+      "sha256": "246bfe95cff1278cf2463770c624ff0a63e292640ce899245891d4b2eb9688a8"
+    },
+    "sources/cctv-runpod-a4000/handoff/streaming.py": {
+      "bytes": 5359,
+      "sha256": "076e8d15900b5f1304fe92b1f80bb1261afe74a710f77dc83941ddab79256be5"
+    },
+    "sources/cctv-runpod-a4000/handoff/streaming_demo.py": {
+      "bytes": 1773,
+      "sha256": "aa5075c53d7785dc8ad7fcc4f0c868c08494cb31e211b86bc1bc2d5312747430"
+    },
+    "sources/cctv-runpod-a4000/handoff/timeline.py": {
+      "bytes": 2158,
+      "sha256": "86ea59d83623554fedf4e08df95f4dec07bddbf41486b6a6493f4d21daf77f20"
+    },
+    "sources/cctv-runpod-a4000/local_hub/hubconf.py": {
+      "bytes": 579,
+      "sha256": "0162b333adf9b336459658f1d982e02ed49ee06ce035409fa0a531cf711671b0"
+    },
+    "sources/cctv-runpod-a4000/requirements.txt": {
+      "bytes": 334,
+      "sha256": "9bfdf36508d026ce841899dc17c8dd2f3a19fa2c4a5d3ab4860beab648fae6c4"
+    },
+    "sources/cctv-runpod-a4000/service.py": {
+      "bytes": 12643,
+      "sha256": "e98ff08e21cfa4976055754c431396993d92ee5e9f03c0a7bf69857c9efcc46a"
+    },
+    "sources/cctv-runpod-a4000/setup.sh": {
+      "bytes": 946,
+      "sha256": "f4480a439933ca9e430971b26d43a15f2ec4df1d912ec16c4f7a13440f84b86e"
+    },
+    "sources/cctv-runpod-a4000/start.sh": {
+      "bytes": 694,
+      "sha256": "4bfda8458d7dc19bd2a1b072d040f3db7dad5d247ff626c6094d83cff5375bd7"
+    },
+    "sources/cctv-runpod-a4000/storage.py": {
+      "bytes": 4712,
+      "sha256": "fce3cb729cbae5b1be857d9ab8cb07a24d9ff88d48faab6cd2af984fd5de8cf9"
+    },
+    "sources/cctv-runpod-a4000/verify_bundle.py": {
+      "bytes": 1031,
+      "sha256": "45aa8f82e3aec1bff31533f709f1f8af34b4e504e4467a4b3ec3741d10c62e99"
+    },
+    "sources/cctv-runpod-a4000/worker.py": {
+      "bytes": 6086,
+      "sha256": "41126a160970d9d3a64c9fe93ab850f5cd24891037a7aaf9644e89754c667473"
+    },
+    "sources/deployment_handoff_1001/README_KO.md": {
+      "bytes": 9347,
+      "sha256": "6d77a0464fb06c579ab15d521209fbb8c151f138f0aa4be2721b260e0fb6e07f"
+    },
+    "sources/deployment_handoff_1001/VERSION.json": {
+      "bytes": 239,
+      "sha256": "7608b11e1de6e2023bf448d00af5b15fa8e3e8a7640f63805c5a572c030dffeb"
+    },
+    "sources/deployment_handoff_1001/handoff_example.json": {
+      "bytes": 854,
+      "sha256": "670b7ffafcc891aa32367a94153e78cc3f909ee8bb98ff1952ae044415d293ae"
+    },
+    "sources/deployment_handoff_1001/incident_context.py": {
+      "bytes": 32859,
+      "sha256": "fe329a2174f63455594b19b94c328c9c4b5c1577d1bcdbbe3f2158df009b493a"
+    },
+    "sources/deployment_handoff_1001/infer_one_video.py": {
+      "bytes": 1552,
+      "sha256": "c577378e8e36eecc8abd12f20fa2e43b0a4fb1c0225b796a069dcfc755e545c5"
+    },
+    "sources/deployment_handoff_1001/make_release.py": {
+      "bytes": 2457,
+      "sha256": "f20b820c5ce087859348eb667560c9758d0791a1b87a2d2168db551fc2f77eb5"
+    },
+    "sources/deployment_handoff_1001/manifest.json": {
+      "bytes": 2300,
+      "sha256": "59e7b5205f01e2da1f582847c21b4a0fe7b45a4a713e42a71ccc670eeec3f822"
+    },
+    "sources/deployment_handoff_1001/models/x3d_s_real_so_tad_epoch7_best_model.pt": {
+      "bytes": 36344683,
+      "sha256": "ca2db4a25c9cd2d859a7143932d911a3351beacc5193de3ada16f3115bea09bf"
+    },
+    "sources/deployment_handoff_1001/models/yolo11s_so_tad_985_no_class4_960_b16_best.pt": {
+      "bytes": 19214682,
+      "sha256": "51b8873f49d6ddf8611de6e3bd2bc88fca00d6d5de62638791d01b25fd9a2dcf"
+    },
+    "sources/deployment_handoff_1001/models/yolo11s_so_tad_985_no_class4_960_b16_classes.json": {
+      "bytes": 456,
+      "sha256": "5b325b332dac34daba4e381c9efc33d696c70a9ec30d5a33b0f89e562e7e3457"
+    },
+    "sources/deployment_handoff_1001/pipeline.py": {
+      "bytes": 15004,
+      "sha256": "b223671abbad3581c03262ff260b62c712b81e03eec468f04374f082012359ec"
+    },
+    "sources/deployment_handoff_1001/requirements.txt": {
+      "bytes": 170,
+      "sha256": "246bfe95cff1278cf2463770c624ff0a63e292640ce899245891d4b2eb9688a8"
+    },
+    "sources/deployment_handoff_1001/streaming.py": {
+      "bytes": 5994,
+      "sha256": "375ce4e3b1a2a10d1845ba3c6069238aef0d521a2ea4c3dc80c39cdf07392203"
+    },
+    "sources/deployment_handoff_1001/streaming_demo.py": {
+      "bytes": 1901,
+      "sha256": "3ea0e5973051145a6f6c5d549dfabfb9814a8fe4f63ed88b8d8fba173ad389f7"
+    },
+    "sources/deployment_handoff_1001/test_incident_context.py": {
+      "bytes": 6497,
+      "sha256": "a75bf5fa6aad574fff1a58c0717c65ec04895b737267ea39e0e6296aa01d5910"
+    },
+    "sources/deployment_handoff_1001/test_timeline.py": {
+      "bytes": 764,
+      "sha256": "1977d7353680018f8f61b88cd7c7dc2df2e0af0c1c6cb8cdf82e97dccd0e91e2"
+    },
+    "sources/deployment_handoff_1001/timeline.py": {
+      "bytes": 2564,
+      "sha256": "4321268ba8c6f34d3c4ad04e06d06d608021f5a1268e269a2b1af74334ebc103"
+    },
+    "sources/deployment_handoff_1001/verify_package.py": {
+      "bytes": 1918,
+      "sha256": "ec644c5100d04afb3c615476a9cec505b77d74a0fecb98f858f792954901ff9c"
+    }
+  },
+  "scope": "A/B offline image validation. HTTP/S3/BE selection integration remains P6.",
+  "old_trial_attempts_remaining": 0,
+  "new_inference_approved": false
+}

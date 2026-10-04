@@ -1,0 +1,5 @@
+torch==2.8.0+cu128
+torchvision==0.23.0+cu128
+numpy==2.2.6
+opencv-python==4.12.0.88
+networkx==3.3

@@ -1,0 +1,57 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InspectCctvRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:ListInstanceProfilesForRole"
+      ],
+      "Resource": "arn:aws:iam::123456789012:role/hanwha-cctv-ec2-role"
+    },
+    {
+      "Sid": "InspectInstanceProfiles",
+      "Effect": "Allow",
+      "Action": "iam:GetInstanceProfile",
+      "Resource": "arn:aws:iam::123456789012:instance-profile/*"
+    },
+    {
+      "Sid": "PassOnlyCctvRoleToEc2",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::123456789012:role/hanwha-cctv-ec2-role",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "ec2.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "InspectSeoulInstances",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeIamInstanceProfileAssociations"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-northeast-2"
+        }
+      }
+    },
+    {
+      "Sid": "OperateExistingInstance",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:AssociateIamInstanceProfile",
+        "ec2:ReplaceIamInstanceProfileAssociation"
+      ],
+      "Resource": "arn:aws:ec2:ap-northeast-2:123456789012:instance/i-REPLACE_WITH_EXISTING_ID"
+    }
+  ]
+}

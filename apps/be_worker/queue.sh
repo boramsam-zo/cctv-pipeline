@@ -17,9 +17,14 @@ if [ "$command" = schema ] || [ "$command" = scene-schema ]; then
 fi
 compose=(docker compose -f "$CCTV_COMPOSE_FILE" -f "$BE_APP_DIR/queue.compose.yaml" --profile be-tools)
 case "$command" in
+  service-build|service-start|service-status)
+    service=(docker compose -f "$CCTV_COMPOSE_FILE" -f "$BE_APP_DIR/queue.compose.yaml" -f "$BE_APP_DIR/service.compose.yaml" --profile cctv-ui)
+    if [ "$command" = service-build ]; then "${service[@]}" build cctv-ui
+    elif [ "$command" = service-start ]; then "${service[@]}" up -d --no-deps be-api be-worker cctv-ui
+    else "${service[@]}" ps be-api be-worker cctv-ui; fi ;;
   build) "${compose[@]}" build be-queue ;;
   enqueue|list|collect|recover-s3|scene-fetch) "${compose[@]}" run --rm -T --no-deps be-queue "$command" "$@" ;;
-  scene-describe|scene-diagnose|scene-probe)
+  scene-report|scene-describe|scene-diagnose|scene-probe)
     : "${BE_SECRETS_DIR:?Set the private queue secret directory}"
     if [ -s "$BE_SECRETS_DIR/gemini_api_key" ]; then
       "${compose[@]}" run --rm -T --no-deps \
@@ -31,5 +36,5 @@ case "$command" in
     fi
     ;;
   dispatch|recover|retarget) "${compose[@]}" run --rm -T --no-deps be-queue "$command" --token-file /run/secrets/runpod_worker_token "$@" ;;
-  *) echo 'Usage: bash queue.sh {schema|scene-schema|build|enqueue|list|dispatch|collect|recover|recover-s3|retarget|scene-fetch|scene-describe|scene-diagnose|scene-probe} [arguments]'; exit 2 ;;
+  *) echo 'Usage: bash queue.sh {schema|scene-schema|build|enqueue|list|dispatch|collect|recover|recover-s3|retarget|scene-fetch|scene-describe|scene-report|scene-diagnose|scene-probe} [arguments]'; exit 2 ;;
 esac

@@ -1,0 +1,465 @@
+{
+  "schema_version": 1,
+  "purpose": "development_validation",
+  "policy_version": "draft-0.1",
+  "model": {
+    "path": "artifacts/training/limited-real-iid-20260921-01/loop/model.pt",
+    "sha256": "2b0c4818f5aa442ce6eff11a240f319e47ae966b52644c9a0c37c851089f5947"
+  },
+  "training_inputs": {
+    "path": "artifacts/training/limited-real-iid-20260921-01/prepared_inputs.json",
+    "sha256": "adba900bfcabe4158e8371b3d00f71779bf12c082f449b366899b642e450a631"
+  },
+  "class_mapping": {
+    "normal": 0,
+    "accident": 1
+  },
+  "preprocessing": {
+    "version": "r3d-letterbox-kinetics-v1",
+    "frame_count": 16,
+    "image_size": 224,
+    "sampling": "nearest_PTS_to_uniform_bin_centres",
+    "spatial": "letterbox_no_crop",
+    "normalization": "KINETICS400_V1",
+    "layout": "CTHW",
+    "dtype": "float32"
+  },
+  "window_seconds": 2,
+  "decision_rule": "argmax_logits_tie_normal",
+  "max_segments": 10,
+  "max_inference_seconds": 300,
+  "evaluation_approval": {
+    "status": "pending",
+    "reviewer": null,
+    "reviewed_at": null,
+    "basis": null
+  },
+  "segments": [],
+  "reservations": [
+    {
+      "reservation_id": "devval_accident_01",
+      "requested_class": "accident",
+      "candidate_basis": "local_metadata_only",
+      "metadata_csv_row": 15,
+      "metadata_path_value": "real_videos/F0NHENn-HS4_00.mp4",
+      "source_url": "https://www.kaggle.com/datasets/picekl/accident",
+      "official_iid": "train",
+      "official_geo": "test",
+      "metadata_quality": "Fine",
+      "metadata_duration_seconds": 20.9,
+      "metadata_accident_time_seconds": 2.533,
+      "proposed_review_seconds": [
+        1.533,
+        3.533
+      ],
+      "approved_evaluation_seconds": null,
+      "actual_local_file": "real_videos/F0NHENn-HS4_00.mp4",
+      "file_size_bytes": 4760564,
+      "target": 1,
+      "source_group_id": "local-file-sha256:8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "event_id": null,
+      "independence_status": "unconfirmed",
+      "review_status": "label_approved_input_quality_and_independence_pending",
+      "reserved_purpose": "development_validation_only",
+      "training_authorized": false,
+      "evaluation_ready": false,
+      "actual_file_verified_in": "artifacts/data-review/t9-devval-20260922-01/comparison.json",
+      "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "approved_label_seconds": [
+        1.533,
+        3.533
+      ],
+      "label_review": {
+        "status": "approved",
+        "label": "accident",
+        "basis": "차가 충돌되고 이어서 다른 차들도 부딪힘",
+        "reviewer": "다헤",
+        "reviewed_at": "2026-09-22",
+        "scope": "segment",
+        "start_seconds": 1.533,
+        "end_seconds": 3.533,
+        "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+        "policy_version": "draft-0.1"
+      },
+      "input_quality_review": {
+        "status": "pending",
+        "unresolved": [
+          "crop_or_missing_problem_unresolved",
+          "order_problem_unresolved",
+          "needs_more_context_unresolved"
+        ]
+      },
+      "review_evidence": "artifacts/data-review/t9-devval-20260922-02/recorded/reviewed_plan.json",
+      "remaining": [
+        "input_quality_confirmation",
+        "source_event_independence_review",
+        "local_cloud_usage_evidence",
+        "final_evaluation_list_approval"
+      ],
+      "file_root_reference": "user_supplied_ACCIDENT_ROOT_on_T9",
+      "source_group_scope": "same_local_file_only_upstream_event_relationship_unverified",
+      "context_evidence": "artifacts/data-review/devval-intake-20260922-01/context-01/manifest.json",
+      "context_status": "scene_observations_received_input_quality_not_inferred",
+      "context_response_evidence": "configs/evaluation.colab.pending.json#latest_context_response",
+      "prepared_review": {
+        "plan_path": "artifacts/data-review/t9-devval-20260922-01/review-plan.json",
+        "plan_sha256": "7b0bb32c3d5d5d09f8c4fd113e2f66efc68bea50ffa59c76ad8c8b1d8eed208a",
+        "manifest_path": "artifacts/data-review/t9-devval-20260922-01/prepared/manifest.json",
+        "manifest_sha256": "81d08a1a7987297b0de806d81fe798c62d9c1f1e4d2298f4f4ddd0e63e273e9d",
+        "frames_sha256": "7802b0a5498320f65b56171d784dbb5aa37be64fb85a4f2ba06967f625bf2f35",
+        "preview_sha256": "98da86545a7e4c9459f6cfb6672d8abad362e5ce257b2288554d24e6606c59a3",
+        "metadata": {
+          "path": "data/local/accident/metadata-real.csv",
+          "sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9",
+          "csv_row": 15
+        }
+      },
+      "independence_review": {
+        "status": "pending",
+        "independent_from_training": null,
+        "basis": "Different local file hashes verified; upstream event/re-edit independence unconfirmed"
+      },
+      "usage_review": {
+        "status": "pending",
+        "local_evaluation_allowed": null,
+        "cloud_evaluation_allowed": null,
+        "basis": "Preparing a local archive is not an upload/execution or data-use approval"
+      }
+    },
+    {
+      "reservation_id": "devval_accident_02",
+      "requested_class": "accident",
+      "candidate_basis": "local_metadata_only",
+      "metadata_csv_row": 23,
+      "metadata_path_value": "real_videos/XaqA-uzqeNc_00.mp4",
+      "source_url": "https://www.kaggle.com/datasets/picekl/accident",
+      "official_iid": "train",
+      "official_geo": "test",
+      "metadata_quality": "Fine",
+      "metadata_duration_seconds": 8.125,
+      "metadata_accident_time_seconds": 2.25,
+      "proposed_review_seconds": [
+        1.25,
+        3.25
+      ],
+      "approved_evaluation_seconds": null,
+      "actual_local_file": "real_videos/XaqA-uzqeNc_00.mp4",
+      "file_size_bytes": 956322,
+      "target": 1,
+      "source_group_id": "local-file-sha256:0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+      "event_id": null,
+      "independence_status": "unconfirmed",
+      "review_status": "label_approved_input_quality_and_independence_pending",
+      "reserved_purpose": "development_validation_only",
+      "training_authorized": false,
+      "evaluation_ready": false,
+      "actual_file_verified_in": "artifacts/data-review/t9-devval-20260922-01/comparison.json",
+      "source_sha256": "0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+      "approved_label_seconds": [
+        1.25,
+        3.25
+      ],
+      "label_review": {
+        "status": "approved",
+        "label": "accident",
+        "basis": "사용자: 사고 포함 예, 현재 2초 구간 사용 예",
+        "reviewer": "다헤",
+        "reviewed_at": "2026-09-22",
+        "scope": "segment",
+        "start_seconds": 1.25,
+        "end_seconds": 3.25,
+        "source_sha256": "0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+        "policy_version": "draft-0.1"
+      },
+      "input_quality_review": {
+        "status": "pending",
+        "unresolved": [
+          "crop_or_missing_problem_unresolved",
+          "order_problem_unresolved",
+          "needs_more_context_unresolved"
+        ]
+      },
+      "review_evidence": "artifacts/data-review/t9-devval-20260922-02/recorded/reviewed_plan.json",
+      "remaining": [
+        "input_quality_confirmation",
+        "source_event_independence_review",
+        "local_cloud_usage_evidence",
+        "final_evaluation_list_approval"
+      ],
+      "file_root_reference": "user_supplied_ACCIDENT_ROOT_on_T9",
+      "source_group_scope": "same_local_file_only_upstream_event_relationship_unverified",
+      "context_evidence": "artifacts/data-review/t9-devval-20260922-02/context/manifest.json",
+      "context_status": "scene_observations_received_input_quality_not_inferred",
+      "context_response_evidence": "configs/evaluation.colab.pending.json#latest_context_response",
+      "prepared_review": {
+        "plan_path": "artifacts/data-review/t9-devval-20260922-01/review-plan.json",
+        "plan_sha256": "7b0bb32c3d5d5d09f8c4fd113e2f66efc68bea50ffa59c76ad8c8b1d8eed208a",
+        "manifest_path": "artifacts/data-review/t9-devval-20260922-01/prepared/manifest.json",
+        "manifest_sha256": "81d08a1a7987297b0de806d81fe798c62d9c1f1e4d2298f4f4ddd0e63e273e9d",
+        "frames_sha256": "b7a5a8009188be5fa839a7ecdf75ce1a763323af4b0d680d96b17c02b878be6e",
+        "preview_sha256": "c14fc454c4e70273c887cc3ea4d84c21b64e9bfd8cc389fc81de9935b7370777",
+        "metadata": {
+          "path": "data/local/accident/metadata-real.csv",
+          "sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9",
+          "csv_row": 23
+        }
+      },
+      "independence_review": {
+        "status": "pending",
+        "independent_from_training": null,
+        "basis": "Different local file hashes verified; upstream event/re-edit independence unconfirmed"
+      },
+      "usage_review": {
+        "status": "pending",
+        "local_evaluation_allowed": null,
+        "cloud_evaluation_allowed": null,
+        "basis": "Preparing a local archive is not an upload/execution or data-use approval"
+      }
+    },
+    {
+      "reservation_id": "devval_normal_01",
+      "requested_class": "normal",
+      "candidate_basis": "ACCIDENT_first_two_seconds_unlabelled_human_review_candidate_no_prediction_used",
+      "metadata_csv_row": 15,
+      "metadata_path_value": "real_videos/F0NHENn-HS4_00.mp4",
+      "source_url": "https://www.kaggle.com/datasets/picekl/accident",
+      "official_iid": "train",
+      "official_geo": "test",
+      "actual_local_file": "real_videos/F0NHENn-HS4_00.mp4",
+      "file_root_reference": "user_supplied_ACCIDENT_ROOT_on_T9",
+      "file_size_bytes": 4760564,
+      "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "proposed_review_seconds": [
+        0.0,
+        2.0
+      ],
+      "approved_evaluation_seconds": null,
+      "target": 0,
+      "label_review": {
+        "status": "approved",
+        "label": "normal",
+        "scope": "segment",
+        "start_seconds": 0.0,
+        "end_seconds": 2.0,
+        "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+        "policy_version": "draft-0.1",
+        "basis": "사용자가 정상 후보01 전체0–2초는 나머지 사고 장면에 포함되지 않으며 사고가 아니라고 명확히 정정함",
+        "reviewer": "다헤",
+        "reviewed_at": "2026-09-22"
+      },
+      "source_group_id": "local-file-sha256:8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "source_group_scope": "same_local_file_only_upstream_event_relationship_unverified",
+      "same_original_as": "devval_accident_01",
+      "event_id": null,
+      "independence_status": "unconfirmed",
+      "review_status": "normal_label_confirmed_input_quality_and_independence_pending",
+      "agent_visual_observation": "차량 통행 장면; 사람이 전체 2초의 무사고 여부와 입력 품질을 확인하기 전 정상 정답 미지정",
+      "reserved_purpose": "development_validation_only",
+      "training_authorized": false,
+      "evaluation_ready": false,
+      "preview_path": "artifacts/data-review/devval-intake-20260922-01/normal-candidates/unconfirmed/devval_normal_01/preview.png",
+      "frames_metadata_path": "artifacts/data-review/devval-intake-20260922-01/normal-candidates/unconfirmed/devval_normal_01/frames.json",
+      "actual_file_verified_in": "artifacts/data-review/devval-intake-20260922-01/normal-candidates/manifest.json",
+      "remaining": [
+        "input_quality_confirmation",
+        "source_event_independence_review",
+        "local_cloud_usage_evidence",
+        "final_evaluation_list_approval"
+      ],
+      "approved_label_seconds": [
+        0.0,
+        2.0
+      ],
+      "review_identity_basis": "Same conversation review context: earlier explicit reviewer 다헤; date is response receipt day, not a newly reported viewing date",
+      "human_submission": {
+        "raw_response": "아니 `정상 후보 01` 전체 0–2초도 포함 하면 안될거가탕 사고 아니야",
+        "response_source": "user_message",
+        "decision": "normal",
+        "scope": "whole_proposed_0_to_2_second_segment",
+        "received_on": "2026-09-22",
+        "reviewer_as_reported_in_this_reply": null,
+        "viewing_date_as_reported_in_this_reply": null,
+        "crop_or_missing_problem": null,
+        "order_problem": null,
+        "needs_more_context": null,
+        "preview_visible_at_224": null
+      },
+      "input_quality_review": {
+        "status": "pending",
+        "basis": "This reply confirms the normal label; no separate no-crop/missing/224 statement inferred"
+      },
+      "prepared_review": {
+        "plan_path": "artifacts/data-review/devval-intake-20260922-01/normal-review-plan.json",
+        "plan_sha256": "6549921989530dcbfebcefb17f826f9497993e399604d81b9b24e74675dd0593",
+        "manifest_path": "artifacts/data-review/devval-intake-20260922-01/normal-candidates/manifest.json",
+        "manifest_sha256": "b77e6242f0727daae6f2399f75e46ced721ade56aa132504ec806e0dd3d4e5d3",
+        "frames_sha256": "3898a2e1a321e9c479d5c49d426c2135b559aeb2e044beff237891d98e75697b",
+        "preview_sha256": "d8e6b6ecda57708c1d20c60b5e159e73755cf182f66db13b192f988739bce05e",
+        "metadata": {
+          "path": "data/local/accident/metadata-real.csv",
+          "sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9",
+          "csv_row": 15
+        }
+      },
+      "independence_review": {
+        "status": "pending",
+        "independent_from_training": null,
+        "basis": "Different local file hashes verified; upstream event/re-edit independence unconfirmed"
+      },
+      "usage_review": {
+        "status": "pending",
+        "local_evaluation_allowed": null,
+        "cloud_evaluation_allowed": null,
+        "basis": "Preparing a local archive is not an upload/execution or data-use approval"
+      }
+    },
+    {
+      "reservation_id": "devval_normal_02",
+      "requested_class": "normal",
+      "candidate_basis": "ACCIDENT_first_two_seconds_unlabelled_human_review_candidate_no_prediction_used",
+      "metadata_csv_row": 23,
+      "metadata_path_value": "real_videos/XaqA-uzqeNc_00.mp4",
+      "source_url": "https://www.kaggle.com/datasets/picekl/accident",
+      "official_iid": "train",
+      "official_geo": "test",
+      "actual_local_file": "real_videos/XaqA-uzqeNc_00.mp4",
+      "file_root_reference": "user_supplied_ACCIDENT_ROOT_on_T9",
+      "file_size_bytes": 956322,
+      "source_sha256": "0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+      "proposed_review_seconds": [
+        0.0,
+        2.0
+      ],
+      "approved_evaluation_seconds": null,
+      "target": null,
+      "label_review": {
+        "status": "unreviewed",
+        "label": null
+      },
+      "source_group_id": "local-file-sha256:0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+      "source_group_scope": "same_local_file_only_upstream_event_relationship_unverified",
+      "same_original_as": "devval_accident_02",
+      "event_id": null,
+      "independence_status": "unconfirmed",
+      "review_status": "hold_for_normal_use_human_reports_accident_in_subinterval",
+      "agent_visual_observation": "Around 1 second vehicle rotates with visible dust; cannot assume no collision from CSV accident_time=2.25. No binary label assigned.",
+      "reserved_purpose": "development_validation_only",
+      "training_authorized": false,
+      "evaluation_ready": false,
+      "preview_path": "artifacts/data-review/devval-intake-20260922-01/normal-candidates/unconfirmed/devval_normal_02/preview.png",
+      "frames_metadata_path": "artifacts/data-review/devval-intake-20260922-01/normal-candidates/unconfirmed/devval_normal_02/frames.json",
+      "actual_file_verified_in": "artifacts/data-review/devval-intake-20260922-01/normal-candidates/manifest.json",
+      "remaining": [
+        "human_segment_label_and_quality_review",
+        "source_event_independence_review",
+        "local_cloud_usage_evidence",
+        "final_evaluation_list_approval"
+      ],
+      "normal_use_hold_basis": {
+        "source": "latest_context_response.follow_up_response",
+        "reported_accident_seconds": [
+          0.75,
+          1.25
+        ],
+        "candidate_seconds": [
+          0.0,
+          2.0
+        ],
+        "reason": "Reported accident subinterval lies inside this proposed normal window. Exclude from normal use; do not expand the approved accident label interval."
+      }
+    }
+  ],
+  "support_files": [
+    "artifacts/training/limited-real-iid-20260921-01/config.json",
+    "artifacts/training/limited-real-iid-20260921-01/class_mapping.json",
+    "artifacts/training/limited-real-iid-20260921-01/versions.json",
+    "data/local/accident/metadata-real.csv"
+  ],
+  "missing": [
+    "ACCIDENT-only: TAD 후보 다운로드는 사용자 미승인/제외. TAD 영상 다운로드0",
+    "사고2구간의 기존 정답 승인 유지; 요청한 참고 장면 준비 완료, 추가 맥락/입력품질 사용자 확인 대기",
+    "두 로컬 파일과 학습 원본/사건의 관계·이용 근거·최종 평가 목록/클라우드 사용 범위 미확정",
+    "정상 후보01 [0,2) 사용자 정상0 확인 완료. 후보02는 정상 사용 제외. 사고2+정상1 정답과 품질/독립성/사용근거 미완료를 구분"
+  ],
+  "readiness_note": "Three labelled input sets can be connected from saved review PNGs. Input quality/independence/usage/run approval remain pending. The preparation archive is not an executable evaluation approval.",
+  "source_scope": "ACCIDENT_only_for_new_development_validation; existing_model_QMUL_training_history_preserved",
+  "latest_context_response": {
+    "raw_response": "사고 후보 1 앞부분은 사고가 안난거같아. 나머지는 사고가 보여. 그래도 이제 진행해도될까?",
+    "response_source": "user_message",
+    "received_on": "2026-09-22",
+    "reviewer": null,
+    "reviewed_at": null,
+    "specific_observation": {
+      "reference_id": "devval_01_context_before",
+      "source_path": "real_videos/F0NHENn-HS4_00.mp4",
+      "start_seconds": 1.033,
+      "end_seconds": 1.533,
+      "observation": "사고가 안난거같아",
+      "certainty": "tentative_as_reported",
+      "binary_target_assigned": false
+    },
+    "other_scenes_observation": {
+      "raw": "나머지는 사고가 보여",
+      "scope": "Follow-up identifies context01 after and context02 before; no whole [0,2) normal approval assigned"
+    },
+    "clarification_needed": null,
+    "quality_approval_inferred": false,
+    "independence_approval_inferred": false,
+    "cloud_execution_performed": false,
+    "scope_before_follow_up": "not_resolved_whether_includes_devval_normal_01_full_0_to_2_seconds",
+    "follow_up_response": {
+      "raw_response": "후보 1은 지금 뒷부분 부분 보여진거만 사고 영상은 보이고 사고후보2( [0.750,1.250)초는사고가 보여. 다른 말이 필요한거야?",
+      "response_source": "user_message",
+      "reported_observations": [
+        {
+          "reference_id": "devval_01_context_after",
+          "source_path": "real_videos/F0NHENn-HS4_00.mp4",
+          "start_seconds": 3.533,
+          "end_seconds": 4.033,
+          "observation": "보여진 뒷부분에서 사고가 보임"
+        },
+        {
+          "reference_id": "devval_02_context_before",
+          "source_path": "real_videos/XaqA-uzqeNc_00.mp4",
+          "start_seconds": 0.75,
+          "end_seconds": 1.25,
+          "observation": "사고가 보임"
+        }
+      ],
+      "scope": "scene_presence_observations_only_existing_segment_labels_preserved",
+      "approved_target_created": false,
+      "normal_0_to_2_approval_inferred": false,
+      "additional_context_not_needed_inferred": false,
+      "crop_or_missing_scene_approval_inferred": false
+    },
+    "same_scene_question_status": "closed_observations_recorded_do_not_repeat",
+    "normal_window_status": "devval_normal_01 [0,2) explicitly confirmed normal in follow-up; target0",
+    "normal_window_follow_up": {
+      "raw_response": "아니 `정상 후보 01` 전체 0–2초도 포함 하면 안될거가탕 사고 아니야",
+      "response_source": "user_message",
+      "decision": "normal",
+      "scope": "whole_proposed_0_to_2_second_segment",
+      "received_on": "2026-09-22",
+      "reviewer_as_reported_in_this_reply": null,
+      "viewing_date_as_reported_in_this_reply": null,
+      "crop_or_missing_problem": null,
+      "order_problem": null,
+      "needs_more_context": null,
+      "preview_visible_at_224": null
+    }
+  },
+  "latest_reference_comparison_authorization": {
+    "raw_response": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+    "received_on": "2026-09-22",
+    "manifest": "configs/evaluation.colab.reference.json",
+    "purpose": "reference_comparison_unconfirmed_independence",
+    "input_quality_approved_for": [
+      "devval_accident_01",
+      "devval_accident_02",
+      "devval_normal_01"
+    ],
+    "independence_verified": false,
+    "independent_validation_authorized": false,
+    "note": "기존 pending 항목은 이전 독립 검증 제안의 상태다. 현재 참고 비교는 연결된 별도 목적의 고정 명세를 사용한다."
+  }
+}

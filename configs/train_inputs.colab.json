@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "purpose": "training_input_transfer_only",
+  "training_execution_authorized": false,
+  "validation_segments": [],
+  "test_segments": [],
+  "references": {
+    "previous_inputs": {
+      "path": "artifacts/training/limited-real-iid-20260921-01/prepared_inputs.json",
+      "sha256": "adba900bfcabe4158e8371b3d00f71779bf12c082f449b366899b642e450a631"
+    },
+    "human_receipt": {
+      "path": "artifacts/training-code-check/iid-readiness-20260921-01/review_readiness.json",
+      "sha256": "3e91a95eabd5a7fff804a6292ac18f980f0397fb924a1f1b253829cc8396d727"
+    },
+    "annotation_report": {
+      "path": "artifacts/training/source-annotations-20260922-01/prepared/report.json",
+      "sha256": "b305eae7ff5289a935ac173d9002cafac7bf5bc135427e2ac26fc21391a2b765"
+    },
+    "annotation_policy": {
+      "path": "configs/train_annotations.accident.json",
+      "sha256": "5d4e5adb79467c8650a9b34b6bb05b537b73a370e9053ef2f7eec85eef07acdb"
+    },
+    "reserved_manifest": {
+      "path": "configs/evaluation.colab.reference.json",
+      "sha256": "8b8f2a3cf1abf397796c61ffb7091ddbbc5f747416a9748ef2e741a727d5e897"
+    },
+    "metadata": {
+      "path": "data/local/accident/metadata-real.csv",
+      "sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9"
+    }
+  },
+  "sample_ids": [
+    "sample_008",
+    "sample_009",
+    "qmul_001",
+    "qmul_002",
+    "qmul_003",
+    "sample_010",
+    "sample_011",
+    "sample_012"
+  ],
+  "preprocessing": {
+    "version": "r3d-letterbox-kinetics-v1",
+    "frame_count": 16,
+    "image_size": 224,
+    "sampling": "nearest_PTS_to_uniform_bin_centres",
+    "spatial": "letterbox_no_crop",
+    "normalization": "KINETICS400_V1",
+    "layout": "CTHW",
+    "dtype": "float32"
+  },
+  "scope_note": "Reuse prior 5 human-reviewed and 3 source-annotation-derived saved inputs. Not a training execution authorization."
+}

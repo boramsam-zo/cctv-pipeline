@@ -1,0 +1,3 @@
+# Install only after approval, in .venv-results-viewer (not the model environment).
+# Official PyPI release verified on 2026-09-22; no optional cloud/ML extras.
+streamlit==1.64.0

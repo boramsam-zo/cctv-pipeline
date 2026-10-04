@@ -1,0 +1,383 @@
+{
+  "schema_version": 1,
+  "purpose": "reference_comparison_unconfirmed_independence",
+  "policy_version": "draft-0.1",
+  "model": {
+    "path": "artifacts/training/limited-real-iid-20260921-01/loop/model.pt",
+    "sha256": "2b0c4818f5aa442ce6eff11a240f319e47ae966b52644c9a0c37c851089f5947"
+  },
+  "training_inputs": {
+    "path": "artifacts/training/limited-real-iid-20260921-01/prepared_inputs.json",
+    "sha256": "adba900bfcabe4158e8371b3d00f71779bf12c082f449b366899b642e450a631"
+  },
+  "class_mapping": {
+    "normal": 0,
+    "accident": 1
+  },
+  "preprocessing": {
+    "version": "r3d-letterbox-kinetics-v1",
+    "frame_count": 16,
+    "image_size": 224,
+    "sampling": "nearest_PTS_to_uniform_bin_centres",
+    "spatial": "letterbox_no_crop",
+    "normalization": "KINETICS400_V1",
+    "layout": "CTHW",
+    "dtype": "float32"
+  },
+  "window_seconds": 2,
+  "decision_rule": "argmax_logits_tie_normal",
+  "max_segments": 3,
+  "max_inference_seconds": 300,
+  "evaluation_approval": {
+    "status": "approved",
+    "reviewer": "user (기존 검수 대화: 다헤)",
+    "reviewed_at": "2026-09-22",
+    "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+    "response_source": "user_message",
+    "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님"
+  },
+  "segments": [
+    {
+      "sample_id": "devval_accident_01",
+      "dataset": "ACCIDENT",
+      "source_path": "real_videos/F0NHENn-HS4_00.mp4",
+      "source_reference": "https://www.kaggle.com/datasets/picekl/accident",
+      "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "management_group": "local-file-sha256:8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "group_scope": "same_local_file_only_upstream_event_relationship_unverified",
+      "upstream_original_id": null,
+      "event_id": null,
+      "start_seconds": 1.533,
+      "end_seconds": 3.533,
+      "target": 1,
+      "split": "validation",
+      "training_authorized": false,
+      "final_test": false,
+      "official_iid_split": "train",
+      "metadata": {
+        "path": "data/local/accident/metadata-real.csv",
+        "sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9",
+        "csv_row": 15
+      },
+      "label_review": {
+        "status": "approved",
+        "label": "accident",
+        "basis": "차가 충돌되고 이어서 다른 차들도 부딪힘",
+        "reviewer": "다헤",
+        "reviewed_at": "2026-09-22",
+        "scope": "segment",
+        "start_seconds": 1.533,
+        "end_seconds": 3.533,
+        "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+        "policy_version": "draft-0.1"
+      },
+      "independence_review": {
+        "status": "pending",
+        "independent_from_training": null,
+        "basis": "Different local file hashes verified; upstream event/re-edit independence unconfirmed"
+      },
+      "usage_review": {
+        "status": "approved",
+        "reviewer": "user (기존 검수 대화: 다헤)",
+        "reviewed_at": "2026-09-22",
+        "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+        "response_source": "user_message",
+        "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님",
+        "local_evaluation_allowed": true,
+        "cloud_evaluation_allowed": true,
+        "approval_scope": "Existing model, these prepared inputs only, manual Drive transfer and free Colab comparison, max 3 segments/300 seconds. No new training, downloads, installations or paid use.",
+        "dataset_legal_terms_newly_verified": false
+      },
+      "input_quality_review": {
+        "status": "approved",
+        "reviewer": "user (기존 검수 대화: 다헤)",
+        "reviewed_at": "2026-09-22",
+        "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+        "response_source": "user_message",
+        "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님",
+        "no_crop_or_missing_scene": true,
+        "preview_visible_at_224": true,
+        "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+        "start_seconds": 1.533,
+        "end_seconds": 3.533,
+        "array_sha256": "725cbf9dfc1ef1a15d02338335a9cc310122699480dbee540cc05eee861dcf2f",
+        "frames_sha256": "38a3d2fdc0c13bc11517774d9b72504283dc0a39e00ebb1205237865151ffa80",
+        "preview_sha256": "98da86545a7e4c9459f6cfb6672d8abad362e5ce257b2288554d24e6606c59a3"
+      },
+      "array_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_accident_01/frames.npy",
+      "array_sha256": "725cbf9dfc1ef1a15d02338335a9cc310122699480dbee540cc05eee861dcf2f",
+      "frames_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_accident_01/frames.json",
+      "frames_sha256": "38a3d2fdc0c13bc11517774d9b72504283dc0a39e00ebb1205237865151ffa80",
+      "preview_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_accident_01/preview.png",
+      "preview_sha256": "98da86545a7e4c9459f6cfb6672d8abad362e5ce257b2288554d24e6606c59a3"
+    },
+    {
+      "sample_id": "devval_accident_02",
+      "dataset": "ACCIDENT",
+      "source_path": "real_videos/XaqA-uzqeNc_00.mp4",
+      "source_reference": "https://www.kaggle.com/datasets/picekl/accident",
+      "source_sha256": "0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+      "management_group": "local-file-sha256:0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+      "group_scope": "same_local_file_only_upstream_event_relationship_unverified",
+      "upstream_original_id": null,
+      "event_id": null,
+      "start_seconds": 1.25,
+      "end_seconds": 3.25,
+      "target": 1,
+      "split": "validation",
+      "training_authorized": false,
+      "final_test": false,
+      "official_iid_split": "train",
+      "metadata": {
+        "path": "data/local/accident/metadata-real.csv",
+        "sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9",
+        "csv_row": 23
+      },
+      "label_review": {
+        "status": "approved",
+        "label": "accident",
+        "basis": "사용자: 사고 포함 예, 현재 2초 구간 사용 예",
+        "reviewer": "다헤",
+        "reviewed_at": "2026-09-22",
+        "scope": "segment",
+        "start_seconds": 1.25,
+        "end_seconds": 3.25,
+        "source_sha256": "0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+        "policy_version": "draft-0.1"
+      },
+      "independence_review": {
+        "status": "pending",
+        "independent_from_training": null,
+        "basis": "Different local file hashes verified; upstream event/re-edit independence unconfirmed"
+      },
+      "usage_review": {
+        "status": "approved",
+        "reviewer": "user (기존 검수 대화: 다헤)",
+        "reviewed_at": "2026-09-22",
+        "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+        "response_source": "user_message",
+        "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님",
+        "local_evaluation_allowed": true,
+        "cloud_evaluation_allowed": true,
+        "approval_scope": "Existing model, these prepared inputs only, manual Drive transfer and free Colab comparison, max 3 segments/300 seconds. No new training, downloads, installations or paid use.",
+        "dataset_legal_terms_newly_verified": false
+      },
+      "input_quality_review": {
+        "status": "approved",
+        "reviewer": "user (기존 검수 대화: 다헤)",
+        "reviewed_at": "2026-09-22",
+        "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+        "response_source": "user_message",
+        "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님",
+        "no_crop_or_missing_scene": true,
+        "preview_visible_at_224": true,
+        "source_sha256": "0238f63c8c7edc7d78911c0524c144906344a6c4fac349df99d5206b88055eec",
+        "start_seconds": 1.25,
+        "end_seconds": 3.25,
+        "array_sha256": "f99152a89227de4e9e9c13c4e6018fb9542ab06bd457a25ea29b14c254a7b1b9",
+        "frames_sha256": "bd10c79bb4b09473b08b703a23b7265d225e69f8aba1a779ad29664cd2a56ff9",
+        "preview_sha256": "c14fc454c4e70273c887cc3ea4d84c21b64e9bfd8cc389fc81de9935b7370777"
+      },
+      "array_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_accident_02/frames.npy",
+      "array_sha256": "f99152a89227de4e9e9c13c4e6018fb9542ab06bd457a25ea29b14c254a7b1b9",
+      "frames_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_accident_02/frames.json",
+      "frames_sha256": "bd10c79bb4b09473b08b703a23b7265d225e69f8aba1a779ad29664cd2a56ff9",
+      "preview_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_accident_02/preview.png",
+      "preview_sha256": "c14fc454c4e70273c887cc3ea4d84c21b64e9bfd8cc389fc81de9935b7370777"
+    },
+    {
+      "sample_id": "devval_normal_01",
+      "dataset": "ACCIDENT",
+      "source_path": "real_videos/F0NHENn-HS4_00.mp4",
+      "source_reference": "https://www.kaggle.com/datasets/picekl/accident",
+      "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "management_group": "local-file-sha256:8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+      "group_scope": "same_local_file_only_upstream_event_relationship_unverified",
+      "upstream_original_id": null,
+      "event_id": null,
+      "start_seconds": 0.0,
+      "end_seconds": 2.0,
+      "target": 0,
+      "split": "validation",
+      "training_authorized": false,
+      "final_test": false,
+      "official_iid_split": "train",
+      "metadata": {
+        "path": "data/local/accident/metadata-real.csv",
+        "sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9",
+        "csv_row": 15
+      },
+      "label_review": {
+        "status": "approved",
+        "label": "normal",
+        "scope": "segment",
+        "start_seconds": 0.0,
+        "end_seconds": 2.0,
+        "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+        "policy_version": "draft-0.1",
+        "basis": "사용자가 정상 후보01 전체0–2초는 나머지 사고 장면에 포함되지 않으며 사고가 아니라고 명확히 정정함",
+        "reviewer": "다헤",
+        "reviewed_at": "2026-09-22"
+      },
+      "independence_review": {
+        "status": "pending",
+        "independent_from_training": null,
+        "basis": "Different local file hashes verified; upstream event/re-edit independence unconfirmed"
+      },
+      "usage_review": {
+        "status": "approved",
+        "reviewer": "user (기존 검수 대화: 다헤)",
+        "reviewed_at": "2026-09-22",
+        "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+        "response_source": "user_message",
+        "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님",
+        "local_evaluation_allowed": true,
+        "cloud_evaluation_allowed": true,
+        "approval_scope": "Existing model, these prepared inputs only, manual Drive transfer and free Colab comparison, max 3 segments/300 seconds. No new training, downloads, installations or paid use.",
+        "dataset_legal_terms_newly_verified": false
+      },
+      "input_quality_review": {
+        "status": "approved",
+        "reviewer": "user (기존 검수 대화: 다헤)",
+        "reviewed_at": "2026-09-22",
+        "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+        "response_source": "user_message",
+        "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님",
+        "no_crop_or_missing_scene": true,
+        "preview_visible_at_224": true,
+        "source_sha256": "8b7ae36b98297727a2247230508bc4015ebe69cbe074553f22cc1642e2673cbd",
+        "start_seconds": 0.0,
+        "end_seconds": 2.0,
+        "array_sha256": "c06a34fcdabe3d04cf7d73326be7c774bd56a97dd07dd912e74fefd76f943d63",
+        "frames_sha256": "be1060b11083e1c7c5cce6c0c11aaf03b67f46759cbb274efcffa0a473888497",
+        "preview_sha256": "d8e6b6ecda57708c1d20c60b5e159e73755cf182f66db13b192f988739bce05e"
+      },
+      "array_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_normal_01/frames.npy",
+      "array_sha256": "c06a34fcdabe3d04cf7d73326be7c774bd56a97dd07dd912e74fefd76f943d63",
+      "frames_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_normal_01/frames.json",
+      "frames_sha256": "be1060b11083e1c7c5cce6c0c11aaf03b67f46759cbb274efcffa0a473888497",
+      "preview_path": "artifacts/colab/evaluation-20260922-02/inputs/devval_normal_01/preview.png",
+      "preview_sha256": "d8e6b6ecda57708c1d20c60b5e159e73755cf182f66db13b192f988739bce05e"
+    }
+  ],
+  "support_files": [
+    "artifacts/training/limited-real-iid-20260921-01/config.json",
+    "artifacts/training/limited-real-iid-20260921-01/class_mapping.json",
+    "artifacts/training/limited-real-iid-20260921-01/versions.json",
+    "data/local/accident/metadata-real.csv"
+  ],
+  "missing": [
+    "학습 원본 및 후보 간 상위 원본·사건·재편집 독립성 근거 미확인; 참고 비교 실행을 막는 조건은 아니며 독립 검증 완료로 표시하지 않음"
+  ],
+  "readiness_note": "Approved for the exact three-segment reference comparison only. Independence remains unconfirmed; no training or independent validation authorization.",
+  "source_scope": "ACCIDENT_only_reference_comparison; existing_model_QMUL_training_history_preserved",
+  "input_connection": {
+    "method": "stack_existing_review_pngs_no_resampling",
+    "samples": [
+      {
+        "sample_id": "devval_accident_01",
+        "parent_plan_sha256": "7b0bb32c3d5d5d09f8c4fd113e2f66efc68bea50ffa59c76ad8c8b1d8eed208a",
+        "parent_manifest_sha256": "81d08a1a7987297b0de806d81fe798c62d9c1f1e4d2298f4f4ddd0e63e273e9d",
+        "review_frames_sha256": "7802b0a5498320f65b56171d784dbb5aa37be64fb85a4f2ba06967f625bf2f35",
+        "preview_sha256": "98da86545a7e4c9459f6cfb6672d8abad362e5ce257b2288554d24e6606c59a3",
+        "png_sha256_in_order": [
+          "d74be71c99308f54d3476c0678a8a59909585b8ad42605f5aabcd13469a23ea6",
+          "ceb7ce0df6e745c7433dc4a8a20e245651e66b0622a52cec8fecab2097e03a98",
+          "ca1c47b95f588d03233046ed8b1ad88fdf3702dd97ab556eb9679b39ba10147f",
+          "c21175d7a740eea3b621e11429fbf18688d67c97257a3a46cb454246334f75da",
+          "6f8dc725f6ddb982439194473949f98cd6f843fe6946ec7639ed96290b83d223",
+          "2b3f1b981e816d9b6af6e746e16181e7e5b07f85502cdf03cc69e29de4abb043",
+          "4c97a34a013b43e1b20c037a7ecc1af7c1fd91508818556822e0e7b766330892",
+          "b5d0027f51b75086c1519a5523c57e5932cbf81428bc42f14c7ae98b0b589942",
+          "775c65357f17777cbc53bcada014cf0fe49bedee65ad38ea43ee61fd05c9b508",
+          "696682f79b2033203675ee71d0c1f3c0956c2a7128fdcdb65f4edb8ef9d36558",
+          "98346f08ad5b859d521732733315498a8bca942a9673d9dfed35ee8efdb6863f",
+          "aa2df6068e444b954e2efc1e48127cdb97da5a9c5fa6a0d8af500511c68edd0f",
+          "6c7457ee41fb032d4e68c8f8b76493e8561092d38c0a291df96fcdde0ec8d9b2",
+          "a02051683de14804ea12df47f1bf51214ca6c0b02be378b822765ae5c9bae08f",
+          "da5093eae19c53146b8b7b3916136f6a94a38d94c8a0cf8261342e0d0b359da3",
+          "902148434f5f5e0eef38c27ea3fb478b49bfbb24220ed0849d5bc21da51b2359"
+        ],
+        "pixels_equal_review_sheet": true,
+        "timestamps_preserved": true,
+        "label_target": 1,
+        "video_decoded": false
+      },
+      {
+        "sample_id": "devval_accident_02",
+        "parent_plan_sha256": "7b0bb32c3d5d5d09f8c4fd113e2f66efc68bea50ffa59c76ad8c8b1d8eed208a",
+        "parent_manifest_sha256": "81d08a1a7987297b0de806d81fe798c62d9c1f1e4d2298f4f4ddd0e63e273e9d",
+        "review_frames_sha256": "b7a5a8009188be5fa839a7ecdf75ce1a763323af4b0d680d96b17c02b878be6e",
+        "preview_sha256": "c14fc454c4e70273c887cc3ea4d84c21b64e9bfd8cc389fc81de9935b7370777",
+        "png_sha256_in_order": [
+          "da7808afa804bb5e020b6e797cda26372a2d076ebf377236ac81bba81f7dd64d",
+          "5496b7781af19dc7691dbe14635069c71a65be24492043d30ee4a257e98a4597",
+          "8c1ea79f61feccc66fa677e03e1b416e814fc242abda468514cab3b03aa1bbf0",
+          "b7a4f4cdc2643c7ef196182e68ffae0ec75f4231c752c3fc92352e94d6beedd8",
+          "1ae481afe66fe21cd1c1fd1a184c6b6432561a7f516f94b5a32e1fa3ec567254",
+          "08d201161603f6cce60f73d7f94ed15ef944c95163e9fdf3dc6fc7063ecdb7a6",
+          "2b46abc38f237a2f0ae6eabbe821713536f6c71cb052c358b5d3b965ec266db9",
+          "a64d3f09cf029b0c566873834dbb971d371c9bf9ee8b1effcc63993ab492278d",
+          "db2cf295f0fc4616842c22681d4f7231fd71fc0a6fe4fa1d27347c5fe287123d",
+          "7aa1f5b4cae42c9317243ca65829499612319d1ac9618433f8a0a1ab671ede33",
+          "bb9247273f0172724ae28bf3499ecae59f7144f37d576d427fd429e235651c43",
+          "844bcc7ab4f0cf79b584a298f67f3fb68caf474c06acc7a22a46d068eefcc6b0",
+          "2417859d744950ed9b701920fe59c6a203e41c1cf36a42823e4f4bb6414c77ec",
+          "09e679786475e21097e734b8a00aa68dc61e72ae624f5babc8fe11a9146402ef",
+          "2ecac8862d9072b5ba0d5b18c3fc68dc642e117376841efc46004fe73921b3c6",
+          "e3b0572ed3a2eb2693940f345f2038f1f78b3f170fbf9ed25155e13dff4fc3d4"
+        ],
+        "pixels_equal_review_sheet": true,
+        "timestamps_preserved": true,
+        "label_target": 1,
+        "video_decoded": false
+      },
+      {
+        "sample_id": "devval_normal_01",
+        "parent_plan_sha256": "6549921989530dcbfebcefb17f826f9497993e399604d81b9b24e74675dd0593",
+        "parent_manifest_sha256": "b77e6242f0727daae6f2399f75e46ced721ade56aa132504ec806e0dd3d4e5d3",
+        "review_frames_sha256": "3898a2e1a321e9c479d5c49d426c2135b559aeb2e044beff237891d98e75697b",
+        "preview_sha256": "d8e6b6ecda57708c1d20c60b5e159e73755cf182f66db13b192f988739bce05e",
+        "png_sha256_in_order": [
+          "964f5ac461f01baf3f7bc6ae7d870e9f466d0c85027ef46b95611a0b0e2438b2",
+          "4039f44ae225c5eda7f2010b522041682167c553895473937f5788f9641616dc",
+          "edc0279fe59ce4b0b867985a9a5716d0c5fde05d33ae7ba1c94d231096585267",
+          "20734ebd6efeb1e2c12041178569a41553ecd4db0704423f0c5f71037bdbed79",
+          "09cc5da2a75546c265294ab6984a39580b8af04e210878c54a3889d2b16b6dd1",
+          "89dcb7766be5beda2848ee70bafffdf73e8c5c939ad14fea9c5fef4f0c658ee5",
+          "120ef37d81e7d21ffbf6be17bc9fe4a8505c058f3fa15b1652aacb22ce2bd2d0",
+          "ea739efe2e73f37354a405f5968135d72495e4a7d3ad193917afca2600e3a1c2",
+          "e935f13fde440461f529488d7897dbaac897b7885532b3b818a0ee97e719f06b",
+          "5c7d48a74d4a0e3bc625a099b42dcd1c2f8798ba70fff3624927598160600fe8",
+          "d4ca3f280b793ad7ab16bf9ad7c86e4aa4e2ac96a8c4a7798f234586e006435f",
+          "3d617f519814374bb00ea60ce81f5c2e640a8f6293768dfa38bb80f3b309dc68",
+          "a68b9eaf4f44f0f5714098a308bf4a4b1de38627748946b9f038feff62601f42",
+          "74e6a2d9c6c86160f3967216d8bf3e115811af5830922ea62d6052ea91caaefc",
+          "b502a77371b3c259c44dda24def474bff6a32535c364a348e5fad2c794a32aa1",
+          "caecfc223e5c98642f3271b35ce2b66ff5839e4b333929fab752318d1f3ed290"
+        ],
+        "pixels_equal_review_sheet": true,
+        "timestamps_preserved": true,
+        "label_target": 0,
+        "video_decoded": false
+      }
+    ],
+    "quality_or_independence_approval_inferred": false
+  },
+  "prior_manifest": {
+    "path": "artifacts/colab/evaluation-20260922-02/evaluation.json",
+    "sha256": "0701944cb2de08e66981c2da3176ec6b65549d3026fc53911def06a2fc4e0e14"
+  },
+  "reference_comparison_approval": {
+    "status": "approved",
+    "reviewer": "user (기존 검수 대화: 다헤)",
+    "reviewed_at": "2026-09-22",
+    "basis": "세 구간 모두 식별 가능하고 잘림·누락 없음. 독립성 미확인을 표시한 참고용 예비 비교로 진행해줘.",
+    "response_source": "user_message",
+    "date_basis": "답변 수신일; 이번 답변에서 새 검수일/이름을 보고한 것은 아님",
+    "purpose": "reference_comparison_unconfirmed_independence",
+    "independence_unconfirmed_accepted": true,
+    "not_independent_validation": true,
+    "scope_sha256": "2effa5516244842688a93372a727301caa51c8ebf5c4134f195c5ba10c1cecd7"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "purpose": "human_review_only",
+  "time_basis": "local_file_pts_seconds",
+  "source_filename": "qmul_junction.avi",
+  "source_sha256": "2add2fa0207a9c903e424f76ead3c749bb02a66994c0f4a9e64fc60cc51652bb",
+  "source_url": "https://personal.ie.cuhk.edu.hk/~ccloy/downloads_qmul_junction.html",
+  "selection_basis": "Predetermined early/middle/late positions, not selected using labels or accident times.",
+  "timing_note": "Local header: 3003 seconds at 30000/1001 fps. Published 1h/25fps correspondence is unverified; do not retime.",
+  "segments": [
+    {"segment_id": "qmul_001", "start_seconds": 30, "end_seconds": 36},
+    {"segment_id": "qmul_002", "start_seconds": 1500, "end_seconds": 1506},
+    {"segment_id": "qmul_003", "start_seconds": 2700, "end_seconds": 2706}
+  ]
+}

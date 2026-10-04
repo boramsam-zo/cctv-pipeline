@@ -1,0 +1,3 @@
+# Optional BE metadata client only. No torch, model flavors, or training extras.
+# Server/client release pinned after official release check on 2026-10-04.
+mlflow-skinny==3.16.1

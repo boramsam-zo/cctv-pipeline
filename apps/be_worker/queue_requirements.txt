@@ -1,2 +1,3 @@
 psycopg[binary]==3.3.6
 boto3==1.43.103
+av==16.1.0

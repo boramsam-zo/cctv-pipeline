@@ -1,0 +1,22 @@
+{
+  "purpose": "synthetic_test_operation_cost_only",
+  "model": "r3d_18",
+  "weights": "random_initialization",
+  "train_scope": "head",
+  "batch_size": 1,
+  "frames": 16,
+  "height": 224,
+  "width": 224,
+  "dtype": "float32",
+  "num_workers": 0,
+  "num_classes": 2,
+  "seed": 20260918,
+  "cpu_threads": 4,
+  "learning_rate": 0.001,
+  "momentum": 0.9,
+  "warmup_forward_calls": 1,
+  "optimizer_updates": 1,
+  "eval_calls": 3,
+  "max_seconds": 180,
+  "normalization": "existing_tensor_from_array_KINETICS400_V1"
+}

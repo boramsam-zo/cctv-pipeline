@@ -28,7 +28,13 @@ def validate_result(result):
         raise ValueError('Invalid source video interval')
     if source['manifest_key'] != f'cctv-evidence/{job}/manifest.json':
         raise ValueError('Result manifest belongs to another job')
-    for kind, ext in [('clip', 'mp4'), ('frame', 'png')]:
+    is_ab = source.get('evidence_version') == 'runpod-evidence-v2'
+    if not is_ab and ('analysis_profile' in source or 'gpu_key' in source or 'evidence_version' in source):
+        raise ValueError('Unknown or downgraded analysis evidence contract')
+    if is_ab:
+        from apps.scene_description import ab_scene
+        ab_scene.validate_result_assets(result)
+    for kind, ext in ([] if is_ab else [('clip', 'mp4'), ('frame', 'png')]):
         asset = source['assets'][kind]
         if (asset['key'] != f'cctv-evidence/{job}/evidence/{event}/{kind}.{ext}'
                 or asset['asset_id'] != f'{job}/{event}/{kind}'):

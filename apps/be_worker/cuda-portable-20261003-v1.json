@@ -1,0 +1,7 @@
+{
+  "schema_version": "cctv-analysis-deployment-v1",
+  "deployment": "cuda-portable-20261003-v1",
+  "gpu": "NVIDIA CUDA GPU",
+  "image_manifest_sha256": "8c6d90690940c678a0d7f48d23d2fa27f491a5a1ca2cfd053bc884b5e5cf6b57",
+  "execution_adapter_sha256": "2ed88140a3a9a14585bc05336b1dc8dfe1663bf607b0f009aa79f7741975853d"
+}

@@ -1,0 +1,3 @@
+# Optional inspection tools only; no model or training dependencies.
+av==16.1.0
+PyYAML==6.0.3

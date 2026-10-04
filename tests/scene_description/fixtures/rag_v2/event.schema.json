@@ -1,0 +1,557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "candidate_time_s",
+    "description",
+    "location",
+    "scene",
+    "participants",
+    "accident",
+    "hazards",
+    "people",
+    "evidence",
+    "uncertainties"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "2.0"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "candidate_time_s": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "camera_id",
+        "registered_location",
+        "road_type",
+        "tunnel",
+        "mountain_road",
+        "near_forest"
+      ],
+      "properties": {
+        "camera_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "registered_location": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "road_type": {
+          "enum": [
+            "highway",
+            "urban",
+            "rural",
+            "unknown"
+          ]
+        },
+        "tunnel": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "mountain_road": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "near_forest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "day_time",
+        "weather"
+      ],
+      "properties": {
+        "day_time": {
+          "enum": [
+            "day",
+            "night",
+            "unknown"
+          ]
+        },
+        "weather": {
+          "enum": [
+            "clear",
+            "cloudy",
+            "rain",
+            "snow",
+            "fog",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "count",
+          "evidence_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "Car",
+              "Truck",
+              "Bus",
+              "Motorcycle",
+              "Bicycle",
+              "Pedestrian",
+              "Unknown"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "accident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "forms",
+        "vehicle_count",
+        "collision_count"
+      ],
+      "properties": {
+        "forms": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "rear_end",
+              "head_on",
+              "side_collision",
+              "single_vehicle",
+              "multi_vehicle",
+              "rollover",
+              "structure_collision",
+              "fall",
+              "unknown"
+            ]
+          }
+        },
+        "vehicle_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "collision_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "hazards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fire",
+        "smoke",
+        "debris",
+        "cargo_spill",
+        "lane_blocked",
+        "forest_fire_spread",
+        "secondary_collision",
+        "dangerous_goods_mark"
+      ],
+      "properties": {
+        "fire": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "smoke": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "debris": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "cargo_spill": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "lane_blocked": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "forest_fire_spread": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "secondary_collision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "dangerous_goods_mark": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "people": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "person_on_road",
+        "rider_separated",
+        "visible_entrapment"
+      ],
+      "properties": {
+        "person_on_road": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "rider_separated": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "visible_entrapment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "evidence_ids"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "observed",
+                "not_observed",
+                "unknown"
+              ]
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "observation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "observation": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 services:
   be-queue:
     profiles: [be-tools]
-    image: cctv-be-queue:pg-v1
+    image: ${BE_QUEUE_IMAGE:-cctv-be-queue:pg-v1}
     build:
       context: ${BE_APP_DIR:?Set the BE app directory}
       dockerfile: Queue.Dockerfile
@@ -23,6 +23,11 @@ services:
       - type: bind
         source: ${BE_SCENE_APP_DIR:?Set the scene app directory}
         target: /code/apps/scene_description
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${BE_APP_DIR}/../rag_index
+        target: /code/apps/rag_index
         read_only: true
         bind: {create_host_path: false}
       - type: bind

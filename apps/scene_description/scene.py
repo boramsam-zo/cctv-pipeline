@@ -182,6 +182,9 @@ def checked_bytes(data, entry):
 
 
 def validate_manifest(manifest, config):
+    if 'analysis_profile' in config:
+        from apps.scene_description import ab_scene
+        return ab_scene.validate_manifest(manifest, config)
     prefix = validate_config(config)
     if (manifest.get('schema_version') != 'runpod-s3-evidence-v1'
             or manifest.get('storage') != 's3'
@@ -195,6 +198,9 @@ def validate_manifest(manifest, config):
 
 
 def selected_event(index, event_id):
+    if index.get('schema_version') == 'runpod-evidence-v2':
+        from apps.be_worker.ab_evidence import selected_event as selected_ab_event
+        return selected_ab_event(index, event_id)
     if index.get('schema_version') != 'runpod-evidence-v1' or index.get('pts_verified') is not True:
         raise ValueError('Verified evidence timeline required')
     if index.get('time_basis') != 'seconds_from_first_decoded_frame':
@@ -223,6 +229,9 @@ def selected_event(index, event_id):
 
 
 def fetch(config, output, reader):
+    if 'analysis_profile' in config:
+        from apps.scene_description import ab_scene
+        return ab_scene.fetch(config, output, reader)
     prefix = validate_config(config)
     output = private_dir(output)
     # Only metadata and the selected event are read, never the whole bucket.
@@ -257,6 +266,9 @@ def fetch(config, output, reader):
 def load_bundle(directory):
     root = Path(directory).resolve()
     config = parse(read_limited(root/'source.json', JSON_LIMIT))
+    if 'analysis_profile' in config:
+        from apps.scene_description import ab_scene
+        return ab_scene.load_bundle(directory)
     manifest_raw = read_limited(root/'manifest.json', JSON_LIMIT)
     manifest = parse(manifest_raw)
     prefix = validate_manifest(manifest, config)
@@ -285,6 +297,9 @@ def load_bundle(directory):
 
 
 def build_request(event, media, fps):
+    if event.get('evidence_version') == 'runpod-evidence-v2':
+        from apps.scene_description import ab_scene
+        return ab_scene.build_request(event, media, fps)
     if not 1 <= finite(fps) <= 8:
         raise ValueError('Sampling FPS must be 1..8 for this demo')
     context = {key: event[key] for key in ['source_start_s', 'source_end_s',
@@ -310,6 +325,9 @@ def build_request(event, media, fps):
 
 
 def validate_description(value, event, version='cctv-scene-v2'):
+    allowed_assets = ['clip', 'frame']
+    if event.get('evidence_version') == 'runpod-evidence-v2' and event.get('version') in ('B', 'R2'):
+        allowed_assets.append('roi_clip')
     fields = {'summary', 'observations', 'uncertainties'}
     fields |= {'assessment'} if version == 'cctv-scene-v1' else {'accident_suspicion', 'incident_types'}
     if version not in ('cctv-scene-v1', 'cctv-scene-v2') or not isinstance(value, dict) or set(value) != fields:
@@ -343,8 +361,8 @@ def validate_description(value, event, version='cctv-scene-v2'):
         times, refs = item['clip_times_seconds'], item['asset_refs']
         if (not isinstance(times, list) or not 1 <= len(times) <= 20
                 or any(not 0 <= finite(t) < duration for t in times)
-                or not isinstance(refs, list) or not refs or len(refs) > 2
-                or any(ref not in ['clip', 'frame'] for ref in refs) or len(refs) != len(set(refs))):
+                or not isinstance(refs, list) or not refs or len(refs) > len(allowed_assets)
+                or any(ref not in allowed_assets for ref in refs) or len(refs) != len(set(refs))):
             raise ValueError('Observation time or evidence reference is invalid')
         normalized.append(dict(item, source_times_seconds=[event['source_start_s'] + t for t in times]))
     if assessment != 'uncertain' and not observations:
@@ -467,6 +485,15 @@ def describe(directory, output, model, fps, key, caller=call_gemini):
     if not key or any(c.isspace() for c in key):
         raise ValueError('Enter one non-empty Gemini API key privately')
     config, manifest, event, media, manifest_sha = load_bundle(directory)
+    ab_version = event.get('evidence_version') == 'runpod-evidence-v2'
+    prompt_version = PROMPT_VERSION
+    visual_kinds = ['clip', 'frame']
+    extra_source = {}
+    if ab_version:
+        from apps.scene_description import ab_scene
+        prompt_version = ab_scene.PROMPT_VERSION
+        visual_kinds = ab_scene.visual_kinds(event)
+        extra_source = ab_scene.source_metadata(event)
     if not (Path(directory)/'fetch.complete.json').is_file():
         raise ValueError('Evidence fetch did not complete')
     request_data = build_request(event, media, fps)
@@ -474,7 +501,7 @@ def describe(directory, output, model, fps, key, caller=call_gemini):
     analysis_id = str(uuid.uuid4())
     request_record = {'schema_version': 'cctv-scene-request-v1', 'analysis_id': analysis_id,
         'provider_job_id': config['job_id'], 'event_id': config['event_id'], 'model': model,
-        'prompt_version': PROMPT_VERSION, 'request_sha256': sha(request_data),
+        'prompt_version': prompt_version, 'request_sha256': sha(request_data),
         'video_sample_fps': fps, 'created_at': now()}
     # Persist intent before the billable request. Never save the API key or inline media request.
     write_new(output/'request.json', request_record)
@@ -492,7 +519,7 @@ def describe(directory, output, model, fps, key, caller=call_gemini):
         description = validate_description(parse(text), event)
         assets = {kind: {**manifest['files'][event[kind]],
                         'asset_id': f"{config['job_id']}/{config['event_id']}/{kind}"}
-                  for kind in ['clip', 'frame']}
+                  for kind in visual_kinds}
         for item in description['observations']:
             item['evidence_asset_ids'] = [assets[ref]['asset_id'] for ref in item['asset_refs']]
         result = {**request_record, 'status': 'completed',
@@ -502,7 +529,7 @@ def describe(directory, output, model, fps, key, caller=call_gemini):
             'input_sha256': config['expected_input_sha256'],
             'source': {'bucket': config['bucket'], 'region': config['region'],
                 'manifest_key': manifest['manifest_key'], 'manifest_sha256': manifest_sha,
-                'source_start_s': event['source_start_s'], 'source_end_s': event['source_end_s'],
+                **extra_source, 'source_start_s': event['source_start_s'], 'source_end_s': event['source_end_s'],
                 'assets': assets}, 'description': description,
             'usage': raw.get('usageMetadata', {}), 'response_sha256': sha(encoded(raw)),
             'finished_at': now(), 'elapsed_seconds': time.monotonic() - started,

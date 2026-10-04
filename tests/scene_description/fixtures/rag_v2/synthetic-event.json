@@ -1,0 +1,100 @@
+{
+  "schema_version": "2.0",
+  "event_id": "demo_mountain_accident_fire_001",
+  "candidate_time_s": null,
+  "description": "산길에서 사고가 발생한 뒤 불꽃이 보이며 주변에 산이 많다.",
+  "location": {
+    "camera_id": null,
+    "registered_location": null,
+    "road_type": "unknown",
+    "tunnel": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "mountain_road": {
+      "state": "observed",
+      "evidence_ids": [
+        "ev-1"
+      ]
+    },
+    "near_forest": {
+      "state": "unknown",
+      "evidence_ids": []
+    }
+  },
+  "scene": {
+    "day_time": "unknown",
+    "weather": "unknown"
+  },
+  "participants": [],
+  "accident": {
+    "forms": [
+      "unknown"
+    ],
+    "vehicle_count": null,
+    "collision_count": null
+  },
+  "hazards": {
+    "fire": {
+      "state": "observed",
+      "evidence_ids": [
+        "ev-1"
+      ]
+    },
+    "smoke": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "debris": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "cargo_spill": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "lane_blocked": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "forest_fire_spread": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "secondary_collision": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "dangerous_goods_mark": {
+      "state": "unknown",
+      "evidence_ids": []
+    }
+  },
+  "people": {
+    "person_on_road": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "rider_separated": {
+      "state": "unknown",
+      "evidence_ids": []
+    },
+    "visible_entrapment": {
+      "state": "unknown",
+      "evidence_ids": []
+    }
+  },
+  "evidence": [
+    {
+      "id": "ev-1",
+      "observation": "사용자 제공 상황: 사고가 나서 화재가 보이는데 옆에 산이 많아. 산길이야."
+    }
+  ],
+  "uncertainties": [
+    "사고 관련 차량 종류와 대수 및 충돌 형태",
+    "주변 수목·산림 인접 여부와 화재 확산 여부",
+    "탑승자 상태와 부상 여부",
+    "차로 점유·연기·파편 발생 여부",
+    "정확한 위치와 관할 연락처"
+  ]
+}

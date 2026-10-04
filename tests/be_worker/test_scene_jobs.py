@@ -42,6 +42,8 @@ class SceneJobTests(unittest.TestCase):
             self.store = Store(conn)
         else:
             self.store = MemoryStore()
+            guard = patch('apps.be_worker.trial_limits.get', return_value=None)
+            guard.start(); self.addCleanup(guard.stop)
         video = self.root/'input.mp4'; video.write_bytes(b'\0\0\0\x18ftyp-SYNTHETIC')
         spool = self.root/'spool'
         be_config = dict(runpod_url='https://test.invalid', s3_bucket=self.config['bucket'], s3_region=self.config['region'])
@@ -110,6 +112,31 @@ class SceneJobTests(unittest.TestCase):
         self.assertIsNone(result['error_code'])
         self.assertEqual(result['status'], 'media_verified')
         self.assertEqual(self.calls, 0)
+    def test_trial_reservation_precedes_scene_call_and_saved_result_reuses_it(self):
+        self.fetch()
+        reserved = []
+        def reserve(conn, row, event, kind, request_sha, model):
+            self.assertEqual(self.calls, 0)
+            self.assertEqual((event, kind, model), ('event_000','scene','gemini-test'))
+            self.assertEqual(len(request_sha), 64)
+            reserved.append(True)
+        original = self.call
+        def caller(*args):
+            self.assertEqual(reserved, [True])
+            return original(*args)
+        with patch('apps.be_worker.trial_limits.claim', side_effect=reserve) as claim, patch.object(self,'call',caller):
+            self.describe()
+            self.describe(key_loader=lambda: self.fail('saved response does not require key'))
+        self.assertEqual(claim.call_count, 1)
+        self.assertEqual(self.calls, 1)
+    def test_trial_reservation_denial_preserves_reason_and_never_calls_scene(self):
+        self.fetch()
+        with patch('apps.be_worker.trial_limits.claim', side_effect=WorkerError('trial_attempt_already_claimed_no_retry')):
+            with self.assertRaisesRegex(WorkerError, 'trial_attempt_already_claimed_no_retry'):
+                self.describe()
+        self.assertEqual(self.calls, 0)
+        self.assertEqual(self.store.rows()[0]['state']['scene_events']['event_000']['error_code'],
+                         'trial_attempt_already_claimed_no_retry')
     def test_changed_manifest_since_handoff_is_rejected(self):
         key = f"cctv-evidence/{self.config['job_id']}/manifest.json"
         self.s3.objects[key]['Body'] += b' '

@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars and replace these placeholders after checking the account/network.
+aws_account_id = "REPLACE_WITH_ACCOUNT_ID"
+subnet_id      = "REPLACE_WITH_PUBLIC_SUBNET_ID"
+ami_id         = "REPLACE_WITH_UBUNTU_2404_AMD64_AMI"
+# Draft resources; review Seoul pricing before apply.
+instance_type = "t3.small"
+root_disk_gib = 20
+ssh_source_cidr = "REPLACE_WITH_YOUR_PUBLIC_IPV4/32"
+ssh_public_key = "ssh-ed25519 REPLACE_WITH_PUBLIC_KEY"
+# After querying profiles for hanwha-cctv-ec2-role, set its actual instance profile name.
+# The profile is managed by the AWS administrator, not created by this module.
+existing_instance_profile_name = ""

@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "policy_version": "draft-0.1",
+  "time_basis": "local_clip_seconds",
+  "frame_count": 16,
+  "image_size": 224,
+  "samples": [
+    {
+      "sample_id": "sample_001",
+      "video_path": "real_videos/-9oifpjUxxM_00.mp4",
+      "source_sha256": "ddf3957dd16fd17ae47e5b014d49c05904de35512634a9fddce4d87e7768906e",
+      "start_seconds": 7.533,
+      "end_seconds": 9.533,
+      "window_basis": "docs/label_policy.md §6의 검토 위치 예시. 원본 accident_time 앞뒤 1초이며 승인된 사고 구간이 아님.",
+      "upstream_original_id": null,
+      "source_group_id": null,
+      "event_id": null,
+      "label_review": {
+        "status": "approved",
+        "label": "accident",
+        "scope": "segment",
+        "start_seconds": 7.533,
+        "end_seconds": 9.533,
+        "source_sha256": "ddf3957dd16fd17ae47e5b014d49c05904de35512634a9fddce4d87e7768906e",
+        "policy_version": "draft-0.1",
+        "reviewer": "다혜",
+        "reviewed_at": "2026-09-19",
+        "basis": "사용자 구간 검수: 차가 가다가 중앙 가드레일쪽으로 갔음; 판정: 사고; 미리보기 식별 가능, 잘림·누락·순서 문제 없음으로 응답."
+      },
+      "human_submission": {
+        "judgement": "사고",
+        "observation": "차가 가다가 중앙 가드레일쪽으로 갔음",
+        "preview_visible": "예",
+        "missing_or_order_problem": "없음",
+        "source": "user_message",
+        "reviewer": "다혜",
+        "reviewed_at": "2026-09-19"
+      },
+      "training_authorized": false,
+      "official_splits": {
+        "split_in_distribution": "test",
+        "split_geo_aware": "test"
+      }
+    },
+    {
+      "sample_id": "sample_002",
+      "video_path": "real_videos/-PpBteU0p3Q_00.mp4",
+      "source_sha256": "d4b1495ca73837a397ecff1e8baba8c59e8651964dd68ae696dcdc950a3f6e49",
+      "start_seconds": 2.292,
+      "end_seconds": 4.292,
+      "window_basis": "docs/label_policy.md §6의 검토 위치 예시. 원본 accident_time 앞뒤 1초이며 승인된 사고 구간이 아님.",
+      "upstream_original_id": null,
+      "source_group_id": null,
+      "event_id": null,
+      "label_review": {
+        "status": "approved",
+        "label": "accident",
+        "scope": "segment",
+        "start_seconds": 2.292,
+        "end_seconds": 4.292,
+        "source_sha256": "d4b1495ca73837a397ecff1e8baba8c59e8651964dd68ae696dcdc950a3f6e49",
+        "policy_version": "draft-0.1",
+        "reviewer": "다혜",
+        "reviewed_at": "2026-09-19",
+        "basis": "사용자 구간 검수: 갑자기 중앙 가드레일쪽으로 돌진. 후속 응답에서 실제 부딪힘을 사고 기준으로 이해하고 원본 2.292~4.292초 구간의 사고 판정을 확인함. 미리보기 식별 가능, 잘림·누락·순서 문제 없음으로 응답. 별도의 사고 시작 시각은 확정하지 않음."
+      },
+      "human_submission": {
+        "judgement": "사고",
+        "observation": "갑자기 중앙 가드레일쪽으로 돌진",
+        "preview_visible": "가능",
+        "missing_or_order_problem": "없음",
+        "source": "user_message",
+        "reviewer": "다혜",
+        "reviewed_at": "2026-09-19"
+      },
+      "training_authorized": false,
+      "official_splits": {
+        "split_in_distribution": "test",
+        "split_geo_aware": "test"
+      }
+    },
+    {
+      "sample_id": "sample_003",
+      "video_path": "real_videos/-SNFUobKjoM_00.mp4",
+      "source_sha256": "d45f68ebe17f9505711b367a4e754487d69a7ff35e635dddf5d3f9988085bcb1",
+      "start_seconds": 12.533,
+      "end_seconds": 14.533,
+      "window_basis": "docs/label_policy.md §6의 검토 위치 예시. 원본 accident_time 앞뒤 1초이며 승인된 사고 구간이 아님.",
+      "upstream_original_id": null,
+      "source_group_id": null,
+      "event_id": null,
+      "label_review": {
+        "status": "approved",
+        "label": "accident",
+        "scope": "segment",
+        "start_seconds": 12.533,
+        "end_seconds": 14.533,
+        "source_sha256": "d45f68ebe17f9505711b367a4e754487d69a7ff35e635dddf5d3f9988085bcb1",
+        "policy_version": "draft-0.1",
+        "reviewer": "다혜",
+        "reviewed_at": "2026-09-19",
+        "basis": "사용자 구간 검수: 4차선도로에서 교차로에서 서로 다른 길로 직진하다 부딪힌 경우; 판정: 사고; 미리보기 식별 가능, 잘림·누락·순서 문제 없음으로 응답."
+      },
+      "human_submission": {
+        "judgement": "사고",
+        "observation": "4차선도로에서 교차로에서 서로 다른 길로 직진하다 부딪힌 경우",
+        "preview_visible": "가능",
+        "missing_or_order_problem": "없음",
+        "source": "user_message",
+        "reviewer": "다혜",
+        "reviewed_at": "2026-09-19"
+      },
+      "training_authorized": false,
+      "official_splits": {
+        "split_in_distribution": "test",
+        "split_geo_aware": "test"
+      }
+    }
+  ],
+  "review_purpose": "human_review_record_only",
+  "review_record": "docs/reviews/2026-09-19_dahye.md",
+  "parent_plan_sha256": "02e53ce9a5a2798b99dbfed5f8d9ea6b4a7aadf6ca6d6d5f0c11c7870e05c4ff",
+  "approval_scope": "sample_labels_only_not_training_or_global_policy_approval",
+  "reviewer": "다혜",
+  "reviewed_at": "2026-09-19",
+  "reviewed_at_as_reported": "260919"
+}

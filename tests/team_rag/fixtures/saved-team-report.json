@@ -1,0 +1,2233 @@
+{
+  "event_id": "6efe62e3bdce4fbdb8270980332db872_event_000",
+  "status": "draft_requires_operator_review",
+  "schema_version": "2.0",
+  "input": {
+    "accident": {
+      "collision_count": 1,
+      "forms": [
+        "side_collision",
+        "multi_vehicle"
+      ],
+      "vehicle_count": 3
+    },
+    "candidate_time_s": null,
+    "description": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+    "event_id": "6efe62e3bdce4fbdb8270980332db872_event_000",
+    "evidence": [
+      {
+        "id": "e1",
+        "observation": "승용차 두 대가 도로를 주행하는 모습"
+      },
+      {
+        "id": "e2",
+        "observation": "트럭이 측면에서 진입하여 승용차와 충돌하는 모습"
+      },
+      {
+        "id": "e3",
+        "observation": "충돌 후 차량들이 차로를 점유하며 정차한 모습"
+      }
+    ],
+    "hazards": {
+      "cargo_spill": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "dangerous_goods_mark": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "debris": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "fire": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "forest_fire_spread": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "lane_blocked": {
+        "evidence_ids": [
+          "e3"
+        ],
+        "state": "observed"
+      },
+      "secondary_collision": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "smoke": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      }
+    },
+    "location": {
+      "camera_id": null,
+      "mountain_road": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "near_forest": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "registered_location": null,
+      "road_type": "unknown",
+      "tunnel": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      }
+    },
+    "participants": [
+      {
+        "count": 2,
+        "evidence_ids": [
+          "e1"
+        ],
+        "id": "p1",
+        "type": "Car"
+      },
+      {
+        "count": 1,
+        "evidence_ids": [
+          "e2"
+        ],
+        "id": "p2",
+        "type": "Truck"
+      }
+    ],
+    "people": {
+      "person_on_road": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "rider_separated": {
+        "evidence_ids": [],
+        "state": "not_observed"
+      },
+      "visible_entrapment": {
+        "evidence_ids": [],
+        "state": "unknown"
+      }
+    },
+    "scene": {
+      "day_time": "night",
+      "weather": "rain"
+    },
+    "schema_version": "2.0",
+    "uncertainties": []
+  },
+  "accident_summary": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+  "observed_topics": [
+    "blocked",
+    "multi",
+    "traffic"
+  ],
+  "agency_notifications": [
+    {
+      "agency_key": "police",
+      "agency": "경찰",
+      "agency_match": "경찰",
+      "notification": "연락 대상",
+      "reason": "관찰된 피처: hazards.lane_blocked",
+      "actions": [
+        "현장 안전을 확보하고 사고 차량·사람 위치를 확인한다.",
+        "필요한 범위의 교통통제와 사고 흔적 보존을 시행한다."
+      ],
+      "task_terms": "초동조치 교통통제 현장 보존",
+      "observed_features": [
+        "hazards.lane_blocked"
+      ],
+      "legal_basis": [
+        "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+        "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+        "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0"
+      ],
+      "evidence_status": "retrieved_candidates",
+      "contact": {
+        "channel": "경찰 관제 연계망",
+        "address": null
+      },
+      "handoff_message": {
+        "event_id": "6efe62e3bdce4fbdb8270980332db872_event_000",
+        "location": null,
+        "camera_id": null,
+        "summary": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+        "confirmed_visual_conditions": [
+          "blocked",
+          "multi",
+          "traffic"
+        ],
+        "human_status": "현장 확인 필요",
+        "notification_condition": "연락 대상"
+      },
+      "retrieved_action_excerpt": [
+        {
+          "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+          "text": "③ 사고현장에 출동한 경찰공무원은 다음 각 호의 초동조치를 취하여야 한다.\n수신호 또는 고장자동차 표지 설치 등 2차사고 예방을 위한 안전조치"
+        },
+        {
+          "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+          "text": "사고현장 보존을 위하여 필요한 최소 범위 내에서 교통을 통제하거나 일방통행의 조치를 취하는 경우에는 \"교통사고 조사 중\" 표지판, 적색 경광등 등을 설치하여 다른 차의 운전자가 사고현장임을 쉽게 알 수 있도록 조치\n현장에 출동한 경찰공무원이 2명 이상일 경우에는 그 임무를 분담하여 수행하고, 상황에 따라 도로관리청 또는 일반인의 협조 조치"
+        },
+        {
+          "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+          "text": "제20조의3(사고유형의 결정) 교통사고의 유형은 다음 각 호의 기준에 따라 정한다.\n\n1. 차대차 사고 : 차와 다른 차가 충돌ㆍ추돌 또는 접촉한 사고\n\n2. 차대사람 사고 : 차가 보행자를 충격한 사고\n\n3. 차량단독 사고 : 운전자, 차, 도로상에 설치된 각종 시설물 또는 자연물이 원인이 되어 차가 스스로 전도ㆍ전복ㆍ추락ㆍ충격한 사고(차량단독 사고 후 그 충격 등으로 다른 차 또는 보행자를 충격한 경우 차량단독 사고로 처리)\n\n4. 건널목 사고 : 철길건널목에서 차와 기차가 충돌한 사고"
+        }
+      ]
+    },
+    {
+      "agency_key": "fire_rescue",
+      "agency": "소방·구급",
+      "agency_match": "소방",
+      "notification": "현장 확인 후 조건부",
+      "reason": "관찰된 피처: hazards.lane_blocked",
+      "actions": [],
+      "task_terms": "관계기관 공동대응 구조 구급",
+      "observed_features": [
+        "hazards.lane_blocked"
+      ],
+      "legal_basis": [],
+      "evidence_status": "insufficient_evidence",
+      "contact": {
+        "channel": "119 상황실 연계망",
+        "address": null
+      },
+      "handoff_message": {
+        "event_id": "6efe62e3bdce4fbdb8270980332db872_event_000",
+        "location": null,
+        "camera_id": null,
+        "summary": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+        "confirmed_visual_conditions": [
+          "blocked",
+          "multi",
+          "traffic"
+        ],
+        "human_status": "현장 확인 필요",
+        "notification_condition": "현장 확인 후 조건부"
+      },
+      "retrieved_action_excerpt": [],
+      "note": "해당 기관의 조치 근거를 찾지 못함. 담당자가 확인해야 함."
+    },
+    {
+      "agency_key": "road_manager",
+      "agency": "도로·터널 관리기관",
+      "agency_match": "도로관리",
+      "notification": "연락 대상",
+      "reason": "관찰된 피처: hazards.lane_blocked",
+      "actions": [],
+      "task_terms": "도로관리청 도로관리자 터널관리자 통제 대피",
+      "observed_features": [
+        "hazards.lane_blocked"
+      ],
+      "legal_basis": [],
+      "evidence_status": "insufficient_evidence",
+      "contact": {
+        "channel": "카메라별 등록 도로·터널 관리기관",
+        "address": null
+      },
+      "handoff_message": {
+        "event_id": "6efe62e3bdce4fbdb8270980332db872_event_000",
+        "location": null,
+        "camera_id": null,
+        "summary": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+        "confirmed_visual_conditions": [
+          "blocked",
+          "multi",
+          "traffic"
+        ],
+        "human_status": "현장 확인 필요",
+        "notification_condition": "연락 대상"
+      },
+      "retrieved_action_excerpt": [],
+      "note": "해당 기관의 조치 근거를 찾지 못함. 담당자가 확인해야 함."
+    }
+  ],
+  "sources": [
+    {
+      "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+      "title": "교통사고 조사규칙 제4조(초동조치)",
+      "section": "제4조 제3항",
+      "content": "③ 사고현장에 출동한 경찰공무원은 다음 각 호의 초동조치를 취하여야 한다.\n\n1. 수신호 또는 고장자동차 표지 설치 등 2차사고 예방을 위한 안전조치\n\n2. 사상자에 대한 응급 구호조치\n\n3. 사상자의 인적사항ㆍ피해정도 파악, 사상자가 차량 밖에 넘어져 있는 경우 넘어져 있는 위치 표시, 사상자 후송병원 기록\n\n4. 사고차량 최종 정지지점 표시, 현장 유류품ㆍ타이어 흔적 등 증거수집 및 사진촬영\n\n5. 사망ㆍ의식불명인 사람이 있는 경우 보호자 등에 통보\n\n6. 사고 당사자 및 목격자 연락처 확보",
+      "source_url": "https://www.law.go.kr/행정규칙/교통사고조사규칙/(1213,20260724)",
+      "corpus_kind": "administrative_rule",
+      "content_role": "official_source_text",
+      "actors": [
+        "경찰"
+      ],
+      "application_conditions": [
+        "본문에 명시된 주체·요건·예외를 함께 확인. 기존 조문은 별도 조건 추출을 수행하지 않음."
+      ],
+      "verification_status": "기존 최종본 출처·판 정보 유지; 이번 병합에서 현행성 재확인하지 않음",
+      "source_version": "제1213호; 시행 2026-07-24",
+      "metadata_is_editorial": true
+    },
+    {
+      "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+      "title": "교통사고 조사규칙 제8조(현장보존)",
+      "section": "제8조 제2항",
+      "content": "② 교통조사관은 다음 각 호에서 정하는 조치 등에 유의하여 사고현장을 보존하여야 한다.\n\n1. 사고현장 보존을 위하여 필요한 최소 범위 내에서 교통을 통제하거나 일방통행의 조치를 취하는 경우에는 \"교통사고 조사 중\" 표지판, 적색 경광등 등을 설치하여 다른 차의 운전자가 사고현장임을 쉽게 알 수 있도록 조치\n\n2. 사고현장의 보존은 사고차량의 상태와 정지지점을 표시한 후 현장을 촬영하여 사후에도 현장상황이 확인되도록 조치\n\n3. 사고현장을 변경할 필요가 있는 때에는 제2호의 사진촬영 이외에 현장약도를 작성하여 사후 조사에 지장이 없도록 조치\n\n4. 스키드마크ㆍ요마크 등 타이어흔적, 혈흔, 유리 또는 페인트 조각, 유류품 등 멸실의 우려가 있는 증거자료는 사진촬영 및 채취하여 보존 조치\n\n5. 현장의 신호기, 표지판, 전주, 가로수, 그 밖의 재물 등의 파손상태는 사진촬영 등 보존 조치\n\n6. 현장에 출동한 경찰공무원이 2명 이상일 경우에는 그 임무를 분담하여 수행하고, 상황에 따라 도로관리청 또는 일반인의 협조 조치",
+      "source_url": "https://www.law.go.kr/행정규칙/교통사고조사규칙/(1213,20260724)",
+      "corpus_kind": "administrative_rule",
+      "content_role": "official_source_text",
+      "actors": [
+        "경찰"
+      ],
+      "application_conditions": [
+        "본문에 명시된 주체·요건·예외를 함께 확인. 기존 조문은 별도 조건 추출을 수행하지 않음."
+      ],
+      "verification_status": "기존 최종본 출처·판 정보 유지; 이번 병합에서 현행성 재확인하지 않음",
+      "source_version": "제1213호; 시행 2026-07-24",
+      "metadata_is_editorial": true
+    },
+    {
+      "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+      "title": "교통사고 조사규칙 제20조의3(사고유형의 결정)",
+      "section": "제20조의3",
+      "content": "제20조의3(사고유형의 결정) 교통사고의 유형은 다음 각 호의 기준에 따라 정한다.\n\n1. 차대차 사고 : 차와 다른 차가 충돌ㆍ추돌 또는 접촉한 사고\n\n2. 차대사람 사고 : 차가 보행자를 충격한 사고\n\n3. 차량단독 사고 : 운전자, 차, 도로상에 설치된 각종 시설물 또는 자연물이 원인이 되어 차가 스스로 전도ㆍ전복ㆍ추락ㆍ충격한 사고(차량단독 사고 후 그 충격 등으로 다른 차 또는 보행자를 충격한 경우 차량단독 사고로 처리)\n\n4. 건널목 사고 : 철길건널목에서 차와 기차가 충돌한 사고",
+      "source_url": "https://www.law.go.kr/행정규칙/교통사고조사규칙/(1213,20260724)",
+      "corpus_kind": "administrative_rule",
+      "content_role": "official_source_text",
+      "actors": [
+        "경찰"
+      ],
+      "application_conditions": [
+        "본문에 명시된 주체·요건·예외를 함께 확인. 기존 조문은 별도 조건 추출을 수행하지 않음."
+      ],
+      "verification_status": "기존 최종본 출처·판 정보 유지; 이번 병합에서 현행성 재확인하지 않음",
+      "source_version": "제1213호; 시행 2026-07-24",
+      "metadata_is_editorial": true
+    }
+  ],
+  "uncertainties": [],
+  "generation": {
+    "mode": "rule_based_templates",
+    "llm_connected": false,
+    "actions_are": "운영 보조 제안; 개별 문장의 법적 의무를 자동 확정하지 않음"
+  },
+  "retrieval": {
+    "model": {
+      "model": "intfloat/multilingual-e5-small",
+      "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+      "dimensions": 384,
+      "normalized": true,
+      "source_sha256": "12cb84612820800131a1ad5c06d10cce0aa2d7d71f347ee4425d82e3de9395cc",
+      "all_chunks": 609,
+      "legal_chunks": 275,
+      "passages": 320,
+      "created_utc": "2026-10-02T02:53:50.330239+00:00"
+    },
+    "db": "/path/to/data/한화미니프로젝트/test_file/accident_control_rag_server/data/index.sqlite",
+    "vector_search": "SQLite BLOB 저장 후 정규화 벡터 내적 전수검색",
+    "fusion": "weighted_rrf",
+    "weights": {
+      "bm25": 0.6,
+      "embedding": 0.4
+    },
+    "rrf_k": 60,
+    "experimental_cosine_floor": 0.65,
+    "trace": [
+      {
+        "agency": "경찰",
+        "topics": [
+          {
+            "topic": "common_initial_response",
+            "query": "교통사고 초동조치 관계기관 공동대응 통보 사고유형 사진촬영 경찰 초동조치 교통통제 현장 보존",
+            "bm25_top20": [
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+                10.766860337358384
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+                7.4525940838364715
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-3",
+                6.366887684292829
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1",
+                6.256150451659866
+              ],
+              [
+                "kr-112-report-act-19870-effective-20240703-article-9-paragraph-1",
+                5.417293156458178
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-11-paragraph-3",
+                5.417293156458178
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-4",
+                5.277155567844022
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-20-paragraph-1",
+                5.241544255611541
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-24-paragraph-1",
+                5.151117936103437
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-15-paragraph-1",
+                5.112305396253471
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-41-paragraph-1",
+                5.065988714999368
+              ],
+              [
+                "kr-112-report-act-19870-effective-20240703-article-9-paragraph-4",
+                5.050924654592681
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-1",
+                5.047287436056137
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-11-paragraph-1",
+                4.888669233666449
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-14-paragraph-2",
+                4.69870558865281
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-14-paragraph-1",
+                4.658041697413809
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-5-paragraph-2",
+                4.651249451619469
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-1",
+                4.541677291270507
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-2",
+                4.3446270578671085
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-1",
+                4.240379153569593
+              ]
+            ],
+            "embedding_top20": [
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+                0.9176026582717896
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+                0.9122114777565002
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-1",
+                0.9086238741874695
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-6",
+                0.8985351324081421
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-2",
+                0.8977901339530945
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-5",
+                0.8970710039138794
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-2-paragraph-2",
+                0.8951898813247681
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-3",
+                0.8945329785346985
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-3-paragraph-0",
+                0.8934465646743774
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-5",
+                0.8928372859954834
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1",
+                0.8924930691719055
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-5-paragraph-3",
+                0.891452431678772
+              ],
+              [
+                "traffic-accident-investigation-rule-17",
+                0.8911857604980469
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-9-paragraph-2",
+                0.8894639015197754
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-4",
+                0.8893612027168274
+              ],
+              [
+                "traffic-accident-investigation-rule-26-3",
+                0.8883015513420105
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-5-paragraph-5",
+                0.8880711793899536
+              ],
+              [
+                "traffic-accident-investigation-rule-18-1",
+                0.8876046538352966
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-37-paragraph-1",
+                0.887567400932312
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-4",
+                0.885784387588501
+              ]
+            ],
+            "selected_chunk_ids": [
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1"
+            ]
+          },
+          {
+            "topic": "blocked",
+            "query": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다. 교통통제 도로관리청 도로관리자 경찰 초동조치 교통통제 현장 보존",
+            "bm25_top20": [
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+                6.7413981943534695
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-3",
+                6.329665045200762
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-2",
+                6.271711486817595
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1",
+                6.214299397472585
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-6",
+                5.601287059530439
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-4",
+                5.249009849723481
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+                5.225620955787278
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-20-paragraph-1",
+                5.219446165640136
+              ],
+              [
+                "traffic-accident-investigation-rule-33-1",
+                5.179890431237772
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-1",
+                5.0109088056501125
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-14-paragraph-2",
+                4.669536437254511
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-14-paragraph-1",
+                4.635057183447822
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-1",
+                4.518953215661738
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-2",
+                4.3037707128037015
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+                4.183285407147488
+              ],
+              [
+                "traffic-accident-investigation-rule-20-4",
+                4.040096720849305
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-4",
+                3.932935150954029
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-5",
+                3.7718663073825303
+              ],
+              [
+                "traffic-accident-investigation-rule-20-6",
+                3.6773673611898765
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-3",
+                3.553567869214162
+              ]
+            ],
+            "embedding_top20": [
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+                0.8978176712989807
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+                0.8845536708831787
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1",
+                0.8819130659103394
+              ],
+              [
+                "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-2",
+                0.8795459866523743
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-1",
+                0.8772318959236145
+              ],
+              [
+                "traffic-accident-investigation-rule-17",
+                0.8767370581626892
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-2",
+                0.8758704662322998
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-3",
+                0.8747677803039551
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+                0.8747585415840149
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-2",
+                0.8746334910392761
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-9-paragraph-2",
+                0.8744087815284729
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-10-paragraph-0",
+                0.8740392923355103
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-1",
+                0.8721420168876648
+              ],
+              [
+                "traffic-accident-investigation-rule-14-7",
+                0.8713917136192322
+              ],
+              [
+                "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-4",
+                0.8712335824966431
+              ],
+              [
+                "scenario-traffic-15-3e48b1298a69",
+                0.8705939650535583
+              ],
+              [
+                "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-3",
+                0.8704745173454285
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-1",
+                0.8703690767288208
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-4",
+                0.8703048229217529
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-2",
+                0.870228111743927
+              ]
+            ],
+            "selected_chunk_ids": [
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1",
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-3"
+            ]
+          },
+          {
+            "topic": "multi",
+            "query": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다. 다중 충돌 다수 차량 사고 공동대응 경찰 초동조치 교통통제 현장 보존",
+            "bm25_top20": [
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+                11.93213026525054
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+                10.354581221530267
+              ],
+              [
+                "traffic-accident-investigation-rule-21-1",
+                7.2615580888047795
+              ],
+              [
+                "traffic-accident-investigation-rule-20-4",
+                7.0352857057357365
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-25-paragraph-1",
+                7.024982153625825
+              ],
+              [
+                "traffic-accident-investigation-rule-20-6",
+                6.897038091452681
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-2",
+                6.597073133388546
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-3",
+                6.329665045200762
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-2",
+                6.271711486817595
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1",
+                6.214299397472585
+              ],
+              [
+                "traffic-accident-investigation-rule-27-4",
+                5.730712051721002
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-6",
+                5.601287059530439
+              ],
+              [
+                "traffic-accident-investigation-rule-26-1",
+                5.499178055593502
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-24-paragraph-3",
+                5.426102368348932
+              ],
+              [
+                "kr-112-report-act-19870-effective-20240703-article-9-paragraph-1",
+                5.392147175720074
+              ],
+              [
+                "kr-112-situation-room-rule-633-effective-20240724-article-11-paragraph-3",
+                5.392147175720074
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-25-paragraph-3",
+                5.390288015982815
+              ],
+              [
+                "traffic-accident-investigation-rule-27-5",
+                5.390288015982815
+              ],
+              [
+                "traffic-accident-investigation-rule-26-2",
+                5.2516367655261105
+              ],
+              [
+                "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-4",
+                5.249009849723481
+              ]
+            ],
+            "embedding_top20": [
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+                0.8980189561843872
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+                0.8876674771308899
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+                0.8814266920089722
+              ],
+              [
+                "traffic-accident-investigation-rule-17",
+                0.877471923828125
+              ],
+              [
+                "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-2",
+                0.8772966265678406
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-9-paragraph-2",
+                0.8769673109054565
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-2",
+                0.8767211437225342
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1",
+                0.8757220506668091
+              ],
+              [
+                "traffic-accident-investigation-rule-18-1",
+                0.8735218048095703
+              ],
+              [
+                "traffic-accident-investigation-rule-14-7",
+                0.8732917308807373
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-2",
+                0.8731493949890137
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-1",
+                0.8730462789535522
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-10-paragraph-0",
+                0.87251877784729
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-1",
+                0.8721795678138733
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-4",
+                0.8715698719024658
+              ],
+              [
+                "scenario-traffic-15-3e48b1298a69",
+                0.8708739280700684
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-2",
+                0.8705568313598633
+              ],
+              [
+                "traffic-accident-investigation-rule-11-2",
+                0.8704313635826111
+              ],
+              [
+                "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-25-paragraph-3",
+                0.8695935010910034
+              ],
+              [
+                "traffic-accident-investigation-rule-21-1",
+                0.8688938617706299
+              ]
+            ],
+            "selected_chunk_ids": [
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+              "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+              "traffic-accident-investigation-rule-21-1"
+            ]
+          }
+        ],
+        "condition_actor_checks": {
+          "kr-112-report-act-19870-effective-20240703-article-11-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-7-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-8-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-8-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-8-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-8-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-8-paragraph-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-8-paragraph-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-9-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-9-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-19870-effective-20240703-article-9-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-3-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-3-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-3-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-3-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-3-paragraph-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-3-paragraph-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-3-paragraph-7": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-5-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-5-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-5-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-5-paragraph-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-5-paragraph-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-report-act-enforcement-decree-34629-effective-20240703-article-6-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-1-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-10-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-10-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-11-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-11-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-11-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-11-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-12-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-12-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-12-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-13-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-13-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-14-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-14-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-15-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-15-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-15-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-18-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-18-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-2-paragraph-0-part-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-2-paragraph-0-part-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-20-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-20-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-3-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-4-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-6-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-6-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-6-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-6-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-7-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-7-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-7-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-7-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-8-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-8-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-9-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-9-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-112-situation-room-rule-633-effective-20240724-article-9-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-police-duties-act-21304-effective-20260707-article-5-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-police-duties-act-21304-effective-20260707-article-5-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-police-duties-act-21304-effective-20260707-article-5-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-police-duties-act-21304-effective-20260707-article-5-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-road-traffic-act-21246-effective-20260701-article-54-paragraph-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-road-traffic-act-21246-effective-20260701-article-58-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-road-traffic-act-enforcement-decree-36114-effective-20260801-article-32-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-1-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-10-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-13-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-15-paragraph-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-2-paragraph-1-part-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-2-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-2-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-22-paragraph-1": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-22-paragraph-2": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-22-paragraph-3": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-24-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-24-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-24-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-25-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-25-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-25-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-3-paragraph-0": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-37-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-37-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-2-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-2-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-2-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-41-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-41-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-41-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-5-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-5-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-6-paragraph-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-9-paragraph-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-9-paragraph-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "scenario-FH-L07-b84bc405d084": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R05-e649e9aaea87": {
+            "accepted": false,
+            "reason": "현장 확인 조건 미충족"
+          },
+          "scenario-FH-R07-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R08-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-SOP-R10-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-SOP-R11-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-coord-rescue-command-52-a41133f3d34e": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-forest_06-576ef0d9a955": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-forest_08-cf76a088fd82": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-forest_11-cf76a088fd82": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-01-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-03-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-05-8d9a50cccefe": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-06-8d9a50cccefe": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-07-f2255799b505": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "scenario-traffic-01-8333af397661": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-05-fdbce41c5757": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-06-fdbce41c5757": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-07-b7c13a51114a": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-09-2101bb6e3f92": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "scenario-traffic-15-3e48b1298a69": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "scenario-traffic-16-3e48b1298a69": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "scenario-traffic-17-8333af397661": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "scenario-traffic-18-3e48b1298a69": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "scenario-traffic-19-3e48b1298a69": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-11-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-11-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-12": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-7": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-14-8": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-16-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-16-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-16-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-17": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-18-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-18-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-19-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-19-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-7": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-8": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-20-sub-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-21-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-21-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-22-sub-2-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-22-sub-2-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-22-sub-2-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-22-sub-2-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-22-sub-2-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-22-sub-2-6": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-22-sub-2-7": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-23-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-23-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-26-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-26-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-26-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-27-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-27-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-27-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-27-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-27-5": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-28": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-29-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-29-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-30-1": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-30-2": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-30-3": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-30-4": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-31-1": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-31-2": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-31-3": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-32": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-33-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-33-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-34": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-35": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "traffic-accident-investigation-rule-36": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-38-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-38-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-38-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-39-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-39-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-40-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-40-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-40-3": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-40-4": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-42-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-42-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-43-1": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-43-2": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-44": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          },
+          "traffic-accident-investigation-rule-7": {
+            "accepted": true,
+            "reason": "주체·구조화 조건 점검 완료; 본문 요건·예외는 담당자 확인 필요"
+          }
+        },
+        "selected": [
+          {
+            "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+            "rrf": 0.016287678476996297,
+            "search": {
+              "bm25": {
+                "rank": 1,
+                "score": 10.766860337358384
+              },
+              "embedding": {
+                "rank": 2,
+                "score": 0.9122114777565002
+              }
+            }
+          },
+          {
+            "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+            "rrf": 0.016393442622950817,
+            "search": {
+              "bm25": {
+                "rank": 1,
+                "score": 6.7413981943534695
+              },
+              "embedding": {
+                "rank": 1,
+                "score": 0.8978176712989807
+              }
+            }
+          },
+          {
+            "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+            "rrf": 0.016185271922976842,
+            "search": {
+              "bm25": {
+                "rank": 1,
+                "score": 11.93213026525054
+              },
+              "embedding": {
+                "rank": 3,
+                "score": 0.8814266920089722
+              }
+            }
+          }
+        ]
+      },
+      {
+        "agency": "소방·구급",
+        "topics": [
+          {
+            "topic": "common_initial_response",
+            "query": "교통사고 초동조치 관계기관 공동대응 통보 사고유형 사진촬영 소방·구급 관계기관 공동대응 구조 구급",
+            "bm25_top20": [],
+            "embedding_top20": [],
+            "selected_chunk_ids": []
+          },
+          {
+            "topic": "blocked",
+            "query": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다. 교통통제 도로관리청 도로관리자 소방·구급 관계기관 공동대응 구조 구급",
+            "bm25_top20": [],
+            "embedding_top20": [],
+            "selected_chunk_ids": []
+          },
+          {
+            "topic": "multi",
+            "query": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다. 다중 충돌 다수 차량 사고 공동대응 소방·구급 관계기관 공동대응 구조 구급",
+            "bm25_top20": [],
+            "embedding_top20": [],
+            "selected_chunk_ids": []
+          }
+        ],
+        "condition_actor_checks": {
+          "scenario-FH-L01-a64f4ece1221": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-L02-a64f4ece1221": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-L03-49ee22fec093": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-L04-49ee22fec093": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-L05-49ee22fec093": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-L06-5079da7767a8": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-L07-b84bc405d084": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-L09-70ee1877540b": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R01-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R02-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R03-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R04-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R05-e649e9aaea87": {
+            "accepted": false,
+            "reason": "현장 확인 조건 미충족"
+          },
+          "scenario-FH-R06-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R07-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R08-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-FH-R09-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-SOP-R10-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-SOP-R11-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-SOP-R12-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-SOP-R13-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-forest_01-576ef0d9a955": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-forest_06-576ef0d9a955": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-forest_08-cf76a088fd82": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-forest_10-cf76a088fd82": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-01-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-03-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-05-8d9a50cccefe": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-06-8d9a50cccefe": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          }
+        },
+        "selected": []
+      },
+      {
+        "agency": "도로·터널 관리기관",
+        "topics": [
+          {
+            "topic": "common_initial_response",
+            "query": "교통사고 초동조치 관계기관 공동대응 통보 사고유형 사진촬영 도로·터널 관리기관 도로관리청 도로관리자 터널관리자 통제 대피",
+            "bm25_top20": [],
+            "embedding_top20": [],
+            "selected_chunk_ids": []
+          },
+          {
+            "topic": "blocked",
+            "query": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다. 교통통제 도로관리청 도로관리자 도로·터널 관리기관 도로관리청 도로관리자 터널관리자 통제 대피",
+            "bm25_top20": [],
+            "embedding_top20": [],
+            "selected_chunk_ids": []
+          },
+          {
+            "topic": "multi",
+            "query": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다. 다중 충돌 다수 차량 사고 공동대응 도로·터널 관리기관 도로관리청 도로관리자 터널관리자 통제 대피",
+            "bm25_top20": [],
+            "embedding_top20": [],
+            "selected_chunk_ids": []
+          }
+        ],
+        "condition_actor_checks": {
+          "scenario-FH-R05-e649e9aaea87": {
+            "accepted": false,
+            "reason": "현장 확인 조건 미충족"
+          },
+          "scenario-SOP-R10-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-SOP-R11-e649e9aaea87": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-01-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-02-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-03-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-preserved-04-3fd0e3457a96": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-roadkill_01-d22dbff302ae": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-03-fdbce41c5757": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-04-fdbce41c5757": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-05-fdbce41c5757": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-06-fdbce41c5757": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-07-b7c13a51114a": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-08-fdbce41c5757": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-10-990008d5780d": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          },
+          "scenario-traffic-11-bb1047aac21d": {
+            "accepted": false,
+            "reason": "상황 조건 불일치"
+          }
+        },
+        "selected": []
+      }
+    ]
+  },
+  "report_format_version": "2.1",
+  "agency_responses": [
+    {
+      "agency": "경찰",
+      "notification": "연락 대상",
+      "reason": "관찰된 피처: hazards.lane_blocked",
+      "contact": {
+        "channel": "경찰 관제 연계망",
+        "address": null
+      },
+      "observed_features": [
+        "hazards.lane_blocked"
+      ],
+      "control_handoff": {
+        "summary": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+        "location": null,
+        "observed_features": [
+          "hazards.lane_blocked"
+        ],
+        "request": "관찰 상황을 전달하고, 아래 근거에 따른 해당 기관의 대응 가능 여부와 통제·지원 필요를 확인 요청한다."
+      },
+      "field_response_reference": [
+        {
+          "text": "수신호·표지 등으로 2차 사고를 예방하고 사고 차량 최종 정지지점 및 현장 증거를 기록한다. 당사자·목격자 연락처를 확보하고, 사상자가 확인되면 응급 구호와 피해 정도 파악을 시행한다.",
+          "reference_ids": [
+            "R1"
+          ],
+          "text_kind": "source_based_response",
+          "actors": [
+            "경찰"
+          ]
+        },
+        {
+          "text": "사고현장 보존을 위하여 필요한 최소 범위 내에서 교통을 통제하거나 일방통행의 조치를 취하는 경우에는 \"교통사고 조사 중\" 표지판, 적색 경광등 등을 설치하여 다른 차의 운전자가 사고현장임을 쉽게 알 수 있도록 조치\n현장에 출동한 경찰공무원이 2명 이상일 경우에는 그 임무를 분담하여 수행하고, 상황에 따라 도로관리청 또는 일반인의 협조 조치",
+          "reference_ids": [
+            "R2"
+          ],
+          "text_kind": "source_based_response",
+          "actors": [
+            "경찰"
+          ]
+        },
+        {
+          "text": "제20조의3(사고유형의 결정) 교통사고의 유형은 다음 각 호의 기준에 따라 정한다.\n\n1. 차대차 사고 : 차와 다른 차가 충돌ㆍ추돌 또는 접촉한 사고\n\n2. 차대사람 사고 : 차가 보행자를 충격한 사고\n\n3. 차량단독 사고 : 운전자, 차, 도로상에 설치된 각종 시설물 또는 자연물이 원인이 되어 차가 스스로 전도ㆍ전복ㆍ추락ㆍ충격한 사고(차량단독 사고 후 그 충격 등으로 다른 차 또는 보행자를 충격한 경우 차량단독 사고로 처리)\n\n4. 건널목 사고 : 철길건널목에서 차와 기차가 충돌한 사고",
+          "reference_ids": [
+            "R3"
+          ],
+          "text_kind": "source_based_response",
+          "actors": [
+            "경찰"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "text": "수신호·표지 등으로 2차 사고를 예방하고 사고 차량 최종 정지지점 및 현장 증거를 기록한다. 당사자·목격자 연락처를 확보하고, 사상자가 확인되면 응급 구호와 피해 정도 파악을 시행한다.",
+          "reference_ids": [
+            "R1"
+          ],
+          "text_kind": "source_based_response",
+          "actors": [
+            "경찰"
+          ]
+        },
+        {
+          "text": "사고현장 보존을 위하여 필요한 최소 범위 내에서 교통을 통제하거나 일방통행의 조치를 취하는 경우에는 \"교통사고 조사 중\" 표지판, 적색 경광등 등을 설치하여 다른 차의 운전자가 사고현장임을 쉽게 알 수 있도록 조치\n현장에 출동한 경찰공무원이 2명 이상일 경우에는 그 임무를 분담하여 수행하고, 상황에 따라 도로관리청 또는 일반인의 협조 조치",
+          "reference_ids": [
+            "R2"
+          ],
+          "text_kind": "source_based_response",
+          "actors": [
+            "경찰"
+          ]
+        },
+        {
+          "text": "제20조의3(사고유형의 결정) 교통사고의 유형은 다음 각 호의 기준에 따라 정한다.\n\n1. 차대차 사고 : 차와 다른 차가 충돌ㆍ추돌 또는 접촉한 사고\n\n2. 차대사람 사고 : 차가 보행자를 충격한 사고\n\n3. 차량단독 사고 : 운전자, 차, 도로상에 설치된 각종 시설물 또는 자연물이 원인이 되어 차가 스스로 전도ㆍ전복ㆍ추락ㆍ충격한 사고(차량단독 사고 후 그 충격 등으로 다른 차 또는 보행자를 충격한 경우 차량단독 사고로 처리)\n\n4. 건널목 사고 : 철길건널목에서 차와 기차가 충돌한 사고",
+          "reference_ids": [
+            "R3"
+          ],
+          "text_kind": "source_based_response",
+          "actors": [
+            "경찰"
+          ]
+        }
+      ],
+      "evidence_status": "retrieved_text"
+    },
+    {
+      "agency": "소방·구급",
+      "notification": "현장 확인 후 조건부",
+      "reason": "관찰된 피처: hazards.lane_blocked",
+      "contact": {
+        "channel": "119 상황실 연계망",
+        "address": null
+      },
+      "observed_features": [
+        "hazards.lane_blocked"
+      ],
+      "control_handoff": {
+        "summary": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+        "location": null,
+        "observed_features": [
+          "hazards.lane_blocked"
+        ],
+        "request": "관찰 상황 전달 및 현장 확인 요청. 검색 근거가 없어 구체 조치를 지정하지 않는다."
+      },
+      "field_response_reference": [],
+      "actions": [],
+      "evidence_status": "insufficient_evidence"
+    },
+    {
+      "agency": "도로·터널 관리기관",
+      "notification": "연락 대상",
+      "reason": "관찰된 피처: hazards.lane_blocked",
+      "contact": {
+        "channel": "카메라별 등록 도로·터널 관리기관",
+        "address": null
+      },
+      "observed_features": [
+        "hazards.lane_blocked"
+      ],
+      "control_handoff": {
+        "summary": "야간의 빗길 도로에서 승용차 두 대가 주행 중이며, 측면에서 진입한 트럭과 승용차가 충돌한 뒤 정지 상태를 유지한다.",
+        "location": null,
+        "observed_features": [
+          "hazards.lane_blocked"
+        ],
+        "request": "관찰 상황 전달 및 현장 확인 요청. 검색 근거가 없어 구체 조치를 지정하지 않는다."
+      },
+      "field_response_reference": [],
+      "actions": [],
+      "evidence_status": "insufficient_evidence"
+    }
+  ],
+  "verification_needed": [],
+  "references": [
+    {
+      "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-4-paragraph-3",
+      "title": "교통사고 조사규칙 제4조(초동조치)",
+      "section": "제4조 제3항",
+      "content": "③ 사고현장에 출동한 경찰공무원은 다음 각 호의 초동조치를 취하여야 한다.\n\n1. 수신호 또는 고장자동차 표지 설치 등 2차사고 예방을 위한 안전조치\n\n2. 사상자에 대한 응급 구호조치\n\n3. 사상자의 인적사항ㆍ피해정도 파악, 사상자가 차량 밖에 넘어져 있는 경우 넘어져 있는 위치 표시, 사상자 후송병원 기록\n\n4. 사고차량 최종 정지지점 표시, 현장 유류품ㆍ타이어 흔적 등 증거수집 및 사진촬영\n\n5. 사망ㆍ의식불명인 사람이 있는 경우 보호자 등에 통보\n\n6. 사고 당사자 및 목격자 연락처 확보",
+      "source_url": "https://www.law.go.kr/행정규칙/교통사고조사규칙/(1213,20260724)",
+      "corpus_kind": "administrative_rule",
+      "content_role": "official_source_text",
+      "actors": [
+        "경찰"
+      ],
+      "application_conditions": [
+        "본문에 명시된 주체·요건·예외를 함께 확인. 기존 조문은 별도 조건 추출을 수행하지 않음."
+      ],
+      "verification_status": "기존 최종본 출처·판 정보 유지; 이번 병합에서 현행성 재확인하지 않음",
+      "source_version": "제1213호; 시행 2026-07-24",
+      "metadata_is_editorial": true,
+      "reference_id": "R1"
+    },
+    {
+      "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-8-paragraph-2",
+      "title": "교통사고 조사규칙 제8조(현장보존)",
+      "section": "제8조 제2항",
+      "content": "② 교통조사관은 다음 각 호에서 정하는 조치 등에 유의하여 사고현장을 보존하여야 한다.\n\n1. 사고현장 보존을 위하여 필요한 최소 범위 내에서 교통을 통제하거나 일방통행의 조치를 취하는 경우에는 \"교통사고 조사 중\" 표지판, 적색 경광등 등을 설치하여 다른 차의 운전자가 사고현장임을 쉽게 알 수 있도록 조치\n\n2. 사고현장의 보존은 사고차량의 상태와 정지지점을 표시한 후 현장을 촬영하여 사후에도 현장상황이 확인되도록 조치\n\n3. 사고현장을 변경할 필요가 있는 때에는 제2호의 사진촬영 이외에 현장약도를 작성하여 사후 조사에 지장이 없도록 조치\n\n4. 스키드마크ㆍ요마크 등 타이어흔적, 혈흔, 유리 또는 페인트 조각, 유류품 등 멸실의 우려가 있는 증거자료는 사진촬영 및 채취하여 보존 조치\n\n5. 현장의 신호기, 표지판, 전주, 가로수, 그 밖의 재물 등의 파손상태는 사진촬영 등 보존 조치\n\n6. 현장에 출동한 경찰공무원이 2명 이상일 경우에는 그 임무를 분담하여 수행하고, 상황에 따라 도로관리청 또는 일반인의 협조 조치",
+      "source_url": "https://www.law.go.kr/행정규칙/교통사고조사규칙/(1213,20260724)",
+      "corpus_kind": "administrative_rule",
+      "content_role": "official_source_text",
+      "actors": [
+        "경찰"
+      ],
+      "application_conditions": [
+        "본문에 명시된 주체·요건·예외를 함께 확인. 기존 조문은 별도 조건 추출을 수행하지 않음."
+      ],
+      "verification_status": "기존 최종본 출처·판 정보 유지; 이번 병합에서 현행성 재확인하지 않음",
+      "source_version": "제1213호; 시행 2026-07-24",
+      "metadata_is_editorial": true,
+      "reference_id": "R2"
+    },
+    {
+      "chunk_id": "kr-traffic-accident-investigation-rule-1213-effective-20260724-article-20-3-paragraph-0",
+      "title": "교통사고 조사규칙 제20조의3(사고유형의 결정)",
+      "section": "제20조의3",
+      "content": "제20조의3(사고유형의 결정) 교통사고의 유형은 다음 각 호의 기준에 따라 정한다.\n\n1. 차대차 사고 : 차와 다른 차가 충돌ㆍ추돌 또는 접촉한 사고\n\n2. 차대사람 사고 : 차가 보행자를 충격한 사고\n\n3. 차량단독 사고 : 운전자, 차, 도로상에 설치된 각종 시설물 또는 자연물이 원인이 되어 차가 스스로 전도ㆍ전복ㆍ추락ㆍ충격한 사고(차량단독 사고 후 그 충격 등으로 다른 차 또는 보행자를 충격한 경우 차량단독 사고로 처리)\n\n4. 건널목 사고 : 철길건널목에서 차와 기차가 충돌한 사고",
+      "source_url": "https://www.law.go.kr/행정규칙/교통사고조사규칙/(1213,20260724)",
+      "corpus_kind": "administrative_rule",
+      "content_role": "official_source_text",
+      "actors": [
+        "경찰"
+      ],
+      "application_conditions": [
+        "본문에 명시된 주체·요건·예외를 함께 확인. 기존 조문은 별도 조건 추출을 수행하지 않음."
+      ],
+      "verification_status": "기존 최종본 출처·판 정보 유지; 이번 병합에서 현행성 재확인하지 않음",
+      "source_version": "제1213호; 시행 2026-07-24",
+      "metadata_is_editorial": true,
+      "reference_id": "R3"
+    }
+  ]
+}

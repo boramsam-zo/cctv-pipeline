@@ -54,8 +54,8 @@ def read_chunks(path, embedded=False):
     return records
 
 
-def embed(text, task):
-    key = os.environ.get('GEMINI_API_KEY')
+def embed(text, task, *, key=None):
+    key = key or os.environ.get('GEMINI_API_KEY')
     if not key:
         raise ValueError('Set GEMINI_API_KEY privately in the execution environment')
     body = {'model':f'models/{MODEL}', 'content':{'parts':[{'text':text}]},
@@ -124,17 +124,30 @@ def load(path):
     return len(rows)
 
 
+def search_vector(connection, vector, date):
+    """Search an already persisted query vector; never calls an embedding API."""
+    vector = validate_vector(vector)
+    from psycopg.rows import dict_row
+    with connection.cursor(row_factory=dict_row) as cur:
+        cur.execute('''SELECT chunk_id, document_id, input_sha256,
+            embedding_profile, content, metadata,
+            embedding <=> %s::vector AS cosine_distance
+            FROM cctv_rag.chunks WHERE embedding_profile=%s
+            AND (metadata->>'effective_from')::date <= %s::date
+            AND (metadata->>'effective_to' IS NULL
+                 OR (metadata->>'effective_to')::date > %s::date)
+            ORDER BY cosine_distance, chunk_id, input_sha256 LIMIT 5''',
+            (json.dumps(vector), PROFILE, date, date))
+        return [dict(row) for row in cur.fetchall()]
+
+
 def search(text, date):
-    vector=embed(text,'RETRIEVAL_QUERY')
+    vector = embed(text, 'RETRIEVAL_QUERY')
     with connect() as conn:
-        with conn.cursor() as cur:
-            cur.execute('''SELECT chunk_id,content,metadata->>'source_url',
-                         embedding <=> %s::vector AS cosine_distance
-                FROM cctv_rag.chunks WHERE embedding_profile=%s
-                  AND (metadata->>'effective_from')::date <= %s::date
-                  AND (metadata->>'effective_to' IS NULL OR (metadata->>'effective_to')::date > %s::date)
-                ORDER BY cosine_distance LIMIT 5''',(json.dumps(vector),PROFILE,date,date))
-            return [dict(chunk_id=r[0],content=r[1],source_url=r[2],cosine_distance=r[3]) for r in cur.fetchall()]
+        rows = search_vector(conn, vector, date)
+    return [dict(chunk_id=r['chunk_id'], content=r['content'],
+                 source_url=r['metadata'].get('source_url'),
+                 cosine_distance=r['cosine_distance']) for r in rows]
 
 
 def main():

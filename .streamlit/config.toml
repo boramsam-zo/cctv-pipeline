@@ -1,0 +1,18 @@
+# shadcn theme pattern, adapted to the control-room reference with system fonts.
+[theme]
+base = "light"
+primaryColor = "#2463DF"
+backgroundColor = "#F2F5FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1D2B45"
+borderColor = "#DDE5EF"
+showWidgetBorder = true
+baseRadius = "8px"
+buttonRadius = "6px"
+font = "sans-serif"
+baseFontSize = 13
+headingFontSizes = ["21px", "18px", "14px", "14px", "13px", "12px"]
+chartCategoricalColors = ["#2463DF", "#AA2943", "#187052", "#617089"]
+
+[browser]
+gatherUsageStats = false

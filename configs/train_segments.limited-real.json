@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "purpose": "limited_real_training_no_validation",
+  "official_split_column": "split_in_distribution",
+  "reviewed_inputs_report": "artifacts/training-code-check/iid-readiness-20260921-01/review_readiness.json",
+  "reviewed_inputs_sha256": "3e91a95eabd5a7fff804a6292ac18f980f0397fb924a1f1b253829cc8396d727",
+  "validation_segments": [],
+  "test_segments": [],
+  "authorization": {
+    "source": "user_message",
+    "recorded_at": "2026-09-21",
+    "training_authorized": true,
+    "conservative_groups_authorized": true,
+    "max_epochs": 5,
+    "max_loop_seconds": 1800,
+    "basis": "사용자: 원본 관계가 불확실한 008·009는 우선 같은 그룹으로 보수적으로 관리하고, 독립 사건 두 개라고 주장하거나 학습·검증에 나누지 마. QMUL 정상 세 구간도 같은 원본 묶음으로 유지해줘. 별도 검증 자료가 없더라도 학습에 사용할 수 있는 자료가 준비됐다면 실제 자료를 사용한 제한 학습으로 구분해 진행해줘. 최대 5 epoch 또는 학습 루프 30분. 파일 받았어."
+  },
+  "group_meaning": {
+    "accident_008_009_unresolved": "보수적인 관리 묶음; 실제 사건 동일성/독립성 미확인",
+    "qmul_junction_same_original": "QMUL junction 동일 원본3구간; 다른 원본으로 분리하지 않음"
+  },
+  "segments": [
+    {
+      "sample_id": "sample_008",
+      "split": "train",
+      "management_group": "accident_008_009_unresolved"
+    },
+    {
+      "sample_id": "sample_009",
+      "split": "train",
+      "management_group": "accident_008_009_unresolved"
+    },
+    {
+      "sample_id": "qmul_001",
+      "split": "train",
+      "management_group": "qmul_junction_same_original"
+    },
+    {
+      "sample_id": "qmul_002",
+      "split": "train",
+      "management_group": "qmul_junction_same_original"
+    },
+    {
+      "sample_id": "qmul_003",
+      "split": "train",
+      "management_group": "qmul_junction_same_original"
+    }
+  ]
+}

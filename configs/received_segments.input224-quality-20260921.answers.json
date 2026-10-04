@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "purpose": "input_quality_only",
+  "source_kind": "accident",
+  "parent_plan_sha256": "b0a7aeddab41abcd6d1824309b28f31a4e516ffb4b308b7991db3c732a2976e5",
+  "parent_report_sha256": "ecb7b4f30e05a1f3860bb08c9c0faf82c974d6effbed46b92acc7a4689586827",
+  "image_size": 224,
+  "frame_count": 16,
+  "responses": [
+    {
+      "sample_id": "sample_007",
+      "source_video_id": "sha256:cfa17a50d906b0f776a378f0a6892d53259c90c7a95d9498960fec82d797fa6a",
+      "start_seconds": 3.0,
+      "end_seconds": 5.0,
+      "preview_path": "labeled/sample_007/preview.png",
+      "preview_sha256": "9dae06112495facbdec65d0b81c0634fe70c5ba89e175d41d789fd91e25fac1d",
+      "frames_sha256": "13193b5309d9c9c14213cc5f6fcb1fc1c0e6cec1e679859c7315890248dc03e6",
+      "checks": {
+        "preview_visible": true
+      },
+      "reviewer": "다혜",
+      "reviewed_at": "2026-09-21",
+      "response_source": "user_message",
+      "raw_response": "사고 007·008·009:\n224픽셀에서도 차량·사고 움직임 식별 가능&#x20;\n\nQMUL 001·002·003:\n식별 가능&#x20;\n잘림·중요 장면 누락: 없음 /\n추가 장면:  불필요&#x20;\n\n검수자 / 확인 날짜: 다혜 260921"
+    },
+    {
+      "sample_id": "sample_008",
+      "source_video_id": "sha256:b00703cb8f4d188e09a6953a1b0da7a14dc55fb8024711668118ac0f23334599",
+      "start_seconds": 2.583,
+      "end_seconds": 4.583,
+      "preview_path": "labeled/sample_008/preview.png",
+      "preview_sha256": "9ebbb670fd3c360da455286163ab2b7759376b31a36bf684d093b46e8977669b",
+      "frames_sha256": "baca65fbef86259b766de2cfef9e9ed7ea415bf676dd7fc00e1091549d1d2bb7",
+      "checks": {
+        "preview_visible": true
+      },
+      "reviewer": "다혜",
+      "reviewed_at": "2026-09-21",
+      "response_source": "user_message",
+      "raw_response": "사고 007·008·009:\n224픽셀에서도 차량·사고 움직임 식별 가능&#x20;\n\nQMUL 001·002·003:\n식별 가능&#x20;\n잘림·중요 장면 누락: 없음 /\n추가 장면:  불필요&#x20;\n\n검수자 / 확인 날짜: 다혜 260921"
+    },
+    {
+      "sample_id": "sample_009",
+      "source_video_id": "sha256:1961ad6739efcd81328afaaa4a2225378c2c5cad4e539904a6ad43ae63622234",
+      "start_seconds": 4.833,
+      "end_seconds": 6.833,
+      "preview_path": "labeled/sample_009/preview.png",
+      "preview_sha256": "5df92344b84e585fcc26070804e50bb39caf6326e6a020ec38338c7a2e30e25e",
+      "frames_sha256": "ff101573ec89133683d748bfd2588dc01832aa6771193a47503a66e9d06ba19e",
+      "checks": {
+        "preview_visible": true
+      },
+      "reviewer": "다혜",
+      "reviewed_at": "2026-09-21",
+      "response_source": "user_message",
+      "raw_response": "사고 007·008·009:\n224픽셀에서도 차량·사고 움직임 식별 가능&#x20;\n\nQMUL 001·002·003:\n식별 가능&#x20;\n잘림·중요 장면 누락: 없음 /\n추가 장면:  불필요&#x20;\n\n검수자 / 확인 날짜: 다혜 260921"
+    }
+  ]
+}

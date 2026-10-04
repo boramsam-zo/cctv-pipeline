@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "policy_version": "accident-point-window-v1",
+  "purpose": "source_annotation_training_inputs_only",
+  "time_basis": "local_clip_seconds",
+  "window_seconds": 2,
+  "sample_ids": [
+    "sample_010",
+    "sample_011",
+    "sample_012"
+  ],
+  "metadata_path": "data/local/accident/metadata-real.csv",
+  "metadata_sha256": "a3d06073353a7fedff140b652d025135f017860a240cad693990f5288c6c0ec9",
+  "parent_plan_sha256": "fec84f7ad662c9b961f2e6e611d6d217c200e3667f755b6d55d3433886a3da77",
+  "parent_manifest_sha256": "bcc4ab7feea8fe49237551e74fae3ee18dbc7883bbd91f2e453f3f76ef620b48",
+  "reserved_manifest": "configs/evaluation.colab.reference.json",
+  "reserved_manifest_sha256": "8b8f2a3cf1abf397796c61ffb7091ddbbc5f747416a9748ef2e741a727d5e897",
+  "authorization": {
+    "source": "user_message",
+    "use_source_annotations": true,
+    "recorded_at": "2026-09-22",
+    "raw_response": "`metadata-real.csv`의 원본 정답을 활용하자는 뜻이야 그럼 그렇게 진행할까",
+    "interpretation": "Use source accident_time to derive training-only positive labels for the existing centered 2s windows. This is policy authorization, not human visual review."
+  },
+  "training_execution_authorized": false,
+  "normal_label_rule": "none; preserve separately reviewed normal intervals",
+  "visual_review_status": "not_claimed",
+  "scope_note": "Only the three existing saved inputs; not an authorization for 300-file processing, independent evaluation or a training run."
+}

@@ -1,5 +1,6 @@
 """One durable BE job -> Runpod -> verified S3 metadata -> scene input configs."""
 import argparse
+from copy import deepcopy
 import getpass
 import hashlib
 import os
@@ -65,16 +66,47 @@ def update(directory, state, **values):
     save(Path(directory) / 'state.json', state)
 
 
-def submit_once(directory, state, api, trace):
+def submit_once(directory, state, api, trace, *, before_intent=None):
     if state['post_attempts'] != 0 or state['status'] != 'prepared':
         raise WorkerError('submission_must_not_be_repeated')
+    from apps.be_worker.mlops_jobs import binding_for, freeze_binding
+    snapshot = deepcopy(state.get('analysis_profile'))
+    binding = freeze_binding(directory, snapshot)
     with trace.span('runpod.health'):
-        api.health()
+        if 'analysis_profile' in state:
+            from apps.be_worker.runpod_api import analysis_identity
+            analysis_identity(state)
+            health = api.health(expected_profile=state['analysis_profile'])
+            from apps.be_worker import hour_session
+            if hour_session.configured():
+                marker = hour_session.current_marker()
+                if marker.get('schema') == 'cctv-model-session-v1':
+                    limits = health.get('limits') if isinstance(health, dict) else None
+                    expected = {'max_jobs': marker['max_jobs'],
+                                'per_job_seconds': marker['per_job_seconds'],
+                                'whole_service_seconds': marker['window_seconds']}
+                    if limits != expected:
+                        raise WorkerError('pod_model_session_limits_mismatch')
+        else:
+            api.health()
+    # The Registry/network preflight must finish before the queue commits a
+    # submission attempt. Recheck the local immutable contract after health;
+    # no second Registry request may fail after that durable intent is written.
+    if state.get('analysis_profile') != snapshot:
+        raise WorkerError('submission_profile_changed_after_preflight')
+    if binding is not None and (binding_for(snapshot) != binding
+            or read_json(Path(directory) / 'model-binding.json') != binding):
+        raise WorkerError('mlflow_frozen_binding_changed')
+    if before_intent is not None:
+        before_intent()
     # Durable intent before the first byte is sent. Any ambiguous failure is NOT retried.
     update(directory, state, status='submitting', post_attempts=1, error_code=None)
     try:
         with trace.span('runpod.submit', state) as result:
-            identifier = api.submit(Path(directory) / 'input.mp4', state['input_bytes'])
+            if 'analysis_profile' in state:
+                identifier = api.submit_versioned(Path(directory) / 'input.mp4', state)
+            else:
+                identifier = api.submit(Path(directory) / 'input.mp4', state['input_bytes'])
             update(directory, state, provider_job_id=checked_id(identifier), status='waiting')
             result.update(provider_job_id=identifier, status='waiting')
     except (ApiError, WorkerError) as exc:
@@ -139,16 +171,34 @@ def collect(directory, state, reader, trace):
     identifier = checked_id(state['provider_job_id'])
     config = {'bucket': state['config']['s3_bucket'], 'region': state['config']['s3_region'],
               'job_id': identifier, 'event_id': 'event_000', 'expected_input_sha256': state['input_sha256']}
+    is_ab = 'analysis_profile' in state
+    if is_ab:
+        from apps.scene_description import ab_scene
+        config.update(analysis_profile=state['analysis_profile'], gpu_key=state['gpu_key'])
+        ab_scene.identity(config)
     with trace.span('s3.verify', state) as result:
         raw_manifest = reader.get(config['bucket'], f'cctv-evidence/{identifier}/manifest.json', JSON_LIMIT)
         if len(raw_manifest) > JSON_LIMIT:
             raise WorkerError('manifest_too_large')
+        if is_ab and digest(raw_manifest) != state['s3'].get('manifest_sha256'):
+            raise WorkerError('provider_manifest_digest_mismatch')
         manifest = parse(raw_manifest)
         prefix = scene.validate_manifest(manifest, config)
         entry = scene.manifest_entry(manifest, prefix, 'evidence.json', JSON_LIMIT)
         raw_index = scene.checked_bytes(reader.get(config['bucket'], entry['key'], entry['bytes']), entry)
         index = parse(raw_index)
-        if (index.get('schema_version') != 'runpod-evidence-v1' or index.get('pts_verified') is not True
+        if is_ab:
+            index = ab_scene.checked_index(raw_index, config, manifest)
+            normalized_entry = scene.manifest_entry(manifest, prefix, 'normalized-result.json', JSON_LIMIT)
+            normalized_bytes = scene.checked_bytes(reader.get(config['bucket'], normalized_entry['key'],
+                                                    normalized_entry['bytes']), normalized_entry)
+            if digest(normalized_bytes) != index['normalized_result_sha256']:
+                raise WorkerError('normalized_result_identity_mismatch')
+            normalized = parse(normalized_bytes)
+            if (normalized.get('input_sha256'), normalized.get('version'), normalized.get('status')) != (
+                    state['input_sha256'],state['analysis_profile']['version'],index['status']):
+                raise WorkerError('normalized_result_summary_mismatch')
+        elif (index.get('schema_version') != 'runpod-evidence-v1' or index.get('pts_verified') is not True
                 or index.get('time_basis') != 'seconds_from_first_decoded_frame'
                 or not isinstance(index.get('events'), list) or len(index['events']) > 100):
             raise WorkerError('invalid_evidence_index')
@@ -157,10 +207,13 @@ def collect(directory, state, reader, trace):
             selected_config = dict(config, event_id=event['event_id'])
             scene.validate_config(selected_config)
             checked = scene.selected_event(index, event['event_id'])
-            assets = [scene.manifest_entry(manifest, prefix, checked[kind], scene.MEDIA_LIMIT)
-                      for kind in ('clip', 'frame')]
-            if sum(asset['bytes'] for asset in assets) > scene.MEDIA_LIMIT:
-                raise WorkerError('scene_media_too_large')
+            if is_ab:
+                ab_scene.entries(manifest, prefix, checked)
+            else:
+                assets = [scene.manifest_entry(manifest, prefix, checked[kind], scene.MEDIA_LIMIT)
+                          for kind in ('clip', 'frame')]
+                if sum(asset['bytes'] for asset in assets) > scene.MEDIA_LIMIT:
+                    raise WorkerError('scene_media_too_large')
             configs.append(selected_config)
         handoff = {'schema_version': 'be-scene-handoff-v1', 'worker_job_id': state['worker_job_id'],
                    'provider_job_id': identifier, 'input_sha256': state['input_sha256'],
@@ -169,8 +222,15 @@ def collect(directory, state, reader, trace):
                    'media_bytes_verified': False, 'gemini_api_calls': 0,
                    'status': 'handoff_ready' if configs else 'no_candidates',
                    'scene_configs': [f"scene-{item['event_id']}.json" for item in configs]}
+        if is_ab:
+            handoff.update(analysis_profile=state['analysis_profile'], gpu_key=state['gpu_key'],
+                           evidence_version='runpod-evidence-v2',
+                           metrics={name:normalized.get(name,{}) for name in ('timings','memory')})
         # Completion receipt is written only after ALL metadata and event paths validate.
         directory = Path(directory)
+        if is_ab:
+            (directory / 'evidence.raw.json').write_bytes(raw_index)
+            (directory / 'normalized-result.json').write_bytes(normalized_bytes)
         save(directory / 'manifest.json', manifest)
         save(directory / 'evidence.json', index)
         for item, filename in zip(configs, handoff['scene_configs']):

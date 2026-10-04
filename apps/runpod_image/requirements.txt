@@ -1,0 +1,14 @@
+# A's reviewed installation requirements, plus B's observed dependencies.
+# Keep one cv2 provider: do not add opencv-python-headless.
+ultralytics==8.4.155
+pytorchvideo==0.1.5
+fvcore==0.1.5.post20221221
+iopath==0.1.10
+av==16.1.0
+numpy==2.2.6
+opencv-python==4.12.0.88
+starlette==1.6.0
+uvicorn==0.53.0
+boto3==1.43.103
+parameterized==0.9.0
+networkx==3.3

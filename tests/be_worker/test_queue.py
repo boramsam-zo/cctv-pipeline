@@ -21,6 +21,7 @@ from apps.be_worker.runpod_api import ApiError
 
 class MemoryStore:
     def __init__(self):
+        self.connection = None  # This double has no SQL backend.
         self.data = []
         self.locks = {'dispatch': threading.Lock(), 'collect': threading.Lock()}
     @contextmanager

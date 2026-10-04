@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 import uuid
 
-from . import worker
+from . import worker, trial_limits
 from .common import WorkerError, checked_id, locked, now, read_json, save
 from apps.scene_description import scene, db
 
@@ -44,6 +44,11 @@ class SceneJobs:
         expected = {'bucket': state['config']['s3_bucket'], 'region': state['config']['s3_region'],
                     'job_id': state['provider_job_id'], 'event_id': event_id,
                     'expected_input_sha256': state['input_sha256']}
+        if 'analysis_profile' in state:
+            expected.update(analysis_profile=state['analysis_profile'], gpu_key=state['gpu_key'])
+            if (handoff.get('analysis_profile') != state['analysis_profile']
+                    or handoff.get('gpu_key') != state['gpu_key']):
+                raise WorkerError('scene_handoff_analysis_mismatch')
         path = directory/f'scene-{event_id}.json'
         if (path.name not in handoff.get('scene_configs', [])
                 or not path.is_file() or read_json(path) != expected):
@@ -232,6 +237,8 @@ class SceneJobs:
                 key = key_loader()  # Existing successful results never require a key.
                 attempts = state.get('scene_events', {}).get(event_id, {}).get('gemini_api_calls', 0)
                 def call_once(model_id, data, api_key):
+                    trial_limits.claim(self.store.connection, row, event_id, 'scene',
+                                       scene.sha(data), model=model_id)
                     self._save(row, directory, state, event_id, status='describing',
                                media_bytes_verified=True, gemini_api_calls=attempts + 1, error_code=None,
                                description_directory=output.name)
@@ -240,12 +247,19 @@ class SceneJobs:
                 try:
                     result = scene.describe(inputs, output, model, fps, key, call_once)
                 except Exception as exc:
-                    code = exc.code if isinstance(exc, scene.GeminiError) else 'scene_attempt_failed_no_auto_retry'
+                    code = exc.code if isinstance(exc, scene.GeminiError) or (
+                        isinstance(exc, WorkerError) and exc.code.startswith('trial_')) else 'scene_attempt_failed_no_auto_retry'
                     self._save(row, directory, state, event_id, status='description_failed',
                                error_code=code)
                     raise WorkerError(code) from None
             db.validate_result(result)
             source = result['source']
+            visual_kinds = ('clip', 'frame')
+            if 'analysis_profile' in expected:
+                from apps.scene_description import ab_scene
+                visual_kinds = ab_scene.visual_kinds(event)
+                if any(source.get(name) != value for name, value in ab_scene.source_metadata(event).items()):
+                    raise WorkerError('scene_result_analysis_mismatch')
             if (result['schema_version'] != 'cctv-scene-v2'
                     or result['provider_job_id'] != expected['job_id'] or result['event_id'] != event_id
                     or result['input_sha256'] != expected['expected_input_sha256']
@@ -254,7 +268,7 @@ class SceneJobs:
                     or (source['source_start_s'], source['source_end_s']) != (event['source_start_s'], event['source_end_s'])
                     or any({k: source['assets'][kind][k] for k in ('key', 'sha256', 'bytes')}
                            != {k: manifest['files'][event[kind]][k] for k in ('key', 'sha256', 'bytes')}
-                           for kind in ('clip', 'frame'))):
+                           for kind in visual_kinds)):
                 raise WorkerError('scene_result_identity_mismatch')
             digest = db.validate_result(result)
             previous = state.get('scene_events', {}).get(event_id, {})

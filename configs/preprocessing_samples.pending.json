@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "policy_version": "draft-0.1",
+  "time_basis": "local_clip_seconds",
+  "frame_count": 16,
+  "image_size": 224,
+  "samples": [
+    {
+      "sample_id": "sample_001",
+      "video_path": "real_videos/-9oifpjUxxM_00.mp4",
+      "source_sha256": "ddf3957dd16fd17ae47e5b014d49c05904de35512634a9fddce4d87e7768906e",
+      "start_seconds": 7.533,
+      "end_seconds": 9.533,
+      "window_basis": "docs/label_policy.md §6의 검토 위치 예시. 원본 accident_time 앞뒤 1초이며 승인된 사고 구간이 아님.",
+      "upstream_original_id": null,
+      "source_group_id": null,
+      "event_id": null,
+      "label_review": {
+        "status": "unreviewed",
+        "label": null,
+        "basis": null,
+        "reviewer": null,
+        "reviewed_at": null,
+        "scope": null,
+        "start_seconds": null,
+        "end_seconds": null,
+        "source_sha256": null,
+        "policy_version": null
+      }
+    },
+    {
+      "sample_id": "sample_002",
+      "video_path": "real_videos/-PpBteU0p3Q_00.mp4",
+      "source_sha256": "d4b1495ca73837a397ecff1e8baba8c59e8651964dd68ae696dcdc950a3f6e49",
+      "start_seconds": 2.292,
+      "end_seconds": 4.292,
+      "window_basis": "docs/label_policy.md §6의 검토 위치 예시. 원본 accident_time 앞뒤 1초이며 승인된 사고 구간이 아님.",
+      "upstream_original_id": null,
+      "source_group_id": null,
+      "event_id": null,
+      "label_review": {
+        "status": "unreviewed",
+        "label": null,
+        "basis": null,
+        "reviewer": null,
+        "reviewed_at": null,
+        "scope": null,
+        "start_seconds": null,
+        "end_seconds": null,
+        "source_sha256": null,
+        "policy_version": null
+      }
+    },
+    {
+      "sample_id": "sample_003",
+      "video_path": "real_videos/-SNFUobKjoM_00.mp4",
+      "source_sha256": "d45f68ebe17f9505711b367a4e754487d69a7ff35e635dddf5d3f9988085bcb1",
+      "start_seconds": 12.533,
+      "end_seconds": 14.533,
+      "window_basis": "docs/label_policy.md §6의 검토 위치 예시. 원본 accident_time 앞뒤 1초이며 승인된 사고 구간이 아님.",
+      "upstream_original_id": null,
+      "source_group_id": null,
+      "event_id": null,
+      "label_review": {
+        "status": "unreviewed",
+        "label": null,
+        "basis": null,
+        "reviewer": null,
+        "reviewed_at": null,
+        "scope": null,
+        "start_seconds": null,
+        "end_seconds": null,
+        "source_sha256": null,
+        "policy_version": null
+      }
+    }
+  ]
+}

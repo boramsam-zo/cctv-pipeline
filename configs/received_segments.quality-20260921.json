@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "scope": "same_reviewed_inputs_only",
+  "parent_review_plan_sha256": "0864252468c3f35a8f764b8394c833e48d5feb9b914321e5b25e1a859262d4c9",
+  "sample_ids": [
+    "sample_007",
+    "sample_008",
+    "sample_009"
+  ],
+  "source": "user_message",
+  "recorded_at": "2026-09-21",
+  "raw_response": "세 구간 모두 잘림·누락 문제 없고 추가 장면이 필요하지 않음",
+  "crop_or_missing_problem": false,
+  "needs_more_context": false,
+  "human_order_answer": null,
+  "label_review_changed": false,
+  "training_authorized": false,
+  "note": "후속 입력 품질 답변만 기록. 기존 사고 판정·검수자·날짜·원문을 보존하고 프레임 순서는 별도 코드로 확인한다."
+}

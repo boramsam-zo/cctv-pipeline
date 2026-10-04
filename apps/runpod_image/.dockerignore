@@ -1,0 +1,12 @@
+**
+!Dockerfile
+!.dockerignore
+!requirements.txt
+!constraints.txt
+!image-manifest.json
+!build_check.py
+!entrypoint.sh
+!runtime/
+!runtime/**
+!sources/
+!sources/**

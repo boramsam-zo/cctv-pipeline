@@ -1,0 +1,18 @@
+{
+  "purpose": "synthetic_operation_check_only",
+  "model": "r3d_18",
+  "weights": "random_initialization",
+  "train_scope": "all_parameters",
+  "batch_size": 1,
+  "frames": 16,
+  "height": 112,
+  "width": 112,
+  "dtype": "float32",
+  "num_workers": 0,
+  "num_classes": 2,
+  "seed": 20260918,
+  "cpu_threads": 4,
+  "learning_rate": 0.001,
+  "optimizer": "SGD_no_momentum",
+  "normalization": "synthetic_uniform_0_1_no_dataset_normalization"
+}
