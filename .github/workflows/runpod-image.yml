@@ -118,10 +118,17 @@ jobs:
           df -h "$docker_root" "$GITHUB_WORKSPACE"
           # Fixed SDK allowlist only. Keep Python/toolcache siblings, Docker,
           # checkout, build context, credentials and all model files intact.
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          # Swift's official runner-image installer uses /usr/share/swift.
+          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+          minimum_kib=$((40 * 1024 * 1024))
+          available_kib=$(df -Pk "$docker_root" | awk 'NR == 2 {print $4}')
+          if [[ "$available_kib" =~ ^[0-9]+$ ]] && (( available_kib < minimum_kib )); then
+            # This fresh job VM has not created Buildx or pulled our base yet.
+            # Prune only unused preloaded images; keep Docker and all volumes.
+            docker image prune --all --force
+          fi
           echo 'Disk space available for CUDA extraction and image export:'
           df -h "$docker_root" "$GITHUB_WORKSPACE"
-          minimum_kib=$((40 * 1024 * 1024))
           for storage_path in "$docker_root" "$GITHUB_WORKSPACE"; do
             available_kib=$(df -Pk "$storage_path" | awk 'NR == 2 {print $4}')
             if [[ ! "$available_kib" =~ ^[0-9]+$ ]] || (( available_kib < minimum_kib )); then
