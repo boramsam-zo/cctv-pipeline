@@ -176,19 +176,26 @@ class Runtime:
         return {'outcome': result['status'], 'event_count': result['event_count']}
 
 
-def publish_existing(directory):
+def publish_existing(directory, *, diagnostics=None):
     from apps.runpod_worker.storage import publish
     directory = Path(directory)
     state = read_json(directory / 'status.json')
     identity = gpu_identity(state['input_sha256'], state['analysis_profile'])
     if identity['gpu_key'] != state['gpu_key']:
         raise ValueError('publication_identity_mismatch')
-    return publish(directory / 'output', checked_id(state['job_id']), state['s3_config'])
+    return publish(directory / 'output', checked_id(state['job_id']), state['s3_config'],
+                   diagnostics=diagnostics)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Publish existing verified output; no inference')
     parser.add_argument('--publish-existing', type=Path, required=True)
     args = parser.parse_args()
-    receipt = publish_existing(args.publish_existing)
+    timings = {}
+    try:
+        receipt = publish_existing(args.publish_existing, diagnostics=timings)
+    finally:
+        # No bucket, credentials or signed URLs; keep timings out of immutable evidence.
+        if timings:
+            print(json.dumps({'event': 's3_publication_timing', **timings}), flush=True)
     print(json.dumps({'status': 's3_evidence_published', 's3_uploaded': receipt['s3_uploaded'], 'model_calls': 0}))

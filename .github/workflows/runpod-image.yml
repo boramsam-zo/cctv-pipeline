@@ -23,6 +23,7 @@ on:
       - 'tests/be_worker/test_mlops*.py'
       - 'tests/be_worker/test_mlflow_tracking.py'
       - 'tests/be_worker/test_register_mlops_models.py'
+      - 'tests/be_worker/test_ab_storage_parallel.py'
   push:
     branches: [main]
     paths:
@@ -45,6 +46,7 @@ on:
       - 'tests/be_worker/test_mlops*.py'
       - 'tests/be_worker/test_mlflow_tracking.py'
       - 'tests/be_worker/test_register_mlops_models.py'
+      - 'tests/be_worker/test_ab_storage_parallel.py'
   workflow_dispatch:
 
 permissions:
@@ -86,6 +88,7 @@ jobs:
           python -B -m unittest discover -s tests/runpod_image -p 'test_mlops*.py' -v
           python -B -m unittest discover -s tests/be_worker -p 'test_mlops*.py' -v
           python -B -m unittest tests.be_worker.test_mlflow_tracking tests.be_worker.test_register_mlops_models -v
+          python -B -m unittest tests.be_worker.test_ab_storage_parallel -v
           python -B scripts/prepare_runpod_ci.py --output "$RUNNER_TEMP/runpod-check"
 
   publish:

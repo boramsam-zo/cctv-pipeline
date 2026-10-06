@@ -1,6 +1,7 @@
 """Upload verified outputs; manifest is the final S3 completion marker."""
 import argparse
 import base64
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 import hashlib
 import json
 import mimetypes
@@ -8,6 +9,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import tempfile
+import time
 
 try:
     from .verify_bundle import sha256
@@ -137,12 +139,89 @@ def settings():
     return dict(bucket=bucket, region=region, prefix=prefix)
 
 
-def publish(directory, job_id, config, client=None):
+def _publish_assets(entries, put_file, max_workers):
+    """Bound both active file buffers and submitted work; drain before returning."""
+    if max_workers == 1:
+        for name, entry in entries:
+            put_file(name, entry)
+        return
+    entries = iter(entries)
+    with ThreadPoolExecutor(max_workers=max_workers,
+                            thread_name_prefix='evidence-s3') as executor:
+        pending = set()
+        try:
+            for _ in range(max_workers):
+                item = next(entries, None)
+                if item is not None:
+                    pending.add(executor.submit(put_file, *item))
+            while pending:
+                completed, pending = wait(pending, return_when=FIRST_COMPLETED)
+                # Inspect every finished result before scheduling another asset.
+                # Any failure prevents the completion marker from being posted.
+                for future in completed:
+                    future.result()
+                for _ in completed:
+                    item = next(entries, None)
+                    if item is not None:
+                        pending.add(executor.submit(put_file, *item))
+        except BaseException:
+            for future in pending:
+                future.cancel()
+            # The executor waits for requests already in progress. Partial
+            # immutable assets remain available for an explicit later resume.
+            raise
+
+
+def publish(directory, job_id, config, client=None, *, max_workers=2,
+            diagnostics=None):
+    """Publish v2 assets concurrently, then its completion marker and receipt.
+
+    ``max_workers=1`` provides a sequential baseline; legacy v1 always uses it.
+    Optional timing diagnostics are separate from immutable evidence identity.
+    """
+    if type(max_workers) is not int or not 1 <= max_workers <= 4:
+        raise ValueError('max_workers must be an integer between 1 and 4')
+    if diagnostics is not None and not isinstance(diagnostics, dict):
+        raise TypeError('diagnostics must be a dict')
+    started = time.perf_counter()
+    if diagnostics is not None:
+        diagnostics.update(schema_version='runpod-s3-publication-timing-v1',
+            status='running', max_workers=max_workers, files={},
+            local_verification_seconds=0.0, assets_seconds=0.0,
+            manifest_seconds=0.0, total_seconds=0.0)
+    try:
+        receipt = _publish(directory, job_id, config, client,
+                           max_workers=max_workers, diagnostics=diagnostics)
+    except BaseException:
+        if diagnostics is not None:
+            diagnostics['status'] = 'failed'
+        raise
+    else:
+        if diagnostics is not None:
+            diagnostics['status'] = 'succeeded'
+        return receipt
+    finally:
+        if diagnostics is not None:
+            diagnostics['total_seconds'] = time.perf_counter() - started
+
+
+def _publish(directory, job_id, config, client, *, max_workers, diagnostics):
     directory = Path(directory)
     if not re.fullmatch(r'[0-9a-f]{32}', job_id):
         raise ValueError('Expected provider job ID')
-    manifest = verified_files(directory)
+    started = time.perf_counter()
+    try:
+        manifest = verified_files(directory)
+    finally:
+        if diagnostics is not None:
+            diagnostics['local_verification_seconds'] = time.perf_counter() - started
     versioned = manifest.get('schema_version') == 'runpod-evidence-v2'
+    max_workers = max_workers if versioned else 1
+    if diagnostics is not None:
+        diagnostics['max_workers'] = max_workers
+        diagnostics['files'] = {name: dict(bytes=entry['bytes'],
+            elapsed_seconds=0.0, status='pending')
+            for name, entry in manifest['files'].items()}
     if versioned:
         prefix_path = PurePosixPath(config['prefix'])
         if (not re.fullmatch(r'[A-Za-z0-9/_-]+', config['prefix']) or
@@ -194,12 +273,40 @@ def publish(directory, job_id, config, client=None):
         if head['ContentLength'] != len(data) or head.get('Metadata', {}).get('sha256') != digest:
             raise ValueError('S3 object verification failed')
 
-    for name, entry in manifest['files'].items():
-        path = directory/name
-        if path.stat().st_size > 200*1024*1024:
-            raise ValueError('Evidence asset exceeds 200 MiB')
-        put(name, path.read_bytes(), entry['sha256'])
-    put('manifest.json', body, hashlib.sha256(body).hexdigest())
+    def put_file(name, entry):
+        started = time.perf_counter()
+        timing = diagnostics['files'][name] if diagnostics is not None else None
+        if timing is not None:
+            timing['status'] = 'running'
+        try:
+            path = directory/name
+            if path.stat().st_size > 200*1024*1024:
+                raise ValueError('Evidence asset exceeds 200 MiB')
+            # Read inside the worker: queued futures never retain file buffers.
+            put(name, path.read_bytes(), entry['sha256'])
+        except BaseException:
+            if timing is not None:
+                timing['status'] = 'failed'
+            raise
+        else:
+            if timing is not None:
+                timing['status'] = 'succeeded'
+        finally:
+            if timing is not None:
+                timing['elapsed_seconds'] = time.perf_counter() - started
+
+    started = time.perf_counter()
+    try:
+        _publish_assets(manifest['files'].items(), put_file, max_workers)
+    finally:
+        if diagnostics is not None:
+            diagnostics['assets_seconds'] = time.perf_counter() - started
+    started = time.perf_counter()
+    try:
+        put('manifest.json', body, hashlib.sha256(body).hexdigest())
+    finally:
+        if diagnostics is not None:
+            diagnostics['manifest_seconds'] = time.perf_counter() - started
     if versioned:
         _save_v2_receipt(directory, receipt)
     else:
