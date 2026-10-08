@@ -17,10 +17,10 @@ SAVED_SNAPSHOT = Path(__file__).with_name('data') / 'saved-control-room.json'
 KST = ZoneInfo('Asia/Seoul')
 TEAM_REPORT = 'cctv-team-report-v1'
 STATUS_LABELS = {
-    'completed': '처리 완료', 'comparison_completed': '근거 비교 완료',
-    'paused': '확인 필요 · 일시중지', 'handoff_ready': '근거 인계 완료',
+    'completed': '요청 처리 완료', 'comparison_completed': 'GPU 비교 완료',
+    'paused': '작업 중단 · 확인 필요', 'handoff_ready': '근거 인계 완료',
     'no_candidates': '후보 없음 · 정상 판정 아님',
-    'prepared': '대기', 'queued': '대기', 'submitting': '접수 중',
+    'prepared': '대기 중', 'queued': '대기 중', 'submitting': '접수 중',
     'waiting': '분석·저장 중', 'evidence_ready': '근거 수집 대기',
     'describing': '장면 설명 중', 'reporting': '보고 작성 중',
     'provider_failed': '분석·저장 실패', 'verification_failed': '근거 확인 실패',
@@ -30,6 +30,10 @@ STATUS_LABELS = {
 TYPE_LABELS = {
     'collision': '충돌', 'side_collision': '측면 충돌', 'multi_vehicle': '다중 차량',
     'rear_end': '추돌', 'rollover': '전복', 'single_vehicle': '차량 단독',
+}
+CANDIDATE_LABELS = {
+    'candidate': '사고 후보', 'no_candidates': '후보 없음 · 정상 판정 아님',
+    'unjudged': '미판정',
 }
 
 
@@ -70,6 +74,102 @@ def _state(job):
     if flow.get('paused') is True or flow.get('status') == 'paused':
         return 'paused'
     return str(flow.get('status') or job.get('stage') or 'unknown')
+
+
+def candidate_classification(job):
+    """Only explicit saved evidence or a no-candidates result supports a class."""
+    if event_ids(job):
+        return 'candidate'
+    if _state(job) == 'no_candidates' or job.get('stage') == 'no_candidates':
+        return 'no_candidates'
+    return 'unjudged'
+
+
+def demo_refresh_signature(status, jobs, selections, worker):
+    """Detect displayed result changes, ignoring ticking clocks and poll receipts.
+
+    This is only a repaint decision, never a storage/integrity checksum. Keep
+    stage/error/evidence/report bodies and session limits in the comparison.
+    """
+    def stable(value):
+        if isinstance(value, dict):
+            return {key: stable(item) for key, item in value.items()
+                    if key not in ('elapsed_seconds', 'queue_updated_at')}
+        if isinstance(value, list):
+            return [stable(item) for item in value]
+        return value
+
+    age = _number(worker.get('age_seconds'))
+    content = {
+        'session': {key: value for key, value in status.items() if key != 'server_time_epoch'},
+        'jobs': sorted(jobs, key=lambda row: row['worker_job_id']),
+        'selections': [dict(row, jobs=sorted(row.get('jobs', []), key=lambda j: j['worker_job_id']))
+                       for row in sorted(selections, key=lambda row: row['selection_id'])],
+        'worker': {'freshness': 'unknown' if age is None else 'late' if age > 180 else 'fresh',
+                   'payload': worker.get('payload')},
+    }
+    return hashlib.sha256(json.dumps(stable(content), sort_keys=True, ensure_ascii=False,
+                                      separators=(',', ':')).encode()).hexdigest()
+
+
+def model_identity(job):
+    tracking, profile = _dict(job.get('mlflow')), _dict(job.get('analysis_profile'))
+    version = job.get('version') or profile.get('version')
+    identifier = tracking.get('model_id') or profile.get('model_id')
+    identifier = identifier or {'B': 'x3d_s', 'R2': 'r2plus1d_18'}.get(version)
+    label = {'x3d_s': 'X3D-S', 'r2plus1d_18': 'R(2+1)D-18'}.get(identifier)
+    return identifier, label or str(identifier or '모델 미기록')
+
+
+def card_identities(jobs):
+    """Compare full input hashes and models inside this view, without merging jobs.
+
+    Recency describes submissions, never model/weight quality. Missing or tied
+    timestamps do not establish a unique latest submission.
+    """
+    rows = unique_jobs(jobs)
+    by_source, by_model = {}, {}
+    for job in rows:
+        digest = job.get('input_sha256')
+        if isinstance(digest, str) and re.fullmatch(r'[a-f0-9]{64}', digest):
+            by_source.setdefault(digest, []).append(job)
+            model, _ = model_identity(job)
+            if model:
+                by_model.setdefault((digest, model), []).append(job)
+    result = {}
+    for job in rows:
+        model, label = model_identity(job)
+        digest = job.get('input_sha256')
+        group = by_source.get(digest, []) if isinstance(digest, str) else []
+        peers = by_model.get((digest, model), []) if group and model else []
+        timestamps = [_timestamp(peer.get('submitted_at')) for peer in peers]
+        run_label = '실행 순서 미확인'
+        if timestamps and all(timestamps):
+            latest = max(timestamps)
+            current = _timestamp(job.get('submitted_at'))
+            run_label = ('이전 실행' if current < latest else
+                         '최신 실행' if timestamps.count(latest) == 1 else '같은 시각 실행')
+        result[job['worker_job_id']] = {
+            'model_label': label, 'run_label': run_label,
+            'source_label': (('동일 원본 ' if len(group) > 1 else '원본 ') + digest[:8]
+                             + (f' · {len(group)}회 분석 작업' if len(group) > 1 else ''))
+                            if group else '원본 식별 미확인',
+            'source_count': len(group),
+        }
+    return result
+
+
+def _result_readiness(description, report, classification):
+    payload, state = _dict(_dict(description).get('payload')), _dict(_dict(report).get('state'))
+    scene = _dict(payload.get('team_event') or payload.get('description'))
+    explanation_ready = payload.get('status') == 'completed' and bool(scene)
+    report_ready = state.get('status') == 'report_stored' and bool(_dict(state.get('result')))
+    absent = '대상 없음' if classification == 'no_candidates' else '미저장'
+    return {
+        'description_readiness': '저장됨' if explanation_ready else absent,
+        'report_readiness': ('복구 저장됨' if state.get('recovery_execution_id') else '저장됨')
+                            if report_ready else absent,
+    }
 
 
 def unique_jobs(jobs, selections=()):
@@ -229,12 +329,16 @@ def normalize_case(job, event_id=None, analysis_id=None, report_id=None):
     types = _list(_dict(scene.get('accident')).get('forms') or scene.get('incident_types'))
     status = _state(job)
     worker_id = job['worker_job_id']
+    classification = candidate_classification(job)
     return {
         'case_id': worker_id + (':' + event_id if event_id else ''),
         'worker_job_id': worker_id, 'event_id': event_id, 'job': job,
         'title': (summary[:68] + ('…' if len(summary) > 68 else '')) if summary
                  else '사고 후보 · ' + worker_id[:8] if event_id else '영상 작업 · ' + worker_id[:8],
         'status': status, 'status_label': STATUS_LABELS.get(status, '상태 확인 필요'),
+        'classification': classification, 'classification_label': CANDIDATE_LABELS[classification],
+        'model_label': model_identity(job)[1],
+        **_result_readiness(description, report, classification),
         'scene': scene, 'description': description, 'reports': reports, 'report': report,
         'report_revisions': revisions, 'report_review_errors': review_errors,
         'report_review': _dict(_dict(report).get('review')),
@@ -296,6 +400,122 @@ def build_statistics(jobs):
         'timezone': 'Asia/Seoul', 'unit': 'unique_worker_job',
         'confirmed_accident_count': None, 'connected_camera_count': None,
     }
+
+
+def saved_description_cases(job):
+    """Completed stored observations whose identifiers agree with this job.
+
+    A failed/empty provider response is never an observation or a normal result.
+    The optional legacy fields are checked when present, without inventing them.
+    """
+    result = []
+    for description in _list(job.get('descriptions')):
+        description = _dict(description)
+        payload = _dict(description.get('payload'))
+        identifier, event = description.get('analysis_id'), description.get('event_id')
+        if (not isinstance(identifier, str) or not identifier
+                or not isinstance(event, str) or not re.fullmatch(r'event_[0-9]+', event)
+                or payload.get('status') != 'completed'
+                or not _dict(payload.get('team_event') or payload.get('description'))):
+            continue
+        if any(payload.get(key) is not None and payload[key] != expected for key, expected in (
+                ('analysis_id', identifier), ('event_id', event), ('input_sha256', job.get('input_sha256')))):
+            continue
+        result.append(normalize_case(job, event, analysis_id=identifier))
+    return result
+
+
+def build_video_aggregates(jobs, model_id):
+    """One full source SHA per selected model; multiple types remain multi-label.
+
+    Readiness uses the newest submission. Type counts use the newest submission
+    with a valid stored observation; older representatives are disclosed. Missing
+    hashes or ambiguous ordering are reported, never merged by filename/prefix.
+    """
+    selected = [job for job in unique_jobs(jobs) if model_identity(job)[0] == model_id]
+    groups, unknown_hash = {}, 0
+    for job in selected:
+        digest = job.get('input_sha256')
+        if not isinstance(digest, str) or not re.fullmatch(r'[a-f0-9]{64}', digest):
+            unknown_hash += 1
+            continue
+        groups.setdefault(digest, []).append(job)
+    rows, types = [], Counter()
+    counts = Counter()
+    for digest, peers in sorted(groups.items()):
+        stamps = [_timestamp(job.get('submitted_at')) for job in peers]
+        ordered = len(peers) == 1 or (all(stamps) and len(set(stamps)) == len(stamps))
+        if not ordered:
+            counts['recency_unknown'] += 1
+            rows.append({'input_sha256': digest, 'job_id': None, 'job_count': len(peers),
+                         'status': '실행 순서 미확인', 'description': '비교 보류', 'report': '비교 보류',
+                         'types': [], 'representative_job_id': None, 'previous_observation': False})
+            continue
+        peers = sorted(peers, key=lambda job: _timestamp(job.get('submitted_at')) or
+                       datetime.min.replace(tzinfo=KST), reverse=True)
+        latest = peers[0]
+        latest_cases = saved_description_cases(latest)
+        summary = _dict(latest.get('demo_summary'))
+        representatives = _list(summary.get('representative_event_ids'))
+        expected = len(representatives) if representatives else len(event_ids(latest))
+        ready_events = {case['event_id'] for case in latest_cases}
+        report_events = {case['event_id'] for case in latest_cases
+                         if case['report_readiness'] in ('저장됨', '복구 저장됨')}
+        classification = candidate_classification(latest)
+        def readiness(ready):
+            if classification == 'no_candidates':
+                return '대상 없음'
+            if not ready:
+                return '미저장'
+            if expected and len(ready) == expected:
+                return '대표 후보 저장됨' if representatives else '저장됨'
+            return f'일부 저장 {len(ready)}/{expected}'
+        representative, cases = None, []
+        if classification == 'no_candidates':
+            counts['no_candidates'] += 1
+        else:
+            for candidate in peers:
+                by_event = {}
+                for case in saved_description_cases(candidate):
+                    by_event.setdefault(case['event_id'], []).append(case)
+                cases = []
+                for revisions in by_event.values():
+                    if len(revisions) == 1:
+                        cases.extend(revisions)
+                        continue
+                    dated = [(_timestamp(_dict(case['description']['payload']).get('finished_at')), case)
+                             for case in revisions]
+                    if all(stamp for stamp, _ in dated):
+                        newest = max(stamp for stamp, _ in dated)
+                        matches = [case for stamp, case in dated if stamp == newest]
+                        if len(matches) == 1:
+                            cases.extend(matches)
+                if cases:
+                    representative = candidate
+                    break
+            if representative is None:
+                counts['incomplete'] += 1
+        tags = sorted({tag for case in cases for tag in case['type_tags']
+                       if tag and tag not in ('unknown', 'uncertain', 'none')})
+        if representative is not None:
+            counts['observed_sources'] += 1
+            if not tags:
+                counts['unclassified'] += 1
+            if len(tags) > 1:
+                counts['multiple_types'] += 1
+            if representative['worker_job_id'] != latest['worker_job_id']:
+                counts['previous_observations'] += 1
+            types.update(tags)
+        rows.append({'input_sha256': digest, 'job_id': latest['worker_job_id'], 'job_count': len(peers),
+                     'status': STATUS_LABELS.get(_state(latest), '상태 확인 필요'),
+                     'description': readiness(ready_events), 'report': readiness(report_events),
+                     'types': [TYPE_LABELS.get(tag, tag) for tag in tags],
+                     'representative_job_id': representative['worker_job_id'] if representative else None,
+                     'previous_observation': representative is not None and representative != latest})
+    return {'model_id': model_id, 'rows': rows, 'source_count': len(groups),
+            'unknown_hash_jobs': unknown_hash, 'type_counts': dict(sorted(types.items())),
+            **{name: counts[name] for name in ('recency_unknown', 'no_candidates', 'incomplete',
+                'observed_sources', 'unclassified', 'multiple_types', 'previous_observations')}}
 
 
 def normalize_snapshot(jobs, selections=(), metadata=None):

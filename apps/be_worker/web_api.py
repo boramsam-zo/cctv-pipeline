@@ -57,9 +57,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             path = urlsplit(self.path).path
+            if path.startswith('/demo/'):
+                from . import demo_access
+                with connect() as conn:
+                    if path == '/demo/status': return self.send(demo_access.status(conn))
+                    demo_access.require_active(conn)
+                if path.startswith('/demo/mlflow/'):
+                    from .demo_read import read_mlflow
+                    return self.send(read_mlflow(self.path))
+                return self.send({'error': 'not_found'}, 404)
             if path == '/report-pipeline': return self.send(team_settings.metadata())
             if path == '/connection': return self.send(connection_status())
+            if path in ('/ui-snapshot', '/ui-revision') and self.path != path:
+                return self.send({'error': 'invalid_ui_read_query'}, 400)
             with connect() as conn:
+                if path in ('/ui-snapshot', '/ui-revision'):
+                    from . import ui_read
+                    read = ui_read.snapshot if path == '/ui-snapshot' else ui_read.revision
+                    return self.send(read(conn))
                 if path == '/jobs': return self.send(flow.view(conn))
                 if path == '/selections': return self.send(flow.selection_views(conn))
                 if path == '/worker':
@@ -89,19 +104,31 @@ class Handler(BaseHTTPRequestHandler):
             code = getattr(exc,'code','read_failed')
             status = (404 if code in ('queue_job_not_found', 'source_media_not_found') else
                       400 if code == 'invalid_provider_job_id' else 503)
+            if path.startswith('/demo/'):
+                reported = getattr(exc, 'status', None)
+                if reported in (400, 403, 404, 409, 410, 413): status = reported
+                elif code in ('demo_not_started', 'test_session_stopped', 'test_session_expired'):
+                    status = 410
             self.send({'error':code},status)
     def do_POST(self):
         temporary = None
         try:
             path = urlsplit(self.path).path
-            if path in ('/jobs','/selections'):
+            if path in ('/jobs','/selections','/demo/selections'):
+                is_demo = path == '/demo/selections'
+                if is_demo:
+                    from . import demo_access
+                    with connect() as conn:
+                        policy = demo_access.require_active(conn)
                 if self.headers.get('Content-Type') != 'video/mp4':
                     return self.send({'error':'expected_video_mp4'},415)
                 length=int(self.headers.get('Content-Length','0'))
                 if not 0 < length <= MAX_VIDEO:return self.send({'error':'invalid_video_size'},413)
+                if is_demo and length > policy['max_upload_bytes']:
+                    return self.send({'error': 'demo_video_size_limit'}, 413)
                 query=parse_qs(urlsplit(self.path).query,keep_blank_values=True)
                 reference_date=query.get('reference_date',[''])[0]
-                if path == '/selections':
+                if path in ('/selections', '/demo/selections'):
                     if (set(query)-{'selection','purpose','reference_date'} or
                             any(len(values)!=1 for values in query.values())):
                         return self.send({'error':'invalid_selection_query'},400)
@@ -109,6 +136,9 @@ class Handler(BaseHTTPRequestHandler):
                     purpose=query.get('purpose',[''])[0]
                     if selection not in ('A','B','A+B','R2') or purpose not in ('gpu_comparison','full_report'):
                         return self.send({'error':'invalid_analysis_selection'},400)
+                    if is_demo and (selection not in policy['versions'] or purpose != 'full_report'
+                                    or 'reference_date' in query):
+                        return self.send({'error': 'demo_selection_not_allowed'}, 403)
                     if purpose=='gpu_comparison':reference_date=None
                     elif team_settings.enabled():
                         if 'reference_date' in query:
@@ -126,7 +156,13 @@ class Handler(BaseHTTPRequestHandler):
                         stream.write(block);remaining-=len(block)
                     stream.flush();os.fsync(stream.fileno())
                 with connect() as conn:
-                    if path == '/selections':
+                    if is_demo:
+                        demo_access.require_active(conn)
+                        demo_access.validate_video(temporary, policy)
+                        answer = demo_access.reuse_selection(conn, temporary, selection)
+                        if answer is None:
+                            answer = flow.admit_selection(Store(conn),temporary,reference_date,selection,purpose)
+                    elif path == '/selections':
                         answer=flow.admit_selection(Store(conn),temporary,reference_date,selection,purpose)
                     else:answer=flow.admit(Store(conn),temporary,reference_date)
                 return self.send(answer,202)

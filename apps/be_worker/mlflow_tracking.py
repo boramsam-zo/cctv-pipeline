@@ -297,6 +297,44 @@ again with retry_pending(), without looking up or submitting a Runpod job.
                 exc.code if isinstance(exc, WorkerError) else 'mlflow_outbox_write_failed'}
 
 
+def display_summary(record):
+    """Explain this execution without treating recovery as another model call."""
+    binding, refs = record['model_binding'], record['result_refs']
+    purpose = refs.get('purpose') or record['config'].get('operation') or 'execution'
+    labels = {'full_report': '영상 분석·보고', 'gpu_comparison': 'GPU 모델 비교',
+              'gpu_only': 'GPU 분석', 'report_recovery': '저장 응답·보고 복구',
+              'saved_response_cpu_report_recovery': '저장 응답·보고 복구',
+              'report_relevance_review': '저장 보고 근거 검수'}
+    purpose_label = labels.get(purpose, purpose)
+    model = {'x3d_s': 'X3D-S', 'r2plus1d_18': 'R(2+1)D-18'}.get(
+        binding['model_id'], binding['model_id'])
+    name = f"{model} · {purpose_label} · {record['execution_id'][:8]}"
+    lines = [f"작업: {purpose_label}",
+             f"모델: {model} / {binding['model_version']} / Registry v{binding['registered_model_version']}",
+             f"결과: {record['outcome']}" + (f" ({record['error_code']})" if record['error_code'] else ''),
+             f"입력 SHA-256: `{record['input_sha256']}`",
+             f"설정 SHA-256: `{record['config_sha256']}`",
+             f"실행 ID: `{record['execution_id']}`",
+             "Traces에서 실제 요청·응답, 단계별 시간, 제공자가 반환한 토큰 사용량을 확인합니다.",
+             "Artifacts의 observations JSON에는 고정된 설정과 결과 식별자가 있습니다."]
+    if refs.get('new_model_calls') == 0:
+        lines.append('이 실행의 새 모델 호출은 0회입니다. 이전 호출의 토큰을 이 실행에 합산하지 않습니다.')
+    source_run = refs.get('source_failed_run_id') or refs.get('source_run_id')
+    if isinstance(source_run, str) and re.fullmatch(r'[a-f0-9]{32}', source_run):
+        lines.append(f"원본 호출 Run: `{source_run}`")
+    report_ids = [refs.get('report_id')] + list(refs.get('report_ids', []))
+    report_ids += [r.get('report_id') for r in refs.get('reports', []) if isinstance(r, dict)]
+    report_ids = list(dict.fromkeys(x for x in report_ids if isinstance(x, str)))
+    if report_ids:
+        lines.append('연결 보고: ' + ', '.join(f'`{value}`' for value in report_ids))
+    if record['durations']:
+        lines.append('기록 시간(초): ' + ', '.join(
+            f'{key}={value:.3f}' for key, value in record['durations'].items()))
+    lines += ['Duration은 Run 시작부터 종료까지의 경과시간이며 대기·수동 복구가 포함될 수 있습니다.',
+              '정확도·F1: 이 추론 실행에서는 평가하지 않았습니다.']
+    return dict(name=name, description='\n\n'.join(lines), purpose=purpose)
+
+
 def _deliver(client, record, receipt, path, observation_sha):
     binding = verify_registered_model(client, record['model_binding'])
     experiment = client.get_experiment_by_name(receipt['experiment_name'])
@@ -325,7 +363,7 @@ def _deliver(client, record, receipt, path, observation_sha):
                 tags={'cctv.identity_sha256': identity_sha,
                       'cctv.execution_id': record['execution_id'],
                       'cctv.worker_job_id': record['worker_job_id']},
-                run_name=record['execution_id'])
+                run_name=display_summary(record)['name'])
         receipt['run_id'] = run.info.run_id
         save(path, receipt)
     if (run.data.tags.get('cctv.identity_sha256') != identity_sha
@@ -351,6 +389,9 @@ def _deliver(client, record, receipt, path, observation_sha):
                        'evaluation_status': 'not_evaluated', 'evaluation_scope': 'inference_only',
                        'error_code': record['error_code'] or ''}.items():
         client.set_tag(run_id, 'cctv.' + key, value)
+    summary = display_summary(record)
+    client.set_tag(run_id, 'cctv.purpose', summary['purpose'])
+    client.set_tag(run_id, 'mlflow.note.content', summary['description'])
     client.set_terminated(run_id, status='FAILED' if record['outcome'] == 'failed' else 'FINISHED',
                           end_time=record['finished_at_ms'])
     # Commit tag is last: earlier partial sends may be safely repeated.

@@ -11,12 +11,21 @@ import uuid
 from .common import WorkerError, locked, read_json, save
 from .scene_jobs import SceneJobs
 from .report_jobs import Journal, fingerprint
-from . import hour_session, trial_limits, team_settings
+from . import hour_session, trial_limits, team_settings, mlflow_tracing
 from apps.scene_description import team_scene, team_db, scene
 
 VERSION = 'cctv-team-report-v1'
 SECTIONS = ('사고 개요', '영상 관찰 및 판단 불가 항목', '관제의 전달·요청 사항',
             '현장 대응 참고', '확인 필요 사항', '관련 근거')
+
+
+def validate_saved_scene(inputs, output):
+    """Only an explicit recovery sidecar opts into the narrow saved repair."""
+    marker = Path(output) / 'normalization.json'
+    if marker.exists() or marker.is_symlink():
+        from .report_recovery import validate_saved_output
+        return validate_saved_output(inputs, output)
+    return team_scene.validate_saved_output(inputs, output)
 
 
 class TeamSceneJobs(SceneJobs):
@@ -41,7 +50,11 @@ class TeamSceneJobs(SceneJobs):
             manifest, event, media = self._media(inputs, expected, handoff)
             output = self._description_output(directory/'scenes'/event_id)
             if (output/'result.json').is_file():
-                result = team_scene.validate_saved_output(inputs,output)
+                with mlflow_tracing.stage('saved_response_reuse', reused=True,
+                                          new_model_calls=0) as trace:
+                    result = validate_saved_scene(inputs,output)
+                    trace.output(analysis_id=result.get('analysis_id'),
+                                 scene_json=result.get('team_event'))
                 if (result['model'], result['video_sample_fps']) != (model, fps):
                     raise WorkerError('team_scene_saved_settings_changed')
             elif output.exists():
@@ -50,20 +63,29 @@ class TeamSceneJobs(SceneJobs):
                 self.preflight()
                 api_key = key_loader()
                 count = state.get('scene_events', {}).get(event_id, {}).get('gemini_api_calls', 0)
+                trace_provenance = {}
                 def reserve(request):
                     trial_limits.claim(self.store.connection, row, event_id, 'scene',
                                        request['request_sha256'], model=model)
                     self._save(row, directory, state, event_id, status='describing',
                                media_bytes_verified=True, gemini_api_calls=count+1,
                                description_directory=output.name, error_code=None)
+                    trace_provenance.update({name: request.get(name) for name in
+                        ('prompt_version', 'request_sha256', 'contract_sha256', 'video_sample_fps')})
                 try:
-                    result = team_scene.describe(inputs, output, model, fps, api_key,
-                                                 execute=True, caller=caller, pre_call=reserve)
+                    with mlflow_tracing.stage('vlm_observation', provider_model=model):
+                        result = team_scene.describe(inputs, output, model, fps, api_key,
+                            execute=True, caller=mlflow_tracing.gemini_caller(
+                                caller or scene.call_gemini, provenance=trace_provenance),
+                            pre_call=reserve)
                 except Exception as exc:
                     code = getattr(exc, 'code', 'team_scene_failed_inspect_saved_response_no_retry')
                     self._save(row, directory, state, event_id, status='description_failed', error_code=code)
                     raise WorkerError(code) from None
-            digest = team_scene.validate_result(result)
+            with mlflow_tracing.stage('scene_contract_validation') as trace:
+                digest = team_scene.validate_result(result)
+                trace.output(analysis_id=result['analysis_id'], scene_sha256=digest,
+                             scene_json=result.get('team_event'))
             source = result['source']
             if (result['provider_job_id'] != expected['job_id'] or result['event_id'] != event_id
                     or result['input_sha256'] != expected['expected_input_sha256']
@@ -82,9 +104,10 @@ class TeamSceneJobs(SceneJobs):
             self._save(row, directory, state, event_id, status='description_ready',
                        analysis_id=result['analysis_id'], result_sha256=digest, error_code=None)
             try:
-                receipt = self.persist_result(result)
-                if receipt.get('committed') is not True or receipt.get('result_sha256') != digest:
-                    raise WorkerError('team_scene_database_readback_failed')
+                with mlflow_tracing.stage('scene_database_storage', analysis_id=result['analysis_id']):
+                    receipt = self.persist_result(result)
+                    if receipt.get('committed') is not True or receipt.get('result_sha256') != digest:
+                        raise WorkerError('team_scene_database_readback_failed')
             except Exception:
                 self._save(row,directory,state,event_id,status='database_pending',
                            error_code='team_scene_database_pending_reuse_saved_result')
@@ -170,7 +193,7 @@ class TeamReportJobs:
             settings = dict(version=VERSION,pipeline_id=team_settings.PIPELINE,report_id=report_id,
                 analysis_id=result['analysis_id'],worker_job_id=identifier,scene_sha256=scene_sha,
                 reference_date=None,document_reference_date_supported=False,
-                model='cpu-template',contract=team_settings.contract())
+                model='cpu-template',contract=team_settings.contract(state.get('analysis_profile', {}).get('version', 'B')))
             self.conn.execute('SELECT state FROM cctv_scene.team_report_runs LIMIT 0')
             permissions = self.conn.execute("SELECT has_table_privilege(current_user, 'cctv_scene.team_report_runs', 'INSERT') AND has_table_privilege(current_user, 'cctv_scene.team_report_runs', 'UPDATE') AS ok").fetchone()
             if not permissions['ok']:
@@ -184,17 +207,34 @@ class TeamReportJobs:
                     WHERE team_report_runs.settings=EXCLUDED.settings''',
                     (report_id,result['analysis_id'],identifier,Jsonb(settings),Jsonb(progress)))
                 readback = self.conn.execute('SELECT settings,state FROM cctv_scene.team_report_runs WHERE report_id=%s',(report_id,)).fetchone()
-                if not readback or readback['settings'] != settings or readback['state'] != progress:
+                # JSON/JSONB represents ranking tuples as arrays. Compare the
+                # serialized values, while rejecting unsupported/nonfinite
+                # objects instead of converting them to strings.
+                expected_settings = json.loads(json.dumps(settings, allow_nan=False))
+                expected_state = json.loads(json.dumps(progress, allow_nan=False))
+                if (not readback or readback['settings'] != expected_settings
+                        or readback['state'] != expected_state):
                     raise WorkerError('team_report_database_readback_mismatch')
             journal = Journal(directory/'scenes'/event_id/'report-team-v1',settings,persist,existing)
             request = dict(scene_sha256=scene_sha,team_event=result['team_event'],contract=settings['contract'])
             def execute():
                 from apps.team_rag.runtime import build_result
-                if self.execute:
-                    return self.execute(result['team_event'])
-                # The window is checked before work and between CPU queries.
-                deadline = hour_session.get(self.conn)['deadline_at']
-                return build_result(result['team_event'],deadline_at=deadline)
+                # Combined measured stage: the existing RAG implementation and
+                # its saved-review policy remain byte-for-byte unchanged.
+                with mlflow_tracing.stage('rag_search_relevance_template', 'RETRIEVER') as trace:
+                    if self.execute:
+                        answer = self.execute(result['team_event'])
+                    else:
+                        deadline = hour_session.get(self.conn)['deadline_at']
+                        answer = build_result(result['team_event'],deadline_at=deadline)
+                    try:
+                        observer = mlflow_tracing.observer()
+                        if observer:
+                            trace.output(**observer.report_summary(answer['report_json'],
+                                report_markdown=answer.get('report_markdown')))
+                    except Exception:
+                        pass
+                    return answer
             def reserve():
                 # This is CPU work, with a separate name/model and one attempt.
                 # No Gemini report/embedding call occurs in the new path.
@@ -211,16 +251,22 @@ class TeamReportJobs:
             report = journal.step('cpu_retrieval',request,execute,
                                   lambda raw: validate_report(raw,result['team_event']),
                                   external=True,reserve=reserve)
-            payload = envelope(report,result,report_id,identifier)
-            journal.state.update(status='report_stored',error_code=None,result=payload,
-                                 result_sha256=fingerprint(payload),generation_calls=0,embedding_calls=0)
-            journal.commit()
-            save(journal.directory/'report.json',payload['report_json'])
-            markdown_path = journal.directory/'report.md'
-            if markdown_path.exists() and markdown_path.read_text() != payload['report_markdown']:
-                raise WorkerError('team_report_markdown_changed')
-            if not markdown_path.exists():
-                markdown_path.write_text(payload['report_markdown'])
+            with mlflow_tracing.stage('report_contract_validation'):
+                payload = envelope(report,result,report_id,identifier)
+            with mlflow_tracing.stage('report_storage', report_id=report_id,
+                                      analysis_id=result['analysis_id']) as trace:
+                journal.state.update(status='report_stored',error_code=None,result=payload,
+                                     result_sha256=fingerprint(payload),generation_calls=0,embedding_calls=0)
+                journal.commit()
+                save(journal.directory/'report.json',payload['report_json'])
+                markdown_path = journal.directory/'report.md'
+                if markdown_path.exists() and markdown_path.read_text() != payload['report_markdown']:
+                    raise WorkerError('team_report_markdown_changed')
+                if not markdown_path.exists():
+                    markdown_path.write_text(payload['report_markdown'])
+                trace.output(report_id=report_id, analysis_id=result['analysis_id'],
+                             result_sha256=journal.state['result_sha256'], status='report_stored',
+                             report_markdown=payload['report_markdown'])
             return dict(report_id=report_id,status='report_stored',database_readback_verified=True,
                         result_sha256=journal.state['result_sha256'],calls=journal.state['calls'],
                         generation_calls=0,embedding_calls=0,

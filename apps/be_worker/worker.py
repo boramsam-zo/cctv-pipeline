@@ -83,7 +83,7 @@ def submit_once(directory, state, api, trace, *, before_intent=None):
             from apps.be_worker import hour_session
             if hour_session.configured():
                 marker = hour_session.current_marker()
-                if marker.get('schema') == 'cctv-model-session-v1':
+                if marker.get('schema') in ('cctv-model-session-v1', 'cctv-demo-session-v1'):
                     limits = health.get('limits') if isinstance(health, dict) else None
                     expected = {'max_jobs': marker['max_jobs'],
                                 'per_job_seconds': marker['per_job_seconds'],

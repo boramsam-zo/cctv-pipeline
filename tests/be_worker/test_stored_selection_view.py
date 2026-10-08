@@ -129,10 +129,16 @@ class StoredSelectionViewTests(unittest.TestCase):
             def __init__(inner,conn): pass
             def rows(inner):return [self.row]
         with patch.object(flow_service,'Store',Store), patch.object(flow_service,'spool',return_value=self.spool), \
-             patch.object(flow_service,'view',return_value=[{'worker_job_id':self.wid}]), \
+             patch.object(flow_service,'view',return_value=[{'worker_job_id':self.wid}]) as view, \
              patch.object(team_settings,'contract',side_effect=AssertionError('current contract read in GET')), \
              patch('apps.be_worker.mlops_jobs.view_status',return_value=None):
             result=flow_service.selection_views(Connection())
+            reused=flow_service.selection_views(Connection(),verified_jobs=[{'worker_job_id':self.wid}])
+            view.assert_called_once()
+            self.assertEqual(result,reused)
+            self.receipt_path(self.task).unlink()
+            with self.assertRaisesRegex(WorkerError,'analysis_task_receipt_missing'):
+                flow_service.selection_views(Connection(),verified_jobs=[{'worker_job_id':self.wid}])
         self.assertEqual(result[0]['jobs'][0]['generation_settings'],self.settings)
         self.assertEqual(result[0]['jobs'][0]['stage'],'completed')
 

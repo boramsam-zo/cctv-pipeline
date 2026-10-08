@@ -1,4 +1,4 @@
-"""One approved report from immutable, completed B evidence; never a GPU grant."""
+"""One approved report from immutable B/R2 evidence; never a GPU grant."""
 import hashlib
 import json
 import math
@@ -42,7 +42,7 @@ def file_sha(path):
     return digest.hexdigest()
 
 
-def validate_marker(value):
+def validate_marker(value, *, historical=False):
     from . import hour_session as session
     require = session.require
     require(set(value) == FIELDS and value['purpose'] == 'full_report'
@@ -65,11 +65,14 @@ def validate_marker(value):
             and re.fullmatch(r'event_[0-9]+', source['event_id']), 'report_continuation_source_invalid')
     for key in ('session_sha256', 'input_sha256', 'handoff_sha256', 'manifest_sha256', 'result_sha256'):
         require(session.valid_sha(source[key]), 'report_continuation_source_hash_invalid')
-    profile = profiles.validate_profile(source['analysis_profile'], expected_version='B')
-    require(profile.get('deployment') == profiles.MLOPS_DEPLOYMENT
+    profile = profiles.validate_profile(source['analysis_profile'])
+    require(profile['version'] in ('B', 'R2') and profile.get('deployment') == profiles.MLOPS_DEPLOYMENT
             and profiles.gpu_identity(source['input_sha256'], profile)['gpu_key'] == source['gpu_key'],
             'report_continuation_gpu_identity_changed')
-    settings = session.settings(value['generation_settings'], analysis_profile=profile)
+    # Only the activation helper's receipt-bound history inspection uses this
+    # read path. All current marker / dispatch / claim checks stay strict.
+    settings = (team_settings.validate_stored(value['generation_settings'], profile) if historical else
+                session.settings(value['generation_settings'], analysis_profile=profile))
     require(team_settings.is_team(settings), 'report_continuation_team_pipeline_required')
     files = source['files']
     event = source['event_id']
@@ -93,14 +96,14 @@ def validate_marker(value):
 def binding(marker):
     source = marker['source']
     return {**{k: source[k] for k in ('input_sha256', 'input_bytes', 'gpu_key')},
-            'version': 'B', 'settings': marker['generation_settings'],
+            'version': source['analysis_profile']['version'], 'settings': marker['generation_settings'],
             'reference_date': None, 'event_ids': [source['event_id']]}
 
 
-def validate_state(value, marker):
+def validate_state(value, marker, *, historical=False):
     from . import hour_session as session
     require = session.require
-    validate_marker(marker)
+    validate_marker(marker, historical=historical)
     require(isinstance(value, dict) and set(value) == FIELDS |
             {'started_at', 'deadline_at', 'stopped', 'bindings', 'claims'}
             and all(value[k] == marker[k] and type(value[k]) is type(marker[k]) for k in FIELDS),
@@ -161,7 +164,8 @@ def check_row(marker, row):
                 ('input_sha256', 'input_bytes', 'gpu_key', 'provider_job_id', 'analysis_profile'))
             and fingerprint(row.get('handoff')) == source['handoff_sha256']
             and state.get('manifest_sha256') == source['manifest_sha256']
-            and session.handoff(row) == [source['event_id']], 'report_continuation_identity_changed')
+            and session.handoff(row, policy=marker) == [source['event_id']],
+            'report_continuation_identity_changed')
     directory = session.marker_path().parent / checked_id(row['directory_id'])
     for name, expected in source['files'].items():
         require(file_sha(directory / name) == expected, 'report_continuation_evidence_changed')

@@ -1,23 +1,44 @@
 from datetime import date, datetime, timezone
 import hashlib
 import json
+import math
+import os
 import sys
 from pathlib import Path
 from urllib.parse import urlencode
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
-from apps.cctv_ui.client import request
+from apps.cctv_ui.client import request, is_read_only
+from apps.cctv_ui import control_demo as demo
+from apps.cctv_ui.control_data import unique_jobs
+from apps.cctv_ui.ui_data import load_snapshot, invalidate_snapshot, demo_status as get_demo_status, pipeline_metadata
 from apps.cctv_ui.report_view import (
     TEAM_REPORT_SCHEMA, TEAM_SCENE_SCHEMA, display_markdown, report_pipeline, source_link,
 )
 
 st.set_page_config(page_title='CCTV 분석', page_icon=':material/videocam:', layout='wide')
+if is_read_only():
+    st.error('공유 화면에서는 분석을 실행하거나 작업을 변경할 수 없습니다.')
+    st.stop()
 if st.session_state.get('cctv_navigation_enabled') and st.button(
         '관제 화면으로', icon=':material/arrow_back:', key='analysis_control_home'):
     st.session_state.control_refresh_pending = True
     st.switch_page('control_room.py')
 st.title('CCTV 영상 분석')
 st.caption('선택한 사고 영상 모델로 분석하고, 장면 설명·문서 근거·보고서까지 확인합니다.')
+DEMO_MODE = os.environ.get('CCTV_DEMO_MODE') == '1'
+demo_status = None
+if DEMO_MODE:
+    try:
+        demo_status = get_demo_status(os.environ.get('CCTV_API_URL', ''))
+    except Exception:
+        st.error('시연 상태를 확인할 수 없습니다. 새 분석을 접수하지 않습니다.')
+        st.stop()
+    if not demo_status.get('active'):
+        st.info('시연이 종료되었거나 아직 시작되지 않았습니다.')
+        st.stop()
+    st.caption(f"새 접수 잔여 {demo_status['remaining_jobs']}건 · 영상 최대 {demo_status['max_video_seconds']}초 · "
+               f"파일 최대 {demo_status['max_upload_bytes'] / 1024**2:g} MiB · 동시 분석 1건")
 for key, value in [('selected_result', None), ('last_submission', None)]:
     st.session_state.setdefault(key, value)
 VERSIONS = {'A': 'A · 과거 기준', 'B': 'X3D-S · 운영 epoch 7', 'R2': 'R(2+1)D-18 · epoch 7', 'A+B': 'A+B · 과거 판본 비교'}
@@ -26,6 +47,7 @@ LABELS = {'prepared': '대기 중', 'queued': '대기 중', 'submitting': '분�
     'waiting': 'GPU 분석·S3 저장 중', 'evidence_ready': '근거 수집 대기',
     'handoff_ready': '근거 인계 완료', 'verifying_media': '클립·프레임 검증 중',
     'describing': '장면 설명 생성·저장 중', 'reporting': '문서 검색·보고 생성 중',
+    'cpu_retrieval': '문서 검색·보고 생성 중',
     'completed': '처리 완료', 'comparison_completed': '근거 비교 완료',
     'preparing_preview': '화면 재생용 클립 준비 중', 'embedding': '검색 문장 임베딩 중',
     'retrieval': '관련 문서 검색 중', 'generation': '보고 초안 생성 중',
@@ -41,7 +63,7 @@ def media(identifier, event, kind):
 
 
 try:
-    pipeline = report_pipeline(request)
+    pipeline = pipeline_metadata(os.environ.get('CCTV_API_URL', '')) if DEMO_MODE else report_pipeline(request)
     reference_supported = pipeline['document_reference_date_supported']
 except Exception:
     pipeline = None
@@ -50,12 +72,24 @@ except Exception:
 
 model_selections = [item['selection'] for item in (pipeline or {}).get('analysis_models', [])]
 choices = {key: VERSIONS[key] for key in model_selections if key in ('B', 'R2')} if model_selections else {key: VERSIONS[key] for key in ('A', 'B', 'A+B')}
+if DEMO_MODE:
+    choices = {key: VERSIONS[key] for key in (demo_status.get('allowed_selections') or [])
+               if key in model_selections and key in ('B', 'R2')}
+    if not choices:
+        st.warning('지금 접수할 수 있는 사고 모델이 없습니다. 연결·시연 설정을 확인해 주세요.')
+        st.stop()
 
 with st.form('video_submission'):
-    video = st.file_uploader('분석할 MP4 영상', type=['mp4'], max_upload_size=200, key='video_upload')
-    selection = st.segmented_control('사고 영상 모델', list(choices), default='B' if model_selections else 'A',
+    video = st.file_uploader('분석할 MP4 영상', type=['mp4'],
+        max_upload_size=max(1, math.ceil(demo_status['max_upload_bytes'] / 1024**2)) if DEMO_MODE else 200, key='video_upload')
+    selection = st.segmented_control('사고 영상 모델', list(choices), default='B' if 'B' in choices else next(iter(choices)),
         format_func=VERSIONS.get, required=True, key='analysis_selection')
-    purpose = st.selectbox('실행 범위', list(PURPOSES), format_func=PURPOSES.get, key='analysis_purpose')
+    if DEMO_MODE:
+        purpose = 'full_report'
+        st.caption('실행 범위: GPU 분석 → 장면 설명 → 문서 검색·보고서')
+        st.caption('영상당 대표 후보 1개를 설명·보고합니다. 나머지 후보는 영상 근거로 확인합니다.')
+    else:
+        purpose = st.selectbox('실행 범위', list(PURPOSES), format_func=PURPOSES.get, key='analysis_purpose')
     reference = st.date_input('문서 검색 기준일', value=date.today(), key='reference_date',
                               disabled=not reference_supported)
     st.caption('분석 근거 비교는 GPU 결과만 처리하며 Gemini를 호출하지 않습니다. '
@@ -68,7 +102,8 @@ with st.form('video_submission'):
     else:
         st.caption('문서 검색 기준일은 보고 실행에만 사용하며 사고 발생일과 별개입니다.')
     st.caption('같은 영상·모델 버전의 분석 근거는 재사용합니다. 모델을 바꾸면 별도 분석으로 기록합니다.')
-    submit = st.form_submit_button('분석 시작', type='primary')
+    submit = st.form_submit_button('분석 시작', type='primary',
+        disabled=DEMO_MODE and demo_status['remaining_jobs'] <= 0)
     inspect_input = st.form_submit_button('선택 영상 확인 · 분석 실행 안 함', key='inspect_input')
 if submit or inspect_input:
     if video is None:
@@ -94,13 +129,26 @@ if submit or inspect_input:
             st.json(input_receipt)
         else:
             try:
+                if DEMO_MODE:
+                    current = request('/demo/status')
+                    if (not current.get('active') or current.get('remaining_jobs', 0) <= 0
+                            or selection not in current.get('allowed_selections', [])
+                            or len(payload) > current['max_upload_bytes']):
+                        raise RuntimeError('시연 실행 시간·잔여 횟수·입력 크기·모델 허용 범위를 확인해 주세요.')
                 if purpose == 'full_report' and pipeline is None:
                     raise RuntimeError('보고 경로 정보를 확인한 뒤 다시 접수해 주세요. 분석 요청은 보내지 않았습니다.')
                 result = request('/selections?' + urlencode(query), payload)
+                if DEMO_MODE:
+                    invalidate_snapshot()
                 st.session_state.selected_result = 'selection:' + result['selection_id']
                 st.session_state.result_picker = st.session_state.selected_result
                 st.session_state.last_submission = result
                 st.session_state.control_refresh_pending = True
+                if DEMO_MODE and not result['already_present']:
+                    watched = set(st.session_state.get('demo_watch_jobs', []))
+                    watched.update(row['worker_job_id'] for row in result.get('jobs', result.get('children', []))
+                                   if row.get('worker_job_id'))
+                    st.session_state.demo_watch_jobs = sorted(watched)
                 st.success('기존 요청을 불러왔습니다.' if result['already_present']
                            else '접수했습니다. worker가 선택한 범위를 처리합니다.')
             except Exception as exc:
@@ -265,8 +313,17 @@ def show_job(job):
         st.session_state.control_selected_job = identifier
         st.session_state.control_refresh_pending = True
         st.switch_page('control_room.py')
+    if DEMO_MODE and st.session_state.get('cctv_navigation_enabled') and st.button(
+            '이 작업의 MLflow 기록', key='analysis_mlflow_' + identifier, icon=':material/monitoring:'):
+        st.session_state.demo_mlflow_job = identifier
+        st.session_state.demo_mlflow_job_input = identifier
+        st.switch_page('demo_mlflow.py')
     if job.get('purpose') in PURPOSES:
         st.caption('실행 범위: ' + PURPOSES[job['purpose']])
+    if job.get('demo_summary'):
+        summary = job['demo_summary']
+        st.caption('대표 후보 1개 설명·보고 · 나머지 후보는 영상 근거 확인 · '
+                   + f"추가 후보 {summary.get('unexplained_candidates', 0)}개")
     tracking = job.get('mlflow')
     if tracking:
         st.caption('사고 모델: ' + tracking['model_id'] + ' · ' + tracking['model_version'])
@@ -285,8 +342,12 @@ def show_job(job):
     if memory is not None:
         st.caption(f'PyTorch 최대 할당 메모리: {float(memory) / 1024**2:.1f} MiB · GPU 전체 사용량과 다름')
     if job.get('error_code'):
-        st.error(job['error_code'])
-    if flow.get('paused') and st.button('실패 단계부터 재개', key='resume_' + str(job.get('task_id') or identifier)):
+        if (DEMO_MODE and job.get('stage') == 'waiting' and flow.get('paused') is False
+                and job['error_code'] == 'wait_limit_resume_only'):
+            st.info('GPU 분석·저장 결과 대기 중 · 결과를 5초마다 확인합니다.')
+        else:
+            st.error(job['error_code'])
+    if flow.get('paused') and not DEMO_MODE and st.button('실패 단계부터 재개', key='resume_' + str(job.get('task_id') or identifier)):
         endpoint = '/tasks/' + job['task_id'] if job.get('task_id') else '/jobs/' + identifier
         try:
             request(endpoint + '/resume', b'')
@@ -325,7 +386,6 @@ def show_job(job):
                            'calls': r['state'].get('calls', {})} for r in job.get('reports', [])]})
 
 
-@st.fragment(run_every=5)
 def results():
     try:
         if pipeline is not None and pipeline['pipeline_id'] == 'legacy':
@@ -336,19 +396,34 @@ def results():
                 st.warning('Runpod 연결 대기: ' + connection.get('error_code', 'unavailable') + ' · 접수된 영상은 대기열에 보관됩니다.')
         else:
             st.caption('저장 결과는 Runpod 기동 없이 조회할 수 있습니다.')
-        worker = request('/worker')
-        age = worker.get('age_seconds')
-        if age is None:
-            st.warning('worker 기동 확인 대기')
-        elif float(age) > 180:
-            st.warning('worker 상태 갱신이 지연되고 있습니다. 처리 결과를 확인하기 전 재제출하지 마세요.')
-        for error in worker.get('payload', {}).get('errors', []):
-            st.warning('worker 확인 필요: ' + error)
-        groups = request('/selections')
-        jobs = request('/jobs')
+        if DEMO_MODE:
+            snapshot = load_snapshot()
+            groups, jobs = snapshot['selections'], snapshot['jobs']
+            st.session_state['cctv_display_revision'] = snapshot['revision']
+        else:
+            worker = request('/worker')
+            age = worker.get('age_seconds')
+            if age is None:
+                st.warning('worker 기동 확인 대기')
+            elif float(age) > 180:
+                st.warning('worker 상태 갱신이 지연되고 있습니다. 처리 결과를 확인하기 전 재제출하지 마세요.')
+            for error in worker.get('payload', {}).get('errors', []):
+                st.warning('worker 확인 필요: ' + error)
+            groups = request('/selections')
+            jobs = request('/jobs')
     except Exception as exc:
         st.error(str(exc))
         return
+    if DEMO_MODE and not st.session_state.get('demo_live_panel_enabled'):
+        def open_live_case(target):
+            st.session_state.control_source = 'api'
+            st.session_state.control_selected_job = target['job_id']
+            st.session_state['control_event_' + target['job_id']] = target['event_id']
+            st.session_state['control_analysis_' + target['job_id'] + '_' + target['event_id']] = target['analysis_id']
+            st.session_state.control_refresh_pending = True
+            st.switch_page('control_room.py')
+        demo.render_live_notifications(unique_jobs(jobs, groups),
+            'api:' + os.environ.get('CCTV_API_URL', ''), open_live_case)
     choices = {'selection:' + row['selection_id']: row for row in groups}
     grouped_jobs = {child['worker_job_id'] for row in groups for child in row['jobs']}
     choices.update({'job:' + row['worker_job_id']: row for row in jobs if row['worker_job_id'] not in grouped_jobs})
@@ -367,7 +442,7 @@ def results():
     st.session_state.selected_result = chosen
     try:
         if chosen.startswith('selection:'):
-            group = request('/selections/' + chosen.split(':', 1)[1])
+            group = choices[chosen] if DEMO_MODE else request('/selections/' + chosen.split(':', 1)[1])
             st.caption('요청 ID: ' + group['selection_id'])
             if group['purpose'] == 'gpu_comparison':
                 st.caption('분석 근거 비교 · 조회와 새로고침은 GPU·Gemini 작업을 추가하지 않습니다.')
@@ -381,9 +456,11 @@ def results():
                 for job in children:
                     show_job(job)
         else:
-            show_job(request('/jobs/' + chosen.split(':', 1)[1]))
+            show_job(choices[chosen] if DEMO_MODE else request('/jobs/' + chosen.split(':', 1)[1]))
     except Exception as exc:
         st.error('결과 조회 실패: ' + str(exc))
 
 
+if not DEMO_MODE:
+    results = st.fragment(run_every=5)(results)
 results()

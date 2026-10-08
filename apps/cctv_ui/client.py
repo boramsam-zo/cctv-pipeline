@@ -6,6 +6,18 @@ import urllib.request
 import urllib.error
 
 
+_SHARE_READ_PATH = re.compile(
+    r'(?:/jobs|/selections|/ui-snapshot|/ui-revision|/jobs/[a-f0-9]{32}/source|'
+    r'/jobs/[a-f0-9]{32}/media/event_[0-9]+/'
+    r'(?:clip|roi_clip|frame|clip_preview|roi_clip_preview))'
+)
+
+
+def is_read_only():
+    """Only deployment configuration controls sharing; browser state cannot."""
+    return os.environ.get('CCTV_UI_READ_ONLY') == '1'
+
+
 class APIError(RuntimeError):
     """Keep HTTP status for optional API capabilities without hiding other errors."""
 
@@ -15,6 +27,13 @@ class APIError(RuntimeError):
 
 
 def request(path, data=None, binary=False):
+    if os.environ.get('CCTV_DEMO_MODE') == '1':
+        from .demo_gateway import route
+        if not isinstance(path, str) or route(path, 'POST' if data is not None else 'GET') is None:
+            raise APIError('시연에서 허용되지 않은 요청입니다.', 403)
+    if is_read_only() and (data is not None or not isinstance(path, str)
+                           or _SHARE_READ_PATH.fullmatch(path) is None):
+        raise APIError('공유 화면에서는 저장된 결과만 조회할 수 있습니다.', 403)
     req=urllib.request.Request(os.environ.get('CCTV_API_URL','http://be-api:8080')+path,
         data=data, headers={'Content-Type':'video/mp4'} if data is not None else {})
     try:

@@ -1,6 +1,7 @@
 """Schema 2.0 observation identity/guard/reuse checks; no inference or network."""
 from copy import deepcopy
 from contextlib import contextmanager
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -75,7 +76,12 @@ class TeamSceneTests(unittest.TestCase):
         result = self.invoke(caller)
         caller.assert_called_once()
         request = scene.parse(caller.call_args.args[1])
-        self.assertNotIn('responseJsonSchema', request['generationConfig'])
+        self.assertIn('responseJsonSchema', request['generationConfig'])
+        provider_schema = request['generationConfig']['responseJsonSchema']
+        self.assertEqual(result['response_format_version'], team_scene.CONSTRAINED_RESPONSE_VERSION)
+        self.assertEqual(result['response_json_schema_sha256'], scene.sha(scene.encoded(provider_schema)))
+        self.assertEqual(provider_schema['properties']['schema_version'],
+                         {'type': 'string', 'enum': ['2.0']})
         self.assertNotIn('accident_suspicion', request['systemInstruction']['parts'][0]['text'])
         self.assertIn('must be null', request['systemInstruction']['parts'][0]['text'])
         self.assertIn('road_type must be unknown', request['systemInstruction']['parts'][0]['text'])
@@ -91,6 +97,115 @@ class TeamSceneTests(unittest.TestCase):
         self.assertEqual(result['human_review'], 'unreviewed')
         self.assertNotIn('mock-key', ''.join(p.read_text() for p in self.output.iterdir()))
         self.assertEqual(team_scene.validate_result(result), scene.sha(scene.encoded(result)))
+
+    def test_provider_subset_does_not_change_local_validation_or_original_contract(self):
+        from jsonschema import Draft202012Validator
+        original, _, _ = team_scene.contract()
+        before = deepcopy(original)
+        projected = team_scene.provider_response_schema(original)
+        self.assertEqual(original, before)
+        self.assertNotIn('$schema', projected)
+        self.assertNotIn('minLength', projected['properties']['description'])
+        self.assertNotIn('pattern', projected['properties']['event_id'])
+        self.assertNotIn('uniqueItems', projected['properties']['accident']['properties']['forms'])
+        Draft202012Validator.check_schema(projected)
+        Draft202012Validator(projected).validate(self.value)
+        for update in ('empty_description', 'duplicate_form'):
+            value = deepcopy(self.value)
+            if update == 'empty_description':
+                value['description'] = ''
+            else:
+                value['accident']['forms'] = ['unknown', 'unknown']
+            Draft202012Validator(projected).validate(value)
+            with self.subTest(update=update), self.assertRaises(Exception):
+                team_scene.validate_event(value, self.event_id)
+        with self.assertRaisesRegex(ValueError, 'provider_schema_keyword'):
+            team_scene.provider_response_schema({'type': 'object', 'unexpected': True})
+
+    def test_legacy_request_bytes_and_saved_output_remain_verifiable(self):
+        data, receipt = team_scene.prepare(self.bundle, 'gemini-3.5-flash-lite')
+        self.assertEqual(scene.sha(data),
+                         '52f3aba9d6615ba3856c259f2fa10f406e7ed254e017e1aff027eb16babf960a')
+        self.assertNotIn('response_format_version', receipt)
+        self.assertNotIn('responseJsonSchema', scene.parse(data)['generationConfig'])
+        raw = self.raw()
+        result = team_scene._result(receipt, self.value, raw, 0.01)
+        self.output.mkdir()
+        for name, value in (('request.json', receipt), ('response.raw.json', raw),
+                            ('event-v2.json', self.value), ('result.json', result)):
+            (self.output / name).write_bytes(scene.encoded(value) + b'\n')
+        before = {path: path.read_bytes() for path in self.output.iterdir()}
+        self.assertEqual(team_scene.validate_saved_output(self.bundle, self.output), result)
+        self.assertEqual(before, {path: path.read_bytes() for path in before})
+
+    def test_v1_saved_structured_request_remains_verifiable_after_v2_is_default(self):
+        data, receipt = team_scene.prepare(self.bundle, 'gemini-3.5-flash-lite',
+            response_format_version=team_scene.STRUCTURED_RESPONSE_VERSION)
+        provider = scene.parse(data)['generationConfig']['responseJsonSchema']
+        self.assertIn('highway', provider['properties']['location']['properties']['road_type']['enum'])
+        raw = self.raw()
+        result = team_scene._result(receipt, self.value, raw, 0.01)
+        self.output.mkdir()
+        for name, value in (('request.json', receipt), ('response.raw.json', raw),
+                            ('event-v2.json', self.value), ('result.json', result)):
+            (self.output / name).write_bytes(scene.encoded(value) + b'\n')
+        before = {path: path.read_bytes() for path in self.output.iterdir()}
+        self.assertEqual(team_scene.validate_saved_output(self.bundle, self.output), result)
+        self.assertEqual(before, {path: path.read_bytes() for path in before})
+
+    def test_v2_provider_schema_rejects_unprovided_location_and_time(self):
+        from jsonschema import Draft202012Validator, ValidationError
+        schema, _, _ = team_scene.contract()
+        before = deepcopy(schema)
+        projected = team_scene.provider_schema_for_version(schema, team_scene.CONSTRAINED_RESPONSE_VERSION)
+        Draft202012Validator.check_schema(projected)
+        validator = Draft202012Validator(projected)
+        validator.validate(self.value)
+        edits = [lambda v: v.update(candidate_time_s=2),
+                 lambda v: v['location'].update(camera_id='camera-1'),
+                 lambda v: v['location'].update(registered_location='unverified place'),
+                 lambda v: v['location'].update(road_type='highway')]
+        for edit in edits:
+            value = deepcopy(self.value)
+            edit(value)
+            with self.subTest(value=value), self.assertRaises(ValidationError):
+                validator.validate(value)
+        self.assertEqual(schema, before)
+        self.assertIn('highway', schema['properties']['location']['properties']['road_type']['enum'])
+
+    def test_structured_plan_hash_matches_actual_request_and_rejects_changed_format(self):
+        data, receipt = team_scene.prepare(self.bundle, 'gemini-3.5-flash-lite',
+            response_format_version=team_scene.CONSTRAINED_RESPONSE_VERSION)
+        caller = Mock(return_value=self.raw())
+        result = self.invoke(caller)
+        self.assertEqual(caller.call_args.args[1], data)
+        self.assertEqual(receipt['request_sha256'], result['request_sha256'])
+        self.assertEqual(team_scene.validate_saved_output(self.bundle, self.output), result)
+        for name, value in (('response_format_version', 'unknown'),
+                            ('response_json_schema_sha256', '0' * 64)):
+            changed = dict(result, **{name: value})
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'response_format'):
+                team_scene.validate_result(changed)
+        with self.assertRaisesRegex(ValueError, 'response_format'):
+            team_scene.prepare(self.bundle, 'gemini-3.5-flash-lite', response_format_version='unknown')
+
+    def test_invalid_unicode_response_is_preserved_and_never_repaired_or_retried(self):
+        raw = self.raw()
+        raw['candidates'][0]['content']['parts'][0]['text'] = '{"description":"\\ub75"}'
+        before = deepcopy(raw)
+        caller = Mock(return_value=raw)
+        with self.assertRaises(json.JSONDecodeError):
+            self.invoke(caller)
+        self.assertEqual(raw, before)
+        self.assertEqual(scene.parse((self.output / 'response.raw.json').read_bytes()), before)
+        failure = scene.parse((self.output / 'failure.json').read_bytes())
+        self.assertEqual(failure['error_code'], 'team_response_invalid_json')
+        self.assertEqual(failure['error_type'], 'JSONDecodeError')
+        self.assertEqual(failure['json_error'], {'line': 1, 'column': 18, 'offset': 17})
+        self.assertEqual(failure['provider_completion'], 'response_saved')
+        self.assertFalse((self.output / 'result.json').exists())
+        self.assertFalse(failure['automatic_retry'])
+        caller.assert_called_once()
 
     def test_repeat_preserves_first_call(self):
         caller = Mock(return_value=self.raw())
@@ -146,6 +261,38 @@ class TeamSceneTests(unittest.TestCase):
             with self.subTest(edit=i), self.assertRaises(Exception):
                 team_scene.validate_event(value, self.event_id)
             self.assertEqual(value, before)
+
+    def test_exact_schema_annotation_preserves_raw_and_records_derivation(self):
+        raw = self.raw(dict(self.value, **{'$schema': team_scene.RESPONSE_SCHEMA_URI}))
+        before = deepcopy(raw)
+        caller = Mock(return_value=raw)
+        result = self.invoke(caller)
+        self.assertEqual(raw, before)
+        self.assertEqual(scene.parse((self.output/'response.raw.json').read_bytes()), before)
+        self.assertEqual(result['team_event'], self.value)
+        self.assertEqual(result['provenance'], dict(
+            schema=team_scene.RESPONSE_NORMALIZATION,
+            removed_annotation={'$schema': team_scene.RESPONSE_SCHEMA_URI},
+            observation_values_changed=False))
+        self.assertEqual(team_scene.validate_saved_output(self.bundle, self.output), result)
+        caller.assert_called_once()
+        result['provenance'] = {}
+        (self.output/'result.json').write_bytes(scene.encoded(result)+b'\n')
+        with self.assertRaisesRegex(ValueError, 'normalization_changed'):
+            team_scene.validate_saved_output(self.bundle, self.output)
+
+    def test_schema_annotation_does_not_relax_observed_fields(self):
+        variants = [
+            dict(self.value, **{'$schema': 'https://unrecognized.invalid/schema'}),
+            dict(self.value, **{'$schema': team_scene.RESPONSE_SCHEMA_URI, 'extra': 'invalid'}),
+            dict(self.value, **{'$schema': team_scene.RESPONSE_SCHEMA_URI, 'candidate_time_s': 2}),
+        ]
+        for value in variants:
+            raw = self.raw(value)
+            before = deepcopy(raw)
+            with self.subTest(value=value), self.assertRaises(Exception):
+                team_scene.parse_response(raw, self.event_id)
+            self.assertEqual(raw, before)
 
     def test_result_identity_and_facts_tamper_rejected(self):
         result = self.success()

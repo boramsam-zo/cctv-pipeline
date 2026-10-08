@@ -3,7 +3,7 @@
 이 저장소는 실행 코드·설정 예시·공유 문서를 선별한 복사본입니다. 원본 프로젝트와 기존 Git main 이력은 보존하며, 이 디렉터리 생성은 commit/push 또는 배포가 아닙니다.
 
 - `.github/workflows/runpod-image.yml`의 CPU 계약/서비스/패키징 검사를 checkout에서 실행할 수 있습니다. 실제 GPU 추론·학습·EC2 배포는 CI 검사가 수행하지 않습니다.
-- `.github/workflows/source-checks.yml`은 BE 보고 재사용·관제 UI·문서 관련성의 합성 CPU 검사를 실행합니다. BE/UI/보고 코드만 바뀌면 기존 Runpod 이미지를 다시 게시하지 않습니다.
+- `.github/workflows/source-checks.yml`은 BE 보고 재사용/복구·공개 조회/시연 경계·관제 UI·MLflow 추적·문서 관련성의 합성 CPU 검사를 실행합니다. BE/UI/보고 코드만 바뀌면 기존 Runpod 이미지를 다시 게시하지 않습니다.
 - 전체 과거 테스트는 Git에서 제외한 `artifacts/`와 평가 원본을 참조합니다. 따라서 이 checkout만으로 과거 전체 테스트나 저장 관제 화면을 모두 재현할 수 있다고 주장하지 않습니다.
 - 원본 영상·저장 사건 snapshot·모델 가중치·비밀 설정·개인 가상환경·실행 결과는 제외했습니다. 개인 절대경로는 이 게시 복사본에서만 프로젝트 상대경로 또는 중립 경로로 바꿨습니다.
 - 문서의 실제 EC2 식별자·공인 IP·Runpod 주소도 게시 복사본에서만 예시로 바꿨습니다. 운영 명령에는 사용 중인 서버 식별자를 넣어야 하며 원본 운영 문서는 별도로 보존합니다.
@@ -14,7 +14,8 @@
 관련 CPU 검사:
 
 ```bash
-python -m pip install -r apps/runpod_image/requirements-ci.txt
+python -m pip install -r apps/runpod_image/requirements-ci.txt -r scripts/requirements-viewer.txt jsonschema==4.25.1
+python -B scripts/ci_source_checks.py
 python -B -m unittest discover -s tests/runpod_image -p 'test_mlops*.py' -v
 python -B -m unittest discover -s tests/be_worker -p 'test_mlops*.py' -v
 python -B -m unittest tests.be_worker.test_mlflow_tracking tests.be_worker.test_register_mlops_models -v
@@ -26,6 +27,18 @@ python -B scripts/prepare_runpod_ci.py --output /path/to/new-build-directory
 ---
 
 # CCTV 사고 의심 분석·검토 프로젝트
+
+## 현재 서비스와 Git 게시 범위 — 2026-10-08
+
+새 MP4를 접수하면 **사고 후보 분석 → 영상 근거 생성 → VLM 관찰 → 문서 검색·6절 보고 저장 → 화면·MLflow 확인**으로 이어집니다. X3D-S와 R(2+1)D-18을 선택할 수 있고 YOLO는 고정합니다. EC2의 화면/API/worker/DB/MLflow는 Docker로, GPU 영상 분석은 별도 Runpod으로 실행합니다.
+
+- 운영 화면, HTTP 조회 전용 공유 화면, 유한 시간·횟수의 업로드 시연 화면을 구분합니다. 공개 조회 경로는 서버에서도 변경 요청을 거부합니다.
+- 보고 완료 알림은 보고서 저장을 확인한 뒤 표시합니다. 작은 상태 영역만 자동 확인하며 영상·보고 본문은 수동 반영하거나 같은 사건을 열 때 갱신합니다.
+- MLflow에는 모델/설정/입력 식별·단계별 시간·성공 여부·요청/응답·제공된 토큰 사용량을 연결합니다. 정답 없는 실행에 정확도/F1을 새로 계산해 넣지 않습니다.
+- 저장 VLM 응답의 사람 관찰 근거 누락은 명시적인 별도 보고 복구 경로로 처리합니다. 원문과 실패 이력을 보존하고 근거 미연결 경고를 남기며 GPU/VLM을 재호출하지 않습니다. 새 분석 전체에 자동 복구를 적용한 것은 아닙니다.
+- 새 시연 설정의 코드상 한도는 총1~20건·1~24시간이고 동시1건입니다. 실제 남은 횟수/종료 시각은 서버 원장에 따릅니다. Git 게시나 컨테이너 시작만으로 시연창을 열거나 모델을 호출하지 않습니다.
+
+실행 절차는 [LOCAL_SETUP](LOCAL_SETUP.md), 최신 확인 사실은 [current_status](docs/current_status.md)를 참고합니다. 비밀 설정·영상·가중치·검색 인덱스·운영 DB와 결과는 Git 게시 범위에서 제외하므로 별도로 준비된 자원을 연결해야 합니다. 아래 날짜별 설명은 과거 이력입니다.
 
 **2026-09-29 동료 공유:** [파이프라인 안내](docs/pipeline-guide/README.md)와 실제 실행 코드·Compose·합성시험을 [게시용 폴더](artifacts/team-handoff/pipeline-guide-20260929-01/repository/)에 함께 준비했다. 최신 사용자 요청으로 기존 문서전용 구성을 확장했다. 공유 문서는 README/ARCHITECTURE 두 개이며 실제 키·가중치·영상·DB/spool·운영 이력은 따로 보관한다. [소스 ZIP v8 — EC2 접속·DB 확인 절차 보완](artifacts/team-handoff/pipeline-guide-20260929-01/cctv-pipeline-source-v8.zip).
 

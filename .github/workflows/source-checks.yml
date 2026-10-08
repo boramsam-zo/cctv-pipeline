@@ -13,11 +13,17 @@ on:
       - 'apps/runpod_image/requirements-ci.txt'
       - 'scripts/activate_mlops_session.py'
       - 'scripts/activate_report_continuation.py'
+      - 'scripts/recover_r2_saved_report.py'
+      - 'scripts/start_runpod_demo.py'
+      - 'scripts/ci_source_checks.py'
       - 'scripts/prepare_git_publication.py'
       - 'scripts/requirements-viewer.txt'
+      - 'apps/runpod_image/start-model-session.sh'
       - 'tests/be_worker/**'
       - 'tests/cctv_ui/**'
       - 'tests/team_rag/**'
+      - 'tests/scene_description/**'
+      - 'tests/runpod/test_demo_start.py'
       - 'tests/test_git_publication.py'
   push:
     branches: [main]
@@ -31,11 +37,17 @@ on:
       - 'apps/runpod_image/requirements-ci.txt'
       - 'scripts/activate_mlops_session.py'
       - 'scripts/activate_report_continuation.py'
+      - 'scripts/recover_r2_saved_report.py'
+      - 'scripts/start_runpod_demo.py'
+      - 'scripts/ci_source_checks.py'
       - 'scripts/prepare_git_publication.py'
       - 'scripts/requirements-viewer.txt'
+      - 'apps/runpod_image/start-model-session.sh'
       - 'tests/be_worker/**'
       - 'tests/cctv_ui/**'
       - 'tests/team_rag/**'
+      - 'tests/scene_description/**'
+      - 'tests/runpod/test_demo_start.py'
       - 'tests/test_git_publication.py'
   workflow_dispatch:
 
@@ -64,26 +76,16 @@ jobs:
           python-version: '3.12'
       - name: Install CPU test dependencies
         run: python -m pip install --disable-pip-version-check -r apps/runpod_image/requirements-ci.txt -r scripts/requirements-viewer.txt jsonschema==4.25.1
-      - name: Report reuse and execution-boundary checks
-        run: >-
-          python -B -m unittest
-          tests.be_worker.test_report_continuation
-          tests.be_worker.test_report_activation
-          tests.be_worker.test_report_jobs
-          tests.be_worker.test_report_review
-          tests.be_worker.test_stored_selection_view
-          tests.be_worker.test_hour_session_windows
-          tests.be_worker.test_trial_limits -v
-      - name: Synthetic UI submission and empty-result checks
-        # These tests use API doubles; private saved CCTV fixtures are excluded.
-        run: >-
-          python -B -m unittest
-          tests.cctv_ui.test_app.AppTests.test_model_selection_keeps_full_report_request_and_does_not_auto_submit
-          tests.cctv_ui.test_app.AppTests.test_same_filename_different_bytes_are_visible_in_rejection_receipt
-          tests.cctv_ui.test_app.AppTests.test_unknown_admission_response_is_not_automatically_posted_again
-          tests.cctv_ui.test_control_room.ControlRoomTests.test_empty_records_and_missing_vlm_are_not_normal_predictions
-          tests.cctv_ui.test_report_revisions -v
+      - name: Report reuse, saved-response recovery and schema-cache checks
+        run: python -B scripts/ci_source_checks.py --group report
+      - name: MLflow request, response, token and read-boundary checks
+        run: python -B scripts/ci_source_checks.py --group mlflow
+      - name: Demo limits and public read-only boundaries
+        run: python -B scripts/ci_source_checks.py --group demo
+      - name: Synthetic UI submission, notification and refresh checks
+        # API doubles only; private saved CCTV fixtures are explicitly excluded.
+        run: python -B scripts/ci_source_checks.py --group ui
       - name: Publication privacy boundaries
-        run: python -B -m unittest tests.test_git_publication -v
+        run: python -B scripts/ci_source_checks.py --group privacy
       - name: Synthetic document relevance checks
-        run: python -B -m unittest tests.team_rag.test_relevance_synthetic -v
+        run: python -B scripts/ci_source_checks.py --group rag

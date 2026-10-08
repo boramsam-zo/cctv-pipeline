@@ -20,6 +20,10 @@ SCHEMA_VERSION = 'cctv-team-scene-v1'
 REQUEST_SCHEMA = 'cctv-team-scene-request-v1'
 PROMPT_VERSION = 'cctv-team-scene-v2-01'
 INDEPENDENT_PROMPT_VERSION = 'independent-s3-rag-v2-01'
+RESPONSE_SCHEMA_URI = 'https://json-schema.org/draft/2020-12/schema'
+RESPONSE_NORMALIZATION = 'cctv-team-response-annotation-v1'
+STRUCTURED_RESPONSE_VERSION = 'gemini-response-json-schema-v1'
+CONSTRAINED_RESPONSE_VERSION = 'gemini-response-json-schema-v2'
 CONTRACT_HASHES = {
     'event.schema.json': 'e70923fefb5e8d39ec5be2a364e39c71db8ce8beea0d5b6e419b56c0c05b1e75',
     'VLM_PROMPT.md': 'f0e403c525862a7335844dc73eedfdedb43f9b910873f7d9db3beef47251a4ab',
@@ -162,11 +166,67 @@ def _source(bundle, directory):
     return source
 
 
-def build_request(verified_bundle, model, fps=4, *, contract_directory=CONTRACT_DIRECTORY):
+def provider_response_schema(schema):
+    """Project the pinned contract onto Gemini's documented JSON Schema subset.
+
+    Unsupported length/pattern/uniqueness constraints remain authoritative in
+    validate_event. This changes the provider request, never a model response.
+    """
+    allowed = {'type', 'properties', 'required', 'additionalProperties', 'items',
+               'enum', 'minimum', 'maximum', 'minItems', 'maxItems',
+               'title', 'description', 'format'}
+    omitted = {'$schema', 'minLength', 'pattern', 'uniqueItems'}
+    _require(isinstance(schema, dict) and set(schema) <= allowed | omitted | {'const'},
+             'unsupported_team_provider_schema_keyword')
+    projected = {}
+    for name, value in schema.items():
+        if name in omitted or name == 'const':
+            continue
+        if name == 'properties':
+            projected[name] = {key: provider_response_schema(item) for key, item in value.items()}
+        elif name == 'items' or name == 'additionalProperties' and isinstance(value, dict):
+            projected[name] = provider_response_schema(value)
+        else:
+            projected[name] = deepcopy(value)
+    if 'const' in schema:
+        _require(isinstance(schema['const'], str) and 'enum' not in schema,
+                 'unsupported_team_provider_schema_const')
+        projected['enum'] = [schema['const']]
+    if 'enum' in projected and 'type' not in projected:
+        _require(all(isinstance(item, str) for item in projected['enum']),
+                 'unsupported_team_provider_schema_enum')
+        projected['type'] = 'string'
+    return projected
+
+
+def provider_schema_for_version(schema, version):
+    """Preserve v1 request bytes; constrain facts absent from these inputs in v2.
+
+    The broad shared event contract stays unchanged. The provider-facing v2
+    schema matches the existing SYSTEM and validate_event policy, without
+    changing any returned observation or relaxing local validation.
+    """
+    _require(version in (STRUCTURED_RESPONSE_VERSION, CONSTRAINED_RESPONSE_VERSION),
+             'invalid_team_response_format_version')
+    projected = provider_response_schema(schema)
+    if version == CONSTRAINED_RESPONSE_VERSION:
+        fields = projected['properties']
+        fields['candidate_time_s'] = {'type': 'null'}
+        location = fields['location']['properties']
+        for name in ('camera_id', 'registered_location'):
+            location[name] = {'type': 'null'}
+        location['road_type'] = {'type': 'string', 'enum': ['unknown']}
+    return projected
+
+
+def build_request(verified_bundle, model, fps=4, *, contract_directory=CONTRACT_DIRECTORY,
+                  response_format_version=None):
     """Build inline media bytes; never call a provider or write an output."""
     _require(isinstance(model, str) and re.fullmatch(r'gemini-[A-Za-z0-9.-]+', model)
              and 'embedding' not in model, 'invalid_team_scene_model')
     _require(1 <= scene.finite(fps) <= 8, 'invalid_team_sampling_fps')
+    _require(response_format_version in (None, STRUCTURED_RESPONSE_VERSION, CONSTRAINED_RESPONSE_VERSION),
+             'invalid_team_response_format_version')
     schema, prompt, _ = contract(contract_directory)
     config, _, event, media, _ = verified_bundle
     event_id = config['job_id'] + '_' + config['event_id']
@@ -190,18 +250,21 @@ def build_request(verified_bundle, model, fps=4, *, contract_directory=CONTRACT_
     request = {'systemInstruction': {'parts': [{'text': SYSTEM + '\n\n' + prompt
                 + '\n\nJSON output contract:\n' + scene.encoded(schema).decode()}]},
         'contents': [{'role': 'user', 'parts': parts}],
-        # The supplied full schema is prompt material. Local validation is
-        # authoritative; no new provider JSON Schema support is assumed.
         'generationConfig': {'responseMimeType': 'application/json',
                              'maxOutputTokens': 8192, 'temperature': 1.0}}
+    if response_format_version is not None:
+        request['generationConfig']['responseJsonSchema'] = provider_schema_for_version(schema, response_format_version)
     data = scene.encoded(request)
     _require(len(data) <= scene.REQUEST_LIMIT, 'team_inline_request_too_large')
     return data
 
 
-def prepare(directory, model, fps=4, *, contract_directory=CONTRACT_DIRECTORY):
+def prepare(directory, model, fps=4, *, contract_directory=CONTRACT_DIRECTORY,
+            response_format_version=None):
+    """Keep legacy bytes by default for historical recovery; describe opts in."""
     bundle = _bundle(directory)
-    data = build_request(bundle, model, fps, contract_directory=contract_directory)
+    data = build_request(bundle, model, fps, contract_directory=contract_directory,
+                         response_format_version=response_format_version)
     config = bundle[0]
     receipt = {'schema_version': REQUEST_SCHEMA, 'analysis_id': str(uuid.uuid4()),
         'provider_job_id': config['job_id'], 'event_id': config['event_id'],
@@ -212,10 +275,14 @@ def prepare(directory, model, fps=4, *, contract_directory=CONTRACT_DIRECTORY):
         'input_sha256': config['expected_input_sha256'],
         'source': _source(bundle, directory), 'created_at': scene.now(),
         'maximum_generation_calls': 1, 'automatic_retry': False}
+    if response_format_version is not None:
+        receipt.update(response_format_version=response_format_version,
+            response_json_schema_sha256=scene.sha(scene.encoded(
+                scene.parse(data)['generationConfig']['responseJsonSchema'])))
     return data, receipt
 
 
-def parse_response(raw, event_id, *, contract_directory=CONTRACT_DIRECTORY):
+def _response_observation(raw, event_id, *, contract_directory=CONTRACT_DIRECTORY):
     _require(isinstance(raw, dict) and not raw.get('promptFeedback', {}).get('blockReason'),
              'team_response_blocked_or_invalid')
     candidates = raw.get('candidates', [])
@@ -224,7 +291,24 @@ def parse_response(raw, event_id, *, contract_directory=CONTRACT_DIRECTORY):
     parts = candidates[0].get('content', {}).get('parts', [])
     _require(isinstance(parts, list), 'team_response_parts_invalid')
     text = ''.join(part.get('text', '') for part in parts if not part.get('thought', False))
-    return validate_event(_parse_observation(text), event_id, contract_directory=contract_directory)
+    value = _parse_observation(text)
+    provenance = {}
+    # Gemini may echo the prompt's JSON Schema annotation. Remove only this
+    # exact top-level annotation; observed values and every other field retain
+    # the strict schema checks. The transport response remains untouched.
+    if isinstance(value, dict) and '$schema' in value:
+        _require(value['$schema'] == RESPONSE_SCHEMA_URI, 'team_response_unknown_schema_annotation')
+        value = deepcopy(value)
+        del value['$schema']
+        provenance = dict(schema=RESPONSE_NORMALIZATION,
+                          removed_annotation={'$schema': RESPONSE_SCHEMA_URI},
+                          observation_values_changed=False)
+    event = validate_event(value, event_id, contract_directory=contract_directory)
+    return event, provenance
+
+
+def parse_response(raw, event_id, *, contract_directory=CONTRACT_DIRECTORY):
+    return _response_observation(raw, event_id, contract_directory=contract_directory)[0]
 
 
 def _result(receipt, event, raw, elapsed, *, origin='operating_generation', provenance=None):
@@ -256,6 +340,13 @@ def validate_result(result, *, contract_directory=CONTRACT_DIRECTORY):
     _require(result['prompt_version'] == PROMPT_VERSION
              and result['contract_sha256'] == CONTRACT_HASHES,
              'invalid_team_result_contract')
+    if 'response_format_version' in result or 'response_json_schema_sha256' in result:
+        schema, _, _ = contract(contract_directory)
+        version = result.get('response_format_version')
+        _require(version in (STRUCTURED_RESPONSE_VERSION, CONSTRAINED_RESPONSE_VERSION)
+                 and result.get('response_json_schema_sha256') == scene.sha(
+                     scene.encoded(provider_schema_for_version(schema, version))),
+                 'invalid_team_result_response_format')
     _require(isinstance(result['model'], str)
              and re.fullmatch(r'gemini-[A-Za-z0-9.-]+', result['model'])
              and 'embedding' not in result['model'] and result['provider'] == 'gemini'
@@ -323,7 +414,8 @@ def describe(directory, output, model, fps=4, key=None, *, execute=False, caller
     if output.exists():
         raise FileExistsError('team_scene_output_exists_no_automatic_retry')
     _require(_plain(output), 'team_scene_output_symlink')
-    data, receipt = prepare(directory, model, fps, contract_directory=contract_directory)
+    data, receipt = prepare(directory, model, fps, contract_directory=contract_directory,
+                            response_format_version=CONSTRAINED_RESPONSE_VERSION)
     if not execute:
         return {'status': 'team_scene_preflight_passed', 'event_id': receipt['team_event_id'],
                 'request_sha256': receipt['request_sha256'], 'generation_calls': 0,
@@ -340,9 +432,10 @@ def describe(directory, output, model, fps=4, key=None, *, execute=False, caller
         attempted = True
         raw = (caller or scene.call_gemini)(model, data, key)
         _write_new(output / 'response.raw.json', raw)
-        event = parse_response(raw, receipt['team_event_id'], contract_directory=contract_directory)
+        event, provenance = _response_observation(raw, receipt['team_event_id'],
+                                                  contract_directory=contract_directory)
         _write_new(output / 'event-v2.json', event)
-        result = _result(receipt, event, raw, time.monotonic()-started)
+        result = _result(receipt, event, raw, time.monotonic()-started, provenance=provenance)
         validate_result(result, contract_directory=contract_directory)
         _write_new(output / 'result.json', result)
     except Exception as exc:
@@ -352,6 +445,9 @@ def describe(directory, output, model, fps=4, key=None, *, execute=False, caller
             'request_attempts': int(attempted), 'automatic_retry': False,
             'provider_completion': 'response_saved' if (output / 'response.raw.json').is_file()
                                    else 'unconfirmed' if attempted else 'not_called',
+            **({'error_code': 'team_response_invalid_json',
+                'json_error': {'line': exc.lineno, 'column': exc.colno, 'offset': exc.pos}}
+               if isinstance(exc, json.JSONDecodeError) else {}),
             **({'diagnostic': exc.diagnostic} if isinstance(exc, scene.GeminiError) else {})})
         raise
     return result
@@ -373,7 +469,8 @@ def validate_saved_output(directory, output, *, contract_directory=CONTRACT_DIRE
     _require(result['generation_origin'] == 'operating_generation',
              'team_saved_operating_response_required')
     data, expected = prepare(directory, result['model'], result['video_sample_fps'],
-                             contract_directory=contract_directory)
+                             contract_directory=contract_directory,
+                             response_format_version=request.get('response_format_version'))
     _require(set(request) == set(expected)
              and request['schema_version'] == REQUEST_SCHEMA
              and request['analysis_id'] == result['analysis_id']
@@ -386,7 +483,9 @@ def validate_saved_output(directory, output, *, contract_directory=CONTRACT_DIRE
     _require(result['request_sha256'] == scene.sha(data)
              and result['response_sha256'] == scene.sha(scene.encoded(raw)),
              'team_saved_transport_hash_changed')
-    actual = parse_response(raw,result['team_event_id'],contract_directory=contract_directory)
+    actual, provenance = _response_observation(raw, result['team_event_id'],
+                                               contract_directory=contract_directory)
+    _require(result['provenance'] == provenance, 'team_saved_response_normalization_changed')
     _require(scene.encoded(actual) == scene.encoded(event)
              and scene.encoded(actual) == scene.encoded(result['team_event']),
              'team_saved_observation_differs_from_raw_response')

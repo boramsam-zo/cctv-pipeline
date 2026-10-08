@@ -72,6 +72,56 @@ class SavedControlDataTests(unittest.TestCase):
         self.assertIsNone(no_candidate['event_id'])
         self.assertIn('정상 판정 아님', no_candidate['status_label'])
 
+    def test_candidate_classification_never_turns_missing_or_failed_analysis_into_normal(self):
+        base = {'worker_job_id': 'a' * 32}
+        for state in ('queued', 'waiting', 'provider_failed', 'verification_failed', 'completed'):
+            self.assertEqual(data.candidate_classification(dict(base, stage=state)), 'unjudged')
+        self.assertEqual(data.candidate_classification(dict(base, stage='no_candidates')), 'no_candidates')
+        candidate = dict(base, flow={'status': 'paused'}, evidence_events=[{'event_id': 'event_000'}])
+        self.assertEqual(data.candidate_classification(candidate), 'candidate')
+        self.assertEqual(data.normalize_case(candidate)['description_readiness'], '미저장')
+
+    def test_card_tags_compare_full_source_and_same_model_without_changing_jobs(self):
+        rows = [dict(worker_job_id=key * 32, input_sha256=digest, version=version, submitted_at=stamp)
+                for key, digest, version, stamp in [
+                    ('a', '1' * 64, 'B', '2026-10-05T00:00:00Z'),
+                    ('b', '1' * 64, 'B', '2026-10-05T12:00:00+09:00'),
+                    ('c', '1' * 64, 'R2', '2026-10-05T05:00:00Z'),
+                    ('d', '1' * 8 + '2' * 56, 'B', '2026-10-06T00:00:00Z')]]
+        before = copy.deepcopy(rows)
+        tags = data.card_identities(rows + [rows[0]])
+        self.assertEqual(tags['a' * 32]['run_label'], '이전 실행')
+        self.assertEqual(tags['b' * 32]['run_label'], '최신 실행')
+        self.assertEqual(tags['b' * 32]['model_label'], 'X3D-S')
+        self.assertEqual(tags['c' * 32]['model_label'], 'R(2+1)D-18')
+        self.assertEqual(tags['c' * 32]['run_label'], '최신 실행')
+        self.assertEqual(tags['c' * 32]['source_count'], 3)
+        self.assertEqual(tags['d' * 32]['source_count'], 1)
+        self.assertEqual(rows, before)
+        self.assertNotIn('과거 모델', str(tags))
+
+    def test_unrecorded_or_tied_submission_times_do_not_claim_unique_latest(self):
+        rows = [dict(worker_job_id=key * 32, input_sha256='1' * 64, version='B',
+                     submitted_at='2026-10-05T00:00:00Z') for key in ('a', 'b')]
+        self.assertEqual({v['run_label'] for v in data.card_identities(rows).values()}, {'같은 시각 실행'})
+        rows[0]['submitted_at'] = '2026-10-05T00:00:00'
+        self.assertEqual({v['run_label'] for v in data.card_identities(rows).values()}, {'실행 순서 미확인'})
+        rows[0]['input_sha256'] = None
+        self.assertEqual(data.card_identities(rows)['a' * 32]['source_label'], '원본 식별 미확인')
+
+    def test_paused_job_and_saved_results_are_independent_and_recovery_is_explicit(self):
+        job = copy.deepcopy(next(j for j in self.saved['jobs'] if j['worker_job_id'] == NEW_JOB))
+        job['flow']['status'] = 'paused'
+        job['flow']['paused'] = True
+        case = data.normalize_case(job)
+        self.assertEqual(case['status_label'], '작업 중단 · 확인 필요')
+        self.assertEqual(case['description_readiness'], '저장됨')
+        self.assertEqual(case['report_readiness'], '저장됨')
+        job['reports'][0]['state']['recovery_execution_id'] = 'e' * 32
+        self.assertEqual(data.normalize_case(job)['report_readiness'], '복구 저장됨')
+        job['reports'][0]['state']['status'] = 'reporting'
+        self.assertEqual(data.normalize_case(job)['report_readiness'], '미저장')
+
     def test_snapshot_preserves_all_reports_and_vlm_payloads_exactly(self):
         originals = {job['worker_job_id']: job for job in self.raw['jobs']}
         for job in self.saved['jobs']:

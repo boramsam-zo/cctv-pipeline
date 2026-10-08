@@ -1,4 +1,4 @@
-"""Plan one B report from completed GPU evidence; --apply grants new VLM work.
+"""Plan one B/R2 report from completed GPU evidence; --apply grants new VLM work.
 
 Default: read-only DB queries and local evidence checks, no network/model call.
 --apply --approved-plan-sha256 <reviewed hash>: preserve the previous session,
@@ -10,6 +10,7 @@ import argparse
 import base64
 from contextlib import ExitStack
 import json
+import hashlib
 import os
 from pathlib import Path
 import stat
@@ -29,6 +30,102 @@ require = hour_session.require
 APPLY_INTENT = False
 
 
+def historical_marker(value):
+    if policy.selected(value):
+        return {key: value[key] for key in policy.FIELDS}
+    return hour_session.marker_from_state(value)
+
+
+def verify_historical_approval(value):
+    """Read a previous continuation only against its immutable approval files.
+
+    Changed runtime hashes are valid provenance for history, never permission
+    to execute that prior window under today's code.
+    """
+    marker = historical_marker(value)
+    policy.validate_state(value, marker, historical=True)
+    path = hour_session.marker_path().parent / ('.report-continuation-' + marker['name'] + '.json')
+    saved = json.loads(activation.read_file(path))
+    ready = json.loads(activation.read_file(path.with_suffix('.ready.json')))
+    plan = saved.get('plan', {})
+    sha = plan.get('plan_sha256')
+    expected_task = selection_jobs.identifier(dict(gpu_key=marker['source']['gpu_key'],
+        purpose='full_report', generation_settings=marker['generation_settings'], reference_date=None))
+    require(plan.get('schema') == 'cctv-report-continuation-plan-v1'
+            and plan.get('task_id') == expected_task
+            and hour_session.valid_sha(plan.get('scene_request_sha256'))
+            and plan.get('max_new_gpu_calls') == 0 and plan.get('max_new_scene_calls') == 1
+            and plan.get('max_cpu_retrievals') == 1
+            and plan.get('max_external_embedding_or_report_calls') == 0
+            and plan.get('admission_window_seconds') == 900
+            and plan.get('hard_wall_clock_timeout') is False and plan.get('automatic_retry') is False,
+            'report_continuation_history_plan_invalid')
+    require(saved.get('status') == 'approved_apply_intent' and plan.get('marker') == marker
+            and hour_session.valid_sha(sha)
+            and policy.fingerprint({k:v for k,v in plan.items() if k != 'plan_sha256'}) == sha
+            and ready.get('status') == 'report_continuation_admitted'
+            and ready.get('plan_sha256') == sha,
+            'report_continuation_history_approval_mismatch')
+    source = marker['source']
+    jobs = ready.get('selection', {}).get('jobs', [])
+    require(len(jobs) == 1 and jobs[0].get('worker_job_id') == source['worker_job_id']
+            and jobs[0].get('task_id') == plan.get('task_id')
+            and jobs[0].get('already_present') is True,
+            'report_continuation_history_task_mismatch')
+    return marker
+
+
+def preflight_history(conn, name, now):
+    """Same idle/expiry gate as GPU activation, with receipt-bound report history."""
+    require(conn.execute('SELECT payload FROM cctv_jobs.service_state WHERE name=%s',
+                         (name,)).fetchone() is None, 'existing_session_name_preserved')
+    history = activation.session_rows(conn)
+    for value in history.values():
+        if policy.selected(value):
+            verify_historical_approval(value)
+            policy.check_origin(conn, historical_marker(value))
+        elif value.get('schema') == hour_session.MARKER['schema']:
+            verify_legacy_history(conn, value)
+        else:
+            hour_session.validate(value, expected_marker=historical_marker(value))
+        require(value['stopped'] or now >= value['deadline_at'], 'active_session_preserved')
+    busy = conn.execute(
+        'SELECT EXISTS(SELECT 1 FROM cctv_jobs.analysis_tasks WHERE finished_at IS NULL AND NOT paused) '
+        'OR EXISTS(SELECT 1 FROM cctv_jobs.flows WHERE finished_at IS NULL AND NOT paused) '
+        "OR EXISTS(SELECT 1 FROM cctv_jobs.queue WHERE state->>'status' NOT IN "
+        "('handoff_ready','no_candidates','provider_failed','submission_rejected',"
+        "'verification_failed','storage_not_ready')) AS busy").fetchone()['busy']
+    require(not busy, 'unfinished_work_preserved')
+    return history
+
+
+def verify_legacy_history(conn, value):
+    """Read old team settings only when their immutable task receipt agrees."""
+    for worker_id, binding in value.get('bindings', {}).items():
+        if not team_settings.is_team(binding.get('settings')):
+            continue
+        profile = hour_session._binding_profile(binding)
+        expected = dict(worker_job_id=worker_id, purpose='full_report', version=profile['version'],
+            gpu_key=binding['gpu_key'], generation_settings=binding['settings'],
+            reference_date=binding['reference_date'])
+        expected['task_id'] = selection_jobs.identifier({key: expected[key] for key in
+            ('gpu_key', 'purpose', 'generation_settings', 'reference_date')})
+        task = conn.execute('SELECT * FROM cctv_jobs.analysis_tasks WHERE task_id=%s',
+                            (expected['task_id'],)).fetchone()
+        row = conn.execute('SELECT * FROM cctv_jobs.queue WHERE worker_job_id=%s',
+                           (worker_id,)).fetchone()
+        require(task is not None and row is not None and selection_jobs.snapshot(task) == expected
+                and row['worker_job_id'] == worker_id
+                and all(row['state'].get(key) == binding[key] for key in ('input_sha256', 'input_bytes', 'gpu_key'))
+                and row['state'].get('analysis_profile') == profile,
+                'report_continuation_history_task_identity_changed')
+        directory = hour_session.marker_path().parent / checked_id(row['directory_id'])
+        selection_jobs.validate_stored(task, row, directory=directory)
+        require(json.loads(activation.read_file(directory / ('task-' + checked_id(task['task_id']) + '.json')))
+                == expected, 'report_continuation_history_task_receipt_changed')
+    hour_session.validate_stored_history(value, expected_marker=historical_marker(value))
+
+
 def inspect_source(conn, store, *, name, source_session, worker_job_id, event_id,
                    input_sha256, gpu_key, manifest_sha256, result_sha256):
     """Build a deterministic, reviewable plan. Never repairs or writes receipts."""
@@ -37,7 +134,9 @@ def inspect_source(conn, store, *, name, source_session, worker_job_id, event_id
     require(len(rows) == 1, 'report_continuation_source_not_unique')
     row = rows[0]
     state = row['state']
-    profile = analysis_profiles.profile('B')
+    profile = analysis_profiles.validate_profile(state.get('analysis_profile'))
+    require(profile['version'] in ('B', 'R2') and profile == analysis_profiles.profile(profile['version']),
+            'report_continuation_current_classifier_required')
     require(state.get('analysis_profile') == profile
             and state.get('input_sha256') == input_sha256 and state.get('gpu_key') == gpu_key
             and state.get('manifest_sha256') == manifest_sha256,
@@ -45,7 +144,12 @@ def inspect_source(conn, store, *, name, source_session, worker_job_id, event_id
     require(state.get('gemini_api_calls', 0) == 0 and all(
         item.get('gemini_api_calls', 0) == 0 and not item.get('analysis_id')
         for item in state.get('scene_events', {}).values()), 'report_continuation_existing_scene_preserved')
-    require(hour_session.handoff(row) == [event_id], 'report_continuation_event_mismatch')
+    history = preflight_history(conn, name, hour_session.clock(conn))
+    require(source_session in history, 'report_continuation_source_session_missing')
+    # The validated source ledger owns these saved GPU events. A subsequently
+    # selected report window may carry older code hashes or another policy.
+    require(hour_session.handoff(row, policy=history[source_session]) == [event_id],
+            'report_continuation_event_mismatch')
     tasks = conn.execute('SELECT * FROM cctv_jobs.analysis_tasks WHERE worker_job_id=%s',
                          (worker_job_id,)).fetchall()
     require(len(tasks) == 1, 'report_continuation_existing_task_preserved')
@@ -78,7 +182,7 @@ def inspect_source(conn, store, *, name, source_session, worker_job_id, event_id
     require(policy.file_sha(directory / 'normalized-result.json') == result_sha256,
             'report_continuation_result_changed')
     normalized = read_json(directory / 'normalized-result.json')
-    require(normalized.get('input_sha256') == input_sha256 and normalized.get('version') == 'B'
+    require(normalized.get('input_sha256') == input_sha256 and normalized.get('version') == profile['version']
             and normalized.get('status') == 'completed', 'report_continuation_result_not_successful')
     files = ['input.mp4', 'handoff.json', 'normalized-result.json', 'model-binding.json', f'scene-{event_id}.json']
     for path in sorted(bundle.rglob('*')):
@@ -90,10 +194,22 @@ def inspect_source(conn, store, *, name, source_session, worker_job_id, event_id
             'report_continuation_model_binding_changed')
     require((directory / 'input.mp4').stat().st_size == state['input_bytes'],
             'report_continuation_input_size_changed')
-    history = activation.preflight_db(conn, {'name': name}, hour_session.clock(conn))
-    require(source_session in history, 'report_continuation_source_session_missing')
-    require(hour_session.current_marker() == hour_session.marker_from_state(history[source_session]),
-            'report_continuation_source_session_not_selected')
+    selected_raw = activation.read_file(hour_session.marker_path())
+    selected = json.loads(selected_raw)
+    require(selected.get('name') in history and selected == historical_marker(history[selected['name']]),
+            'report_continuation_selected_history_changed')
+    if policy.selected(selected):
+        expected = dict(worker_job_id=selected['source']['worker_job_id'], purpose='full_report',
+            version=selected['source']['analysis_profile']['version'], gpu_key=selected['source']['gpu_key'],
+            generation_settings=selected['generation_settings'], reference_date=None)
+        expected['task_id'] = selection_jobs.identifier({key: expected[key] for key in
+            ('gpu_key', 'purpose', 'generation_settings', 'reference_date')})
+        completed = conn.execute('SELECT * FROM cctv_jobs.analysis_tasks WHERE task_id=%s',
+                                 (expected['task_id'],)).fetchone()
+        require(completed is not None and selection_jobs.snapshot(completed) == expected
+                and completed['status'] == 'completed' and completed['finished_at'] is not None
+                and completed['paused'] is False and completed.get('error_code') is None,
+                'report_continuation_selected_report_not_completed')
     for previous in history.values():
         require(not policy.selected(previous) or (
             previous['source']['worker_job_id'] != worker_job_id and previous['source']['gpu_key'] != gpu_key),
@@ -118,6 +234,8 @@ def inspect_source(conn, store, *, name, source_session, worker_job_id, event_id
     next_task = selection_jobs.identifier(dict(gpu_key=gpu_key, purpose='full_report',
         generation_settings=settings, reference_date=None))
     plan = {'schema': 'cctv-report-continuation-plan-v1', 'marker': marker,
+            'previous_marker_sha256': hashlib.sha256(selected_raw).hexdigest(),
+            'preserved_history_sha256': {key: policy.fingerprint(value) for key, value in history.items()},
             'task_id': next_task, 'scene_request_sha256': request['request_sha256'],
             'admission_window_seconds': 900, 'hard_wall_clock_timeout': False,
             'max_new_gpu_calls': 0, 'max_new_scene_calls': 1, 'max_cpu_retrievals': 1,
@@ -146,6 +264,8 @@ def apply(conn, store, parameters, approved_plan_sha256):
         require(path.parent.stat().st_uid == os.geteuid()
                 and not stat.S_IMODE(path.parent.stat().st_mode) & 0o077, 'private_spool_required')
         before = activation.read_file(path)
+        require(hashlib.sha256(before).hexdigest() == plan['previous_marker_sha256'],
+                'report_continuation_selected_marker_changed')
         after = activation.encoded(marker)
         backup = path.parent / ('.report-continuation-' + marker['name'] + '.json')
         save_exclusive(backup, {'status': 'approved_apply_intent', 'plan': plan,
@@ -156,7 +276,8 @@ def apply(conn, store, parameters, approved_plan_sha256):
             started = hour_session.clock(conn)
             hour_session.initialize(conn, started, started + marker['window_seconds'])
             directory = path.parent / checked_id(row['directory_id'])
-            result = selection_jobs.admit(store, directory / 'input.mp4', None, 'B', 'full_report',
+            result = selection_jobs.admit(store, directory / 'input.mp4', None,
+                marker['source']['analysis_profile']['version'], 'full_report',
                 spool=path.parent, config=row['state']['config'], jsonb=flow_service.jsonb)
             require(len(result['jobs']) == 1 and result['jobs'][0]['worker_job_id'] == row['worker_job_id']
                     and result['jobs'][0]['task_id'] == plan['task_id']

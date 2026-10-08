@@ -61,7 +61,7 @@ class ControlRoomTests(unittest.TestCase):
             app.button(key='control_open_' + B).click().run()
             before = rendered_report(app)
             self.assertEqual(before.count('<section '), 6)
-            self.assertEqual(len(app.get('video')), 1)
+            self.assertEqual(len(app.get('video')), 0)  # Annotation is the default view.
             app.button(key='control_new_analysis').click().run()
             self.assertFalse(app.exception)
             self.assertEqual(app.session_state['analysis_selection'], 'B')
@@ -107,18 +107,22 @@ class ControlRoomTests(unittest.TestCase):
             self.assertEqual(len(replies.posts), 1)
         self.assertFalse(any(path == '/connection' for path, _ in replies.calls))
 
-    def test_selected_real_b_shows_checks_six_sections_two_videos_and_annotation(self):
+    def test_selected_real_b_defaults_annotation_and_preserves_two_videos_and_report(self):
         with patch('apps.cctv_ui.client.request', side_effect=AssertionError('network forbidden')) as request:
             app = AppTest.from_file(str(APP), default_timeout=15).run()
             app.button(key='control_open_' + B).click().run()
             self.assertFalse(app.exception)
-            self.assertEqual([t.label for t in app.tabs], ['원본 영상', '사고 후보 클립', '박스 주석 이미지 · 보조 근거'])
-            self.assertEqual(len(app.get('video')), 1)
+            self.assertEqual([t.label for t in app.tabs], ['박스 주석 이미지 · 보조 근거', '원본 영상', '사고 후보 클립'])
+            self.assertEqual(len(app.get('video')), 0)
             markdown = rendered_report(app)
             for title in ['사고 개요', '영상 관찰 및 판단 불가 항목', '관제의 전달·요청 사항',
                           '현장 대응 참고', '확인 필요 사항', '관련 근거']:
                 self.assertIn(title, markdown)
-            self.assertTrue(any('06  도로 종류 판단 불가' in x.value for x in app.text))
+            self.assertFalse(any('먼저 확인할 사항' in x.value for x in app.subheader))
+            app.session_state['control_video_' + B + '_event_000'] = '원본 영상'
+            app.run()
+            self.assertFalse(app.exception)
+            self.assertEqual(len(app.get('video')), 1)
             app.session_state['control_video_' + B + '_event_000'] = '사고 후보 클립'
             app.run()
             self.assertFalse(app.exception)
@@ -156,6 +160,40 @@ class ControlRoomTests(unittest.TestCase):
             self.assertEqual(app.metric[1].value, '1')
             self.assertEqual(app.metric[3].value, '0')
             self.assertTrue(any('정상 판정 아님' in x.value for x in app.caption))
+
+    def test_classification_filter_keeps_uncertain_results_separate_and_preserves_selection(self):
+        jobs = [dict(worker_job_id=key * 32, stage=stage, version='B',
+                     input_sha256='1' * 64, submitted_at=stamp, evidence_events=events,
+                     descriptions=[], reports=[])
+                for key, stage, stamp, events in [
+                    ('a', 'completed', '2026-10-05T00:00:00Z', [{'event_id': 'event_000'}]),
+                    ('b', 'no_candidates', '2026-10-05T01:00:00Z', []),
+                    ('c', 'provider_failed', '2026-10-05T02:00:00Z', [])]]
+        def reply(path, data=None, **kwargs):
+            self.assertIsNone(data)
+            return jobs if path == '/jobs' else [] if path == '/selections' else None
+        with patch.dict(os.environ, {'CCTV_UI_DATA_MODE': 'api'}), \
+                patch('apps.cctv_ui.client.request', side_effect=reply) as request, \
+                patch('apps.cctv_ui.client.fetch_media', return_value=None):
+            app = AppTest.from_file(str(APP), default_timeout=15).run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.metric[1].label, '요청 처리 완료')
+            for category, key in [('no_candidates', 'b'), ('unjudged', 'c'), ('candidate', 'a')]:
+                app.session_state['control_candidate_filter'] = category
+                app.run()
+                self.assertFalse(app.exception)
+                self.assertEqual([b.key for b in app.button if b.key.startswith('control_open_')],
+                                 ['control_open_' + key * 32])
+            self.assertTrue(any('설명: 미저장 · 보고: 미저장' == x.value for x in app.caption))
+            app.button(key='control_open_' + 'a' * 32).click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['control_selected_job'], 'a' * 32)
+            app.button(key='control_back').click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['control_candidate_filter'], 'candidate')
+            self.assertEqual([b.key for b in app.button if b.key.startswith('control_open_')],
+                             ['control_open_' + 'a' * 32])
+            self.assertTrue(all(call.args[0] in ('/jobs', '/selections') for call in request.call_args_list))
 
     def test_current_annotation_is_shown_without_a_historical_substitution(self):
         identifier = 'c9e8788932f544a682af5e8990e7b589'
@@ -233,15 +271,6 @@ class ControlRoomTests(unittest.TestCase):
             picker.select(other).run()
             self.assertFalse(app.exception)
             self.assertTrue(any('기존 경로의 저장 보고' in x.value for x in app.caption))
-
-    def test_chart_sums_states_with_same_display_label(self):
-        data = deepcopy(load_saved_snapshot())
-        data['stats']['states'] = {'prepared': 1, 'queued': 2}
-        with patch('apps.cctv_ui.control_data.load_saved_snapshot', return_value=data), \
-                patch('streamlit.bar_chart') as chart:
-            app = AppTest.from_file(str(APP), default_timeout=15).run()
-        self.assertFalse(app.exception)
-        self.assertEqual(chart.call_args_list[0].args[0], [{'상태': '대기 중', '작업 수': 3}])
 
     def test_monitor_switches_all_content_and_preserves_legacy_choice_and_grid(self):
         other = 'c2f5dc5084f744f0addaff03ad877e04'

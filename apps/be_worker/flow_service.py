@@ -1,5 +1,6 @@
 """Shared API/worker functions. Views never execute models or advance jobs."""
 from datetime import date
+from contextlib import nullcontext
 from pathlib import Path
 import os
 import re
@@ -184,6 +185,9 @@ def process_events(queue, row, reference_date, emit, scenes=None, reports=None, 
         events.append(match[1])
     if len(set(events)) != len(events):
         raise WorkerError('flow_duplicate_event')
+    from . import demo_session
+    if demo_session.bound_job(queue.store.connection, row):
+        events = demo_session.representative_events(events)
     # Validate the entire candidate list before even the first paid stage.
     trial_limits.check_events(queue.store.connection, row, events, settings, purpose, reference_date)
     for event in events:
@@ -197,14 +201,18 @@ def process_events(queue, row, reference_date, emit, scenes=None, reports=None, 
             (previews or prepare_previews)(scenes,row['worker_job_id'],event)
         if purpose=='gpu_comparison':
             continue
-        if scene_state.get('status') != 'description_stored':
-            emit('describing')
-            scenes.describe(row['worker_job_id'], event, model=settings['scene_model'],
-                            fps=settings['scene_fps'], key_loader=key)
-        emit('reporting')
-        reports.run(row['worker_job_id'], event, reference_date, settings['report_model'], key,
-                    expected_scene={'model': settings['scene_model'], 'fps': settings['scene_fps'],
-                                    'prompt_version': settings['scene_prompt_version']})
+        from .mlflow_tracing import report_trace
+        trace_context = (report_trace(queue.directory(row), row, event, settings, reference_date)
+                         if team_settings.is_team(settings) else nullcontext())
+        with trace_context:
+            if scene_state.get('status') != 'description_stored':
+                emit('describing')
+                scenes.describe(row['worker_job_id'], event, model=settings['scene_model'],
+                                fps=settings['scene_fps'], key_loader=key)
+            emit('reporting')
+            reports.run(row['worker_job_id'], event, reference_date, settings['report_model'], key,
+                        expected_scene={'model': settings['scene_model'], 'fps': settings['scene_fps'],
+                                        'prompt_version': settings['scene_prompt_version']})
     emit('comparison_completed' if purpose=='gpu_comparison' else 'completed')
 
 
@@ -282,7 +290,42 @@ def tick(conn):
         heartbeat('idle')
 
 
+def _attach_report_recovery(item, directory):
+    """Expose separate recovery provenance without rewriting a failed task/run."""
+    path = Path(directory) / 'report-recovery.json'
+    if not path.exists() and not path.is_symlink():
+        return
+    from . import report_recovery
+    try:
+        receipt = report_recovery.load_recovery(directory)
+        if receipt is None:
+            return
+        candidates = [report for report in item['reports']
+                      if str(report['report_id']) == receipt['report_id']]
+        if (receipt['worker_job_id'] != item['worker_job_id']
+                or receipt['input_sha256'] != item['input_sha256'] or len(candidates) != 1
+                or candidates[0]['state'].get('status') != 'report_stored'
+                or candidates[0]['state'].get('result_sha256') != receipt['result_sha256']
+                or candidates[0]['settings'].get('analysis_id') != receipt['analysis_id']):
+            raise WorkerError('report_recovery_view_identity_changed')
+        tracking = report_recovery.tracking_status(directory, receipt)
+        item['report_recovery'] = receipt
+        item['recovery_mlflow'] = tracking
+        candidates[0]['recovery'] = receipt
+        candidates[0]['mlflow'] = tracking
+    except (WorkerError, ValueError, KeyError, TypeError, OSError) as exc:
+        item['report_recovery_error'] = getattr(exc, 'code', 'report_recovery_view_unavailable')
+
+
 def view(conn, identifier=None):
+    # Keep the execution adapter source and its pinned hash unchanged. Only
+    # this read-only result validation scope can reuse schema-definition work.
+    from .ui_validation import readonly_validation
+    with readonly_validation():
+        return _view(conn, identifier)
+
+
+def _view(conn, identifier=None):
     rows = Store(conn).rows()
     if identifier: rows = [r for r in rows if r['worker_job_id'] == checked_id(identifier)]
     output = []
@@ -294,7 +337,7 @@ def view(conn, identifier=None):
         # Additive table lookup: legacy deployments before migration have none.
         team_exists = conn.execute("SELECT to_regclass('cctv_scene.team_descriptions') IS NOT NULL AND to_regclass('cctv_scene.team_report_runs') IS NOT NULL AS ok").fetchone()
         if team_exists and team_exists['ok']:
-            from .team_jobs import validate_report
+            from .team_jobs import validate_report, validate_saved_scene
             from apps.scene_description import team_scene
             from .report_jobs import fingerprint as report_fingerprint
             new_descriptions = conn.execute('SELECT analysis_id,event_id,result AS payload,result_sha256 FROM cctv_scene.team_descriptions WHERE provider_job_id=%s ORDER BY created_at',(state.get('provider_job_id'),)).fetchall()
@@ -302,6 +345,12 @@ def view(conn, identifier=None):
             for item in new_descriptions:
                 if team_scene.validate_result(item['payload']) != item['result_sha256']:
                     raise WorkerError('team_view_scene_hash_changed')
+                event_dir = spool()/row['directory_id']/'scenes'/item['event_id']
+                output_dir = event_dir/'description-team-v1'
+                normalization = output_dir/'normalization.json'
+                if normalization.exists() or normalization.is_symlink():
+                    if validate_saved_scene(event_dir/'input', output_dir) != item['payload']:
+                        raise WorkerError('team_view_recovered_scene_changed')
                 by_analysis[str(item['analysis_id'])] = item['payload']
             new_reports = conn.execute('SELECT report_id,settings,state FROM cctv_scene.team_report_runs WHERE worker_job_id=%s',(identifier,)).fetchall()
             for item in new_reports:
@@ -350,6 +399,7 @@ def view(conn, identifier=None):
                 index=ab_evidence.validate_index(read_json(path),snapshot=state['analysis_profile'],input_sha256=state['input_sha256'])
                 item.update(evidence_events=[ab_evidence.selected_event(index,e['event_id']) for e in index['events']],
                             metrics=handoff.get('metrics',{}))
+        _attach_report_recovery(item, spool()/row['directory_id'])
         output.append(item)
     return output
 
@@ -376,12 +426,15 @@ def media(conn, identifier, event, kind):
     return assets[kind]
 
 
-def selection_views(conn, identifier=None):
+def selection_views(conn, identifier=None, *, verified_jobs=None):
     sql='SELECT * FROM cctv_jobs.analysis_selections'
     groups=conn.execute(sql+' WHERE selection_id=%s' if identifier else sql+' ORDER BY created_at DESC',
                         (checked_id(identifier),) if identifier else ()).fetchall()
     if not groups:return []
-    jobs={r['worker_job_id']:r for r in view(conn)}
+    # The combined UI read passes the result of view() from this same request.
+    # Keep all membership/receipt checks below; only avoid validating each
+    # scene and report a second time to construct the same selection cards.
+    jobs={r['worker_job_id']:r for r in (view(conn) if verified_jobs is None else verified_jobs)}
     rows={r['worker_job_id']:r for r in Store(conn).rows()}
     tasks={r['task_id']:r for r in conn.execute('''SELECT *, EXTRACT(EPOCH FROM
         (COALESCE(finished_at,now())-created_at)) AS elapsed_seconds FROM cctv_jobs.analysis_tasks''').fetchall()}

@@ -143,6 +143,19 @@ class TrackingTests(unittest.TestCase):
         self.assertEqual(self.client.created_runs, 1)
         self.assertEqual(self.client.metrics, before)
 
+    def test_overview_explains_recovery_and_preserves_execution_identity(self):
+        original = record(result_refs={'purpose': 'report_recovery', 'new_model_calls': 0,
+            'source_failed_run_id': 'e' * 32, 'report_id': 'report-saved'})
+        self.send(original)
+        tags = self.client.runs['run-1'].data.tags
+        self.assertEqual(tags['cctv.execution_id'], 'task-1')
+        self.assertEqual(tags['cctv.purpose'], 'report_recovery')
+        self.assertIn('새 모델 호출은 0회', tags['mlflow.note.content'])
+        self.assertIn('report-saved', tags['mlflow.note.content'])
+        self.assertIn('e' * 32, tags['mlflow.note.content'])
+        self.assertIn('저장 응답·보고 복구', tracking.display_summary(original)['name'])
+        self.assertEqual({r[1] for r in self.client.metrics}, {'gpu_seconds', 'total_seconds'})
+
     def test_log_failure_preserves_analysis_and_retries_metadata_only(self):
         original = record()
         self.client.fail_delivery = True

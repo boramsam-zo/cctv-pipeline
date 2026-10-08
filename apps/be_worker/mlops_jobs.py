@@ -107,8 +107,12 @@ def record_task(directory, task, row, *, reports=(), client=None):
             error_code=task.get('error_code'),
             started_at_ms=int(task['created_at'].timestamp() * 1000) if task.get('created_at') else None,
             finished_at_ms=int(task['finished_at'].timestamp() * 1000) if task.get('finished_at') else None)
-        return tracking.record_execution(directory, record, client=client,
-                                         tracking_uri=os.environ.get('BE_MLFLOW_TRACKING_URI'))
+        delivered = tracking.record_execution(directory, record, client=client,
+                                             tracking_uri=os.environ.get('BE_MLFLOW_TRACKING_URI'))
+        if delivered.get('status') == 'recorded':
+            from .mlflow_tracing import link_run
+            link_run(directory, task['task_id'], delivered['run_id'], client=client)
+        return delivered
     except Exception as exc:
         return {'status': 'pending', 'run_id': None,
                 'error_code': exc.code if isinstance(exc, WorkerError) else 'mlflow_tracking_prepare_failed'}

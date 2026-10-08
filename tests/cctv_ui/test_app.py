@@ -46,6 +46,10 @@ class Replies:
         if path=='/worker':return {'age_seconds':1}
         if path=='/jobs':return self.jobs
         if path=='/selections':return self.groups
+        if path in ('/ui-revision', '/ui-snapshot'):
+            revision = hashlib.sha256(json.dumps([self.jobs, self.groups], sort_keys=True).encode()).hexdigest()
+            if path == '/ui-revision': return {'revision': revision}
+            return {'revision': revision, 'jobs': self.jobs, 'selections': self.groups}
         if path.startswith('/selections/'):
             return next(row for row in self.groups if row['selection_id']==path.split('/')[-1])
         if '/media/' in path:

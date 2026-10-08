@@ -43,7 +43,7 @@ PUBLICATION_NOTICE = """## 이 Git 게시본의 재현 범위
 이 저장소는 실행 코드·설정 예시·공유 문서를 선별한 복사본입니다. 원본 프로젝트와 기존 Git main 이력은 보존하며, 이 디렉터리 생성은 commit/push 또는 배포가 아닙니다.
 
 - `.github/workflows/runpod-image.yml`의 CPU 계약/서비스/패키징 검사를 checkout에서 실행할 수 있습니다. 실제 GPU 추론·학습·EC2 배포는 CI 검사가 수행하지 않습니다.
-- `.github/workflows/source-checks.yml`은 BE 보고 재사용·관제 UI·문서 관련성의 합성 CPU 검사를 실행합니다. BE/UI/보고 코드만 바뀌면 기존 Runpod 이미지를 다시 게시하지 않습니다.
+- `.github/workflows/source-checks.yml`은 BE 보고 재사용/복구·공개 조회/시연 경계·관제 UI·MLflow 추적·문서 관련성의 합성 CPU 검사를 실행합니다. BE/UI/보고 코드만 바뀌면 기존 Runpod 이미지를 다시 게시하지 않습니다.
 - 전체 과거 테스트는 Git에서 제외한 `artifacts/`와 평가 원본을 참조합니다. 따라서 이 checkout만으로 과거 전체 테스트나 저장 관제 화면을 모두 재현할 수 있다고 주장하지 않습니다.
 - 원본 영상·저장 사건 snapshot·모델 가중치·비밀 설정·개인 가상환경·실행 결과는 제외했습니다. 개인 절대경로는 이 게시 복사본에서만 프로젝트 상대경로 또는 중립 경로로 바꿨습니다.
 - 문서의 실제 EC2 식별자·공인 IP·Runpod 주소도 게시 복사본에서만 예시로 바꿨습니다. 운영 명령에는 사용 중인 서버 식별자를 넣어야 하며 원본 운영 문서는 별도로 보존합니다.
@@ -54,7 +54,8 @@ PUBLICATION_NOTICE = """## 이 Git 게시본의 재현 범위
 관련 CPU 검사:
 
 ```bash
-python -m pip install -r apps/runpod_image/requirements-ci.txt
+python -m pip install -r apps/runpod_image/requirements-ci.txt -r scripts/requirements-viewer.txt jsonschema==4.25.1
+python -B scripts/ci_source_checks.py
 python -B -m unittest discover -s tests/runpod_image -p 'test_mlops*.py' -v
 python -B -m unittest discover -s tests/be_worker -p 'test_mlops*.py' -v
 python -B -m unittest tests.be_worker.test_mlflow_tracking tests.be_worker.test_register_mlops_models -v

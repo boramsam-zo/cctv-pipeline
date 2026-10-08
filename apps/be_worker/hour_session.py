@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 import re
 
-from . import analysis_profiles as profiles, generation_settings as generation, team_settings
+from . import analysis_profiles as profiles, generation_settings as generation, team_settings, demo_session
 from .common import MAX_VIDEO, WorkerError, checked_id, read_json
 
 NAME = 'p6-hour-session-20261002-01'
@@ -60,6 +60,7 @@ def _model_session(value):
 def marker_from_state(value):
     from . import report_continuation
     fields = (report_continuation.FIELDS if report_continuation.selected(value) else
+              demo_session.FIELDS if demo_session.selected(value) else
               MODEL_SESSION_FIELDS if _model_session(value) else {'schema', 'name'})
     result = {k: value[k] for k in fields}
     if 'max_jobs' in value:
@@ -71,6 +72,8 @@ def _validate_marker(value):
     from . import report_continuation
     if report_continuation.selected(value):
         return report_continuation.validate_marker(value)
+    if demo_session.selected(value):
+        return demo_session.validate_marker(value)
     if _model_session(value):
         require(set(value) == MODEL_SESSION_FIELDS, 'test_session_marker_invalid')
         name = value['name']
@@ -136,28 +139,47 @@ def _binding_profile(binding):
 
 
 def validate(p, *, expected_marker=None):
+    """Execution validation always requires this release's frozen settings."""
+    return _validate(p, expected_marker=expected_marker)
+
+
+def validate_stored_history(p, *, expected_marker):
+    """Inspect legacy session history after checking its saved task receipts.
+
+    This does not authorize dispatch, admission, resume or claims. Callers must
+    bind every stored team setting to the immutable task receipt first.
+    """
+    require(p.get('schema') == MARKER['schema'] and expected_marker.get('schema') == MARKER['schema'],
+            'test_session_history_schema_invalid')
+    return _validate(p, expected_marker=expected_marker, stored=True)
+
+
+def _validate(p, *, expected_marker=None, stored=False):
     marker = current_marker() if expected_marker is None else _validate_marker(expected_marker)
     from . import report_continuation
     if report_continuation.selected(marker):
         return report_continuation.validate_state(p, marker)
     is_model = _model_session(marker)
+    is_demo = demo_session.selected(marker)
+    versioned = is_model or is_demo
+    policy_fields = demo_session.FIELDS if is_demo else MODEL_SESSION_FIELDS
     keys = {'schema', 'name', 'started_at', 'deadline_at', 'stopped', 'bindings', 'claims'}
-    if is_model:
-        keys |= MODEL_SESSION_FIELDS
+    if versioned:
+        keys |= policy_fields
     if 'max_jobs' in marker:
         keys.add('max_jobs')
     require(isinstance(p, dict) and set(p) == keys, 'test_session_state_invalid')
     require(p['schema'] == marker['schema'] and p['name'] == marker['name'],
             'test_session_identity_changed')
-    if is_model:
+    if versioned:
         require(all(type(p[k]) is type(marker[k]) and p[k] == marker[k]
-                    for k in MODEL_SESSION_FIELDS), 'test_session_model_policy_changed')
+                    for k in policy_fields), 'test_session_model_policy_changed')
     cap = marker.get('max_jobs', MAX_JOBS)
     require(type(cap) is int and 1 <= cap <= MAX_JOBS
             and type(p.get('max_jobs', MAX_JOBS)) is int
             and p.get('max_jobs', MAX_JOBS) == cap, 'test_session_approved_limit_changed')
     require(all(type(p[k]) in (int, float) and math.isfinite(p[k]) for k in ('started_at', 'deadline_at'))
-            and p['deadline_at'] - p['started_at'] == (marker['window_seconds'] if is_model else 3600)
+            and p['deadline_at'] - p['started_at'] == (marker['window_seconds'] if versioned else 3600)
             and type(p['stopped']) is bool, 'test_session_window_invalid')
     require(isinstance(p['bindings'], dict) and len(p['bindings']) <= cap
             and isinstance(p['claims'], list), 'test_session_state_invalid')
@@ -166,15 +188,17 @@ def validate(p, *, expected_marker=None):
     for wid, b in p['bindings'].items():
         checked_id(wid)
         binding_keys = {'input_sha256', 'input_bytes', 'gpu_key', 'settings', 'reference_date', 'event_ids'}
-        if is_model:
+        if versioned:
             binding_keys.add('version')
         require(isinstance(b, dict) and set(b) == binding_keys,
                 'test_session_binding_invalid')
         require(valid_sha(b['input_sha256']) and type(b['input_bytes']) is int
                 and 0 < b['input_bytes'] <= MAX_VIDEO, 'test_session_binding_invalid')
-        if is_model:
+        if versioned:
             require(isinstance(b['version'], str) and b['version'] in marker['versions'],
                     'test_session_model_binding_invalid')
+        if is_demo:
+            require(b['input_bytes'] <= marker['max_upload_bytes'], 'demo_session_input_too_large')
         frozen = _binding_profile(b)
         if is_model:
             require(b['input_sha256'] == marker['approved_input_sha256']
@@ -189,7 +213,14 @@ def validate(p, *, expected_marker=None):
             require(b['settings'] is None and b['reference_date'] is None,
                     'test_session_comparison_has_generation_settings')
         else:
-            settings(b['settings'], analysis_profile=frozen)
+            if is_demo:
+                require(team_settings.is_team(b['settings']), 'demo_session_cpu_report_required')
+            if stored and team_settings.is_team(b['settings']):
+                saved = team_settings.validate_stored(b['settings'], frozen)
+                require(saved['scene_model'] == MODEL and saved['report_model'] == 'cpu-template',
+                        'test_session_model_changed')
+            else:
+                settings(b['settings'], analysis_profile=frozen)
             require(team_settings.reference_date(b['settings'], b['reference_date']) == b['reference_date'],
                     'test_session_date_invalid')
         if b['event_ids'] is not None:
@@ -251,7 +282,7 @@ def active(conn, p):
     require(p['name'] == marker['name'] and p.get('max_jobs', MAX_JOBS) == marker.get('max_jobs', MAX_JOBS),
             'test_session_identity_changed')
     from . import report_continuation
-    if _model_session(p) or _model_session(marker) or report_continuation.selected(marker):
+    if _model_session(p) or _model_session(marker) or demo_session.selected(marker) or report_continuation.selected(marker):
         # Pin every field, not merely the session name/cap, between reads.
         validate(p, expected_marker=marker)
     now = clock(conn)
@@ -306,9 +337,19 @@ def check_admission(conn, sha, size, versions, purpose):
     active(conn, p)
     from . import report_continuation
     if report_continuation.selected(p):
-        require(tuple(versions) == ('B',) and purpose == 'full_report'
+        require(tuple(versions) == (p['source']['analysis_profile']['version'],) and purpose == 'full_report'
                 and sha == p['source']['input_sha256'] and size == p['source']['input_bytes'],
                 'report_continuation_admission_not_approved')
+    elif demo_session.selected(p):
+        require(isinstance(versions, (list, tuple)) and len(versions) == 1
+                and versions[0] in p['versions'] and purpose == 'full_report',
+                'demo_session_selection_not_approved')
+        require(type(size) is int and 0 < size <= p['max_upload_bytes'], 'demo_session_input_too_large')
+        if p['bindings']:
+            busy = conn.execute('''SELECT count(*) AS count FROM cctv_jobs.analysis_tasks
+                WHERE worker_job_id = ANY(%s) AND finished_at IS NULL AND NOT paused''',
+                (list(p['bindings']),)).fetchone()['count']
+            require(busy == 0, 'demo_session_busy')
     elif _model_session(p):
         require(isinstance(versions, (list, tuple)) and tuple(versions) in (('B',), ('R2',), ('B', 'R2'))
                 and purpose == p['purpose'], 'test_session_model_selection_not_approved')
@@ -330,15 +371,20 @@ def row_binding(row, value, day, *, policy=None):
                 'report_continuation_settings_changed')
         return row['worker_job_id'], report_continuation.binding(policy)
     is_model = _model_session(policy)
+    is_demo = demo_session.selected(policy)
+    versioned = is_model or is_demo
     s = row['state']; wid = checked_id(row['worker_job_id'])
     try:
-        frozen = profiles.validate_profile(s['analysis_profile'], expected_version=None if is_model else 'B')
+        frozen = profiles.validate_profile(s['analysis_profile'], expected_version=None if versioned else 'B')
     except ValueError:
         raise WorkerError('test_session_requires_b') from None
     require(s['worker_job_id'] == wid, 'test_session_requires_b')
     if is_model:
         require(frozen['version'] in policy['versions'] and s['input_sha256'] == policy['approved_input_sha256'],
                 'test_session_model_selection_not_approved')
+    if is_demo:
+        require(frozen['version'] in policy['versions'] and type(s['input_bytes']) is int
+                and 0 < s['input_bytes'] <= policy['max_upload_bytes'], 'demo_session_input_or_model_not_approved')
     key = profiles.gpu_identity(s['input_sha256'], frozen)['gpu_key']
     require(key == s['gpu_key'], 'test_session_gpu_identity_changed')
     if is_model and policy['purpose'] == 'gpu_comparison':
@@ -346,10 +392,12 @@ def row_binding(row, value, day, *, policy=None):
         selected_settings, selected_day = None, None
     else:
         selected_settings = settings(value, analysis_profile=frozen)
+        if is_demo:
+            require(team_settings.is_team(selected_settings), 'demo_session_cpu_report_required')
         selected_day = team_settings.reference_date(value, day)
     result = dict(input_sha256=s['input_sha256'], input_bytes=s['input_bytes'], gpu_key=key,
                   settings=selected_settings, reference_date=selected_day, event_ids=None)
-    if is_model:
+    if versioned:
         result['version'] = frozen['version']
     return wid, result
 
@@ -369,9 +417,17 @@ def bind_job(conn, row, value, day):
     require(not report_continuation.selected(p), 'report_continuation_prebound_job_only')
     # Changing windows must not grant a second attempt to an old request. This
     # runs under admission/dispatch locks in the caller's existing transaction.
-    if _model_session(p):
+    if demo_session.selected(p):
         already = conn.execute("SELECT EXISTS(SELECT 1 FROM cctv_jobs.service_state "
-            "WHERE name ~ '^(p6-hour-session|mlops-session)-[0-9]{8}-[0-9]{2}$' "
+            "WHERE name ~ '^(p6-hour-session|mlops-session|demo-session)-[0-9]{8}-[0-9]{2}$' "
+            "AND name<>%s AND (payload->'bindings' ? %s OR EXISTS "
+            "(SELECT 1 FROM jsonb_each(payload->'bindings') AS b "
+            "WHERE b.value->>'gpu_key'=%s))) AS already_bound", (p['name'], wid, b['gpu_key'])).fetchone()
+        require(not any(other['gpu_key'] == b['gpu_key'] for other in p['bindings'].values()),
+                'test_session_gpu_identity_changed')
+    elif _model_session(p):
+        already = conn.execute("SELECT EXISTS(SELECT 1 FROM cctv_jobs.service_state "
+            "WHERE name ~ '^(p6-hour-session|mlops-session|demo-session)-[0-9]{8}-[0-9]{2}$' "
             "AND name<>%s AND (payload->'bindings' ? %s OR EXISTS "
             "(SELECT 1 FROM jsonb_each(payload->'bindings') AS b "
             "WHERE b.value->>'gpu_key'=%s))) AS already_bound", (p['name'], wid, b['gpu_key'])).fetchone()
@@ -381,7 +437,7 @@ def bind_job(conn, row, value, day):
                 'test_session_input_size_changed')
     else:
         already = conn.execute("SELECT EXISTS(SELECT 1 FROM cctv_jobs.service_state "
-                               "WHERE name ~ '^p6-hour-session-[0-9]{8}-[0-9]{2}$' "
+                               "WHERE name ~ '^(p6-hour-session|demo-session)-[0-9]{8}-[0-9]{2}$' "
                                "AND name<>%s AND payload->'bindings' ? %s) AS already_bound",
                                (p['name'], wid)).fetchone()
     require(not already['already_bound'], 'test_session_old_job_preserved_view_only')
@@ -393,7 +449,7 @@ def bind_job(conn, row, value, day):
     return b
 
 
-def handoff(row):
+def handoff(row, *, policy=None):
     configs = (row.get('handoff') or {}).get('scene_configs')
     require(isinstance(configs, list), 'test_session_handoff_required')
     found = []
@@ -401,6 +457,8 @@ def handoff(row):
         match = re.fullmatch(r'scene-(event_[0-9]+)\.json', name) if isinstance(name, str) else None
         require(match is not None, 'test_session_handoff_invalid')
         found.append(match[1])
+    if demo_session.selected(current_marker() if policy is None else policy):
+        return demo_session.representative_events(found)
     return events(found)
 
 
@@ -415,7 +473,7 @@ def check_events(conn, row, event_ids, value, purpose, day):
         expected['event_ids'] = b['event_ids']
         require(expected == b, 'test_session_task_settings_changed')
         selected = events(event_ids)
-        require(selected == handoff(row), 'test_session_event_selection_changed')
+        require(selected == handoff(row, policy=p), 'test_session_event_selection_changed')
         require(b['event_ids'] is None or b['event_ids'] == selected, 'test_session_events_changed')
         b['event_ids'] = selected
         write(conn, p)
@@ -437,7 +495,7 @@ def claim(conn, row, event_id, kind, request_sha256, model=None):
         require(b is not None, 'test_session_job_not_bound')
         _, expected = row_binding(row, b['settings'], b['reference_date'], policy=p)
         expected['event_ids'] = b['event_ids']
-        require(expected == b and b['event_ids'] is not None and b['event_ids'] == handoff(row)
+        require(expected == b and b['event_ids'] is not None and b['event_ids'] == handoff(row, policy=p)
                 and event_id in b['event_ids'], 'test_session_event_not_approved')
         require(kind in KINDS and model == model_for(kind) and valid_sha(request_sha256),
                 'test_session_call_invalid')
@@ -463,6 +521,7 @@ def check_dispatch(conn, row):
     _, expected = row_binding(row, b['settings'], b['reference_date'], policy=p)
     expected['event_ids'] = b['event_ids']
     require(expected == b, 'test_session_binding_changed')
-    if _model_session(p):
-        require(current_marker() == {k: p[k] for k in MODEL_SESSION_FIELDS},
+    if _model_session(p) or demo_session.selected(p):
+        fields = demo_session.FIELDS if demo_session.selected(p) else MODEL_SESSION_FIELDS
+        require(current_marker() == {k: p[k] for k in fields},
                 'test_session_marker_changed_during_dispatch')

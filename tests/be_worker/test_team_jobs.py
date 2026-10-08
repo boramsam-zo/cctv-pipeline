@@ -1,6 +1,7 @@
 """Saved actual scene/report + worker journals; no models, network or real PG."""
 from contextlib import contextmanager
 from copy import deepcopy
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -165,7 +166,8 @@ class TeamJobTests(unittest.TestCase):
         stack=ExitStack()
         stack.enter_context(patch.dict(sys.modules,{
             'psycopg':SimpleNamespace(),'psycopg.types':SimpleNamespace(),
-            'psycopg.types.json':SimpleNamespace(Jsonb=lambda value:deepcopy(value))}))
+            'psycopg.types.json':SimpleNamespace(Jsonb=lambda value:json.loads(
+                json.dumps(value, allow_nan=False)))}))
         stack.enter_context(patch('apps.be_worker.team_jobs.team_db.show',
             side_effect=lambda conn,aid:deepcopy(self.persisted[aid])))
         stack.enter_context(patch('apps.be_worker.team_jobs.hour_session.configured',return_value=True))
@@ -255,6 +257,38 @@ class TeamJobTests(unittest.TestCase):
             with self.assertRaisesRegex(WorkerError,'failed_inspect'):reports.run('d'*32,'event_000',None,'cpu-template',None)
             with self.assertRaisesRegex(WorkerError,'response_missing_no_auto_retry'):reports.run('d'*32,'event_000',None,'cpu-template',None)
         execute.assert_called_once();claim.assert_called_once()
+
+    def test_report_storage_compares_json_arrays_with_in_memory_tuples(self):
+        self.save_completed_scene()
+        original_envelope = team_jobs.envelope
+        def envelope(*args):
+            return dict(original_envelope(*args), synthetic_rankings=[('chunk-a', 0.5)])
+        execute = Mock(return_value=deepcopy(self.actual_report))
+        with (self.report_patches(), patch.object(team_jobs, 'envelope', side_effect=envelope),
+              patch('apps.be_worker.team_jobs.hour_session.claim')):
+            result = team_jobs.TeamReportJobs(self.queue, execute).run(
+                'd'*32, 'event_000', None, 'cpu-template', None)
+        self.assertEqual(result['status'], 'report_stored')
+        stored = self.queue.connection.records[result['report_id']]
+        self.assertEqual(stored['state']['result']['synthetic_rankings'], [['chunk-a', 0.5]])
+        execute.assert_called_once()
+
+    def test_report_json_roundtrip_still_rejects_changed_values(self):
+        self.save_completed_scene()
+        original = self.queue.connection.execute
+        def changed_readback(sql, args=None):
+            response = original(sql, args)
+            if 'WHERE report_id=' in sql and response.value and response.value['state'].get('result'):
+                response.value = deepcopy(response.value)
+                response.value['state']['result']['generation_calls'] = 1
+            return response
+        self.queue.connection.execute = changed_readback
+        execute = Mock(return_value=deepcopy(self.actual_report))
+        with self.report_patches(), patch('apps.be_worker.team_jobs.hour_session.claim'):
+            with self.assertRaisesRegex(WorkerError, 'database_readback_mismatch'):
+                team_jobs.TeamReportJobs(self.queue, execute).run(
+                    'd'*32, 'event_000', None, 'cpu-template', None)
+        execute.assert_called_once()
 
     def test_cpu_response_saved_before_db_failure_reused_without_new_call(self):
         self.save_completed_scene()

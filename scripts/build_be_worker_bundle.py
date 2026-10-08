@@ -11,7 +11,7 @@ NAMES = tuple('apps/be_worker/' + name for name in (
     'config.example.json', 'README.md', 'verify_bundle.py',
     'job_queue.py', 'queue_store.py', 'queue_schema.sql', 'queue_requirements.txt',
     'Queue.Dockerfile', 'queue.compose.yaml', 'queue.sh', 'prepare_queue.py', 'QUEUE.md',
-    '.dockerignore', 'scene_jobs.py', 'flow_status.py', 'prepare_stage1.py', 'report_jobs.py', 'report_schema.sql', 'prepare_stage5.py', 'flow_schema.sql', 'flow_service.py', 'web_api.py', 'daemon.py', 'service.compose.yaml', 'prepare_stage6.py',
+    '.dockerignore', 'scene_jobs.py', 'flow_status.py', 'prepare_stage1.py', 'report_jobs.py', 'report_schema.sql', 'prepare_stage5.py', 'flow_schema.sql', 'flow_service.py', 'ui_read.py', 'ui_validation.py', 'web_api.py', 'daemon.py', 'service.compose.yaml', 'prepare_stage6.py',
     'generation_settings.py', 'generation.env.example', 'prepare_generation_settings.py',
     'analysis_profiles.py', 'ab_evidence.py', 'browser_preview.py', 'selection_jobs.py',
     'selection_schema.sql', 'prepare_selections.py', 'trial_limits.py')) + tuple('apps/scene_description/' + name for name in (

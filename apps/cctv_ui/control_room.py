@@ -8,30 +8,26 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
-from apps.cctv_ui.client import request, fetch_media
+from apps.cctv_ui.client import request, fetch_media, is_read_only
+from apps.cctv_ui.ui_data import load_snapshot, invalidate_snapshot
 from apps.cctv_ui.control_data import (
     load_saved_snapshot, normalize_snapshot, normalize_case, media_reference,
-    historical_frame_reference,
+    historical_frame_reference, card_identities, candidate_classification,
+    build_video_aggregates, model_identity, TYPE_LABELS,
 )
-from apps.cctv_ui.control_panels import render_observations, render_checks, render_agencies, render_report
+from apps.cctv_ui.control_panels import render_observations, render_agencies, render_report
 from apps.cctv_ui import control_demo as demo
 
 st.set_page_config(page_title='CCTV 관제 · 저장 결과', page_icon=':material/videocam:', layout='wide')
 st.html(Path(__file__).with_name('control_room.css'))
 st.session_state.setdefault('control_selected_job', None)
 st.session_state.setdefault('control_demo', None)
+READ_ONLY = is_read_only()
+DEMO_MODE = os.environ.get('CCTV_DEMO_MODE') == '1'
 
-STAGES = {
-    'completed': '처리 완료', 'comparison_completed': '근거 비교 완료',
-    'no_candidates': '후보 없음 · 정상 판정 아님', 'paused': '확인 필요',
-    'provider_failed': 'GPU·저장 실패', 'verification_failed': '근거 검증 실패',
-    'submission_unknown': '접수 불확실', 'submission_rejected': '접수 거절',
-    'storage_not_ready': '저장 확인 필요', 'queued': '대기 중', 'prepared': '대기 중',
-    'waiting': '분석·저장 중', 'describing': '관찰 설명 처리 중', 'reporting': '보고 처리 중',
-}
-MEDIA = [('original', '원본 영상', '업로드한 전체 원본 · 사건 전후의 전체 흐름'),
-         ('clip', '사고 후보 클립', '후보 전후의 전체 화면 동영상'),
-         ('frame', '박스 주석 이미지 · 보조 근거', '박스·궤적이 표시된 정지 이미지 · 동영상과 구분되는 보조 근거')]
+MEDIA = [('frame', '박스 주석 이미지 · 보조 근거', '박스·궤적이 표시된 정지 이미지 · 동영상과 구분되는 보조 근거'),
+         ('original', '원본 영상', '업로드한 전체 원본 · 사건 전후의 전체 흐름'),
+         ('clip', '사고 후보 클립', '후보 전후의 전체 화면 동영상')]
 
 
 def time_text(value):
@@ -50,6 +46,15 @@ def api_snapshot(base_url):
     # The base URL is part of the cache identity; client credentials remain server-side.
     return normalize_snapshot(request('/jobs'), request('/selections'), metadata={
         'mode': 'api', 'captured_at': datetime.now(timezone.utc).isoformat(),
+        'scope': 'API가 반환한 전체 작업 · 작업 ID로 중복 제거',
+    })
+
+
+def public_snapshot(*, force=False):
+    payload = load_snapshot(force=force)
+    st.session_state['cctv_display_revision'] = payload['revision']
+    return normalize_snapshot(payload['jobs'], payload['selections'], metadata={
+        'mode': 'api', 'captured_at': payload['captured_at'],
         'scope': 'API가 반환한 전체 작업 · 작업 ID로 중복 제거',
     })
 
@@ -206,16 +211,32 @@ def show_thumbnail(job, case, mode):
 
 
 def show_card_notice(job, scope):
+    if READ_ONLY or DEMO_MODE:
+        return
     notice = demo.card_notice(st.session_state.control_demo, job['worker_job_id'], scope)
     if notice:
         st.badge(notice, color='violet', icon=':material/notifications:')
 
 
+def show_identity_tags(identity):
+    with st.container(horizontal=True, gap='xsmall'):
+        st.badge(identity['model_label'], color='blue')
+        st.badge(identity['run_label'], color='gray',
+                 help='현재 조회 범위에서 같은 원본·같은 모델의 접수시각을 비교합니다. 가중치의 새 버전이라는 뜻은 아닙니다.')
+    st.caption(identity['source_label'])
+
+
+def show_result_readiness(case):
+    st.caption('분류: ' + case['classification_label'])
+    st.caption('설명: ' + case['description_readiness'] + ' · 보고: ' + case['report_readiness'])
+
+
 def monitor(snapshot, mode, scope, selected):
+    identities = card_identities(snapshot['jobs'])
     with st.container(border=True, key='control_monitor', gap='xsmall'):
         st.subheader('CCTV 영상 모니터링')
         stats = snapshot['stats']
-        st.caption(f"저장 {len(snapshot['jobs'])}작업 · 완료 {stats['completed_count']} · 확인 필요 {stats['attention_count']}")
+        st.caption(f"저장 {len(snapshot['jobs'])}작업 · 요청 처리 완료 {stats['completed_count']} · 작업 확인 필요 {stats['attention_count']}")
         with st.container(height=680, border=False, key='control_monitor_list', gap='small', autoscroll=False):
             for job in sorted(snapshot['jobs'], key=lambda j: j.get('submitted_at') or '', reverse=True):
                 case = normalize_case(job)
@@ -223,9 +244,11 @@ def monitor(snapshot, mode, scope, selected):
                 active = identifier == selected
                 with st.container(border=True, key='control_monitor_card_' + ('selected_' if active else '') + identifier, gap='xsmall'):
                     with st.container(horizontal=True, vertical_alignment='center', gap='xsmall'):
-                        st.text(str(case.get('version') or '?') + ' · ' + identifier[:8])
+                        st.text('작업 · ' + identifier[:8])
                         st.badge(case['status_label'], color=status_color(case['status']))
+                    show_identity_tags(identities[identifier])
                     show_thumbnail(job, case, mode)
+                    show_result_readiness(case)
                     st.text(' · '.join(case['type_labels']) if case['type_labels'] else '영상 관찰 미저장')
                     st.caption('접수 ' + time_text(job.get('submitted_at')))
                     st.caption('카메라 ' + str(case.get('camera_id') or '미등록') + ' · 위치 ' + str(case.get('location') or '미등록'))
@@ -273,7 +296,7 @@ def show_annotation(job, event_id, mode):
 
 
 def case_title(case):
-    return ('영상 후보' if case.get('event_id') else '영상 작업') + ' · ' + str(case.get('version') or '버전 미기록') + ' · ' + case['worker_job_id'][:8]
+    return ('영상 후보' if case.get('event_id') else '영상 작업') + ' · ' + case['worker_job_id'][:8]
 
 
 def review_text(case):
@@ -285,7 +308,9 @@ def review_text(case):
 
 def gallery(snapshot, mode, scope):
     jobs = sorted(snapshot['jobs'], key=lambda j: j.get('submitted_at') or '', reverse=True)
-    demo_controls(snapshot, scope)
+    identities = card_identities(jobs)
+    if not READ_ONLY and not DEMO_MODE:
+        demo_controls(snapshot, scope)
     with st.container(key='control_statistics'):
         statistics(snapshot)
     with st.container(horizontal=True, vertical_alignment='center', key='control_gallery_toolbar'):
@@ -294,9 +319,18 @@ def gallery(snapshot, mode, scope):
                                     key='control_grid', width='content', label_visibility='collapsed', persist_state='session')
     st.caption(('원본 첫 프레임 · 정지 미리보기' if mode == 'saved' else '주석 프레임 · 보조 이미지')
                + ' · 슬롯은 배치 수이며 실제 연결 CCTV 수·독립 사고 수가 아닙니다.')
+    filters = {'all': '전체', 'candidate': '사고 후보', 'no_candidates': '후보 없음', 'unjudged': '미판정'}
+    selected_filter = st.segmented_control('영상 분류', list(filters), default='all', required=True,
+        format_func=filters.get, key='control_candidate_filter', persist_state='session')
+    jobs = [job for job in jobs if selected_filter == 'all' or candidate_classification(job) == selected_filter]
+    st.caption(f'목록 {len(jobs)}작업 · 위 집계는 조회 자료 전체 기준 · 후보 없음은 정상 확정이 아니며, 후보 유무를 확인할 결과가 없으면 미판정으로 구분합니다.')
+    if selected_filter == 'unjudged':
+        st.info('미판정은 분석 대기·실패·결과 누락 등으로 후보 유무를 확인할 수 없는 작업입니다. 사고가 아닌 영상이라는 뜻이 아닙니다. 이미 사고 후보가 저장된 작업은 이후 보고가 실패해도 사고 후보에 표시됩니다.')
     size = 4 if grid == '4×4' else 3
     capacity = size * size
     pages = max(1, math.ceil(len(jobs) / capacity))
+    if st.session_state.get('control_page', 1) > pages:
+        st.session_state.control_page = 1
     page = st.selectbox('목록 페이지', list(range(1, pages + 1)), key='control_page',
                         format_func=lambda n: f'{n} / {pages}') if pages > 1 else 1
     visible = jobs[(page - 1) * capacity:page * capacity]
@@ -314,7 +348,10 @@ def gallery(snapshot, mode, scope):
                 show_thumbnail(job, case, mode)
                 show_card_notice(job, scope)
                 st.text(case_title(case))
-                st.caption(case['status_label'] + ' · ' + review_text(case))
+                show_identity_tags(identities[job['worker_job_id']])
+                st.caption('작업: ' + case['status_label'])
+                show_result_readiness(case)
+                st.caption(review_text(case))
                 st.caption('접수 ' + time_text(job.get('submitted_at')))
                 st.button('사건 확인', icon=':material/arrow_forward:', width='stretch',
                           key='control_open_' + job['worker_job_id'], on_click=choose_job,
@@ -330,42 +367,56 @@ def statistics(snapshot):
     attention = stats['attention_count']
     st.subheader('관제 기록 집계')
     with st.container(horizontal=True, key='control_metrics'):
-        for name, value in [('고유 작업', len(jobs)), ('처리 완료', complete),
-                            ('확인 필요 작업', attention), ('대기·처리 중', len(jobs)-complete-attention)]:
+        for name, value in [('고유 작업', len(jobs)), ('요청 처리 완료', complete),
+                            ('작업 확인 필요', attention), ('대기·처리 중', len(jobs)-complete-attention)]:
             st.metric(name, value, border=True)
-    left, right = st.columns(2, wrap=True)
-    from collections import Counter
-    statuses = Counter()
-    for state, count in stats['states'].items():
-        statuses[STAGES.get(state, state)] += count
-    hours = Counter(time_text(j.get('submitted_at'))[:13] + '시' for j in jobs
-                    if time_text(j.get('submitted_at')) != '미기록' and '시간대 미확인' not in time_text(j.get('submitted_at')))
-    with left, st.container(border=True, key='control_status_chart', gap='xsmall'):
-        st.markdown('**작업 상태**')
-        if statuses:
-            st.bar_chart([{'상태': k, '작업 수': v} for k, v in statuses.items()], x='상태', y='작업 수', horizontal=True, height=100, color='#2463df')
-        else:
-            st.caption('집계할 작업 없음')
-    with right, st.container(border=True, key='control_hour_chart', gap='xsmall'):
-        st.markdown('**접수 시간대 · KST**')
-        if hours:
-            import altair as alt
-            # Short axis labels keep the bars visible; the tooltip retains the full date.
-            chart = alt.Chart(alt.Data(values=[{'접수 시간대': k, '작업 수': v}
-                                               for k, v in sorted(hours.items())])).mark_bar(color='#2463df').encode(
-                x=alt.X('접수 시간대:N', title=None, axis=alt.Axis(
-                    labelAngle=0, labelExpr="substring(datum.label, 5)", labelFontSize=10)),
-                y=alt.Y('작업 수:Q', title=None, axis=alt.Axis(tickMinStep=1, labelFontSize=10)),
-                tooltip=['접수 시간대:N', '작업 수:Q'],
-            ).properties(height=72)
-            st.altair_chart(chart, width='stretch')
-        else:
-            st.caption('확인된 접수시각 없음')
     st.caption(f"고유 보고 {stats['report_count']}개 · 저장 완료 보고 {stats['stored_report_count']}개 · "
                f"영상 후보 {stats['candidate_event_count']}개 · 후보는 작업/장면 기준, 확정 사고 수 아님 · 접수시각은 사고시각과 별개")
+    st.caption('요청 처리 완료에는 GPU 비교 완료·후보 없음이 포함됩니다. 설명·보고 저장 여부와 사람 검토 여부는 각 카드에서 별도로 확인합니다.')
+    video_statistics(jobs)
 
 
-def detail(job, mode):
+def video_statistics(jobs):
+    models = {model_identity(job)[0]: model_identity(job)[1] for job in jobs if model_identity(job)[0]}
+    if not models:
+        st.caption('모델 식별 정보가 없어 영상별 집계를 만들 수 없습니다.')
+        return
+    selected = st.selectbox('영상 집계 모델', list(models), format_func=models.get,
+        index=list(models).index('x3d_s') if 'x3d_s' in models else 0,
+        key='control_aggregate_model', persist_state='session')
+    aggregate = build_video_aggregates(jobs, selected)
+    readiness, distribution = st.columns([3, 2], wrap=True)
+    with readiness, st.container(border=True):
+        st.markdown('**영상별 설명·보고 준비 현황**')
+        rows = [{'원본 SHA': row['input_sha256'][:12], '최근 작업': (row['job_id'] or '미확인')[:8],
+                 '작업 상태': row['status'], '설명': row['description'], '보고': row['report'],
+                 '분석 작업 수': row['job_count']} for row in aggregate['rows']]
+        if rows:
+            st.dataframe(rows, hide_index=True, width='stretch')
+        else:
+            st.caption('원본 SHA가 확인된 영상 없음')
+        st.caption('선택 모델의 원본별 최신 작업 기준 · 같은 SHA의 재실행은 한 행 · 카드와 과거 기록은 모두 보존')
+    with distribution, st.container(border=True):
+        st.markdown('**관찰된 사고 유형 분포**')
+        counts = [{'관찰 유형': TYPE_LABELS.get(tag, tag), '원본 수': count}
+                  for tag, count in aggregate['type_counts'].items()]
+        if counts:
+            st.bar_chart(counts, x='관찰 유형', y='원본 수', horizontal=True, height=160)
+        else:
+            st.caption('유형이 기록된 유효 관찰 없음')
+        st.caption(f"고유 원본 {aggregate['source_count']}개 · 관찰 저장 {aggregate['observed_sources']}개 · "
+                   f"설명 미완료 {aggregate['incomplete']}개 · 유형 미분류 {aggregate['unclassified']}개 · "
+                   f"후보 없음 {aggregate['no_candidates']}개")
+        st.caption(f"복수 유형 원본 {aggregate['multiple_types']}개 · 같은 영상은 각 유형에 한 번씩 포함되어 "
+                   '유형별 합계가 원본 수보다 클 수 있습니다. 확정 사고 통계가 아닙니다.')
+        if aggregate['previous_observations']:
+            st.caption(f"최근 작업에 설명이 없어 이전 유효 관찰을 사용한 원본 {aggregate['previous_observations']}개")
+    if aggregate['unknown_hash_jobs'] or aggregate['recency_unknown']:
+        st.caption(f"집계 제외: 원본 SHA 미확인 {aggregate['unknown_hash_jobs']}작업 · "
+                   f"실행 순서 미확인 {aggregate['recency_unknown']}원본")
+
+
+def detail(job, mode, identity):
     st.button('영상 목록으로', icon=':material/arrow_back:', on_click=choose_job, args=(None,), key='control_back')
     event_ids = list(dict.fromkeys([e['event_id'] for e in job.get('evidence_events', []) if e.get('event_id')]
                     + [d['event_id'] for d in job.get('descriptions', []) if d.get('event_id')]))
@@ -381,6 +432,10 @@ def detail(job, mode):
                                    format_func=lambda i: ('동료 6절 보고' if by_id[i].get('payload', {}).get('schema_version') == 'cctv-team-scene-v1' else '기존 저장 보고') + ' · ' + i[:8],
                                    key=analysis_key, persist_state='session')
     case = normalize_case(job, event_id, analysis_id=analysis_id)
+    if job.get('demo_summary'):
+        summary = job['demo_summary']
+        st.caption('대표 후보 1개 설명·보고 · 나머지 후보는 영상 근거 확인 · '
+                   + f"추가 후보 {summary.get('unexplained_candidates', 0)}개")
     revisions = case['report_revisions']
     if len(revisions) > 1:
         revision_ids = [row['report_id'] for row in revisions]
@@ -403,9 +458,17 @@ def detail(job, mode):
             st.subheader(case_title(case), width='stretch')
             st.badge(case['status_label'], color=status_color(case['status']))
             st.badge(review_text(case), color='orange')
+        show_identity_tags(identity)
+        show_result_readiness(case)
+        if case['status'] == 'paused':
+            st.caption('이전 작업 중단 기록을 보존합니다. 별도로 저장된 설명·보고는 위 준비 상태와 아래 원문에서 확인할 수 있습니다.')
         st.caption('카메라: ' + str(case.get('camera_id') or '미등록') + ' · 위치: '
                    + str(case.get('location') or '미등록') + ' · 영상 사건 시각: '
                    + str(case.get('incident_at') or '미확인') + ' · 접수 ' + time_text(job.get('submitted_at')))
+        if READ_ONLY:
+            tracking = job.get('mlflow') or {}
+            st.caption('사고 모델: ' + str(tracking.get('model_id') or case.get('version') or '미기록')
+                       + ' · ' + str(tracking.get('model_version') or '모델 버전 미기록'))
         if case.get('type_labels'):
             st.caption('VLM 관찰 유형: ' + ' · '.join(case['type_labels']) + ' · 한 후보의 복수 태그 / 접수시각 ≠ 사고 발생시각')
     left, right = st.columns([66, 34], gap='small', wrap=True)
@@ -434,11 +497,9 @@ def detail(job, mode):
                 timeline.append('영상 시작 경계로 이전 구간 단축')
             if timeline:
                 st.caption(' · '.join(timeline))
+    with right:
         with st.container(border=True, key='control_observations', gap='xsmall'):
             render_observations(case, compact=True)
-    with right:
-        with st.container(border=True, key='control_checks', gap='xsmall'):
-            render_checks(case, compact=True)
         with st.container(border=True, key='control_agencies', gap='xsmall'):
             render_agencies(case, compact=True)
     with st.container(border=True, key='control_report', gap='small'):
@@ -447,6 +508,12 @@ def detail(job, mode):
         render_observations(case)
     with st.expander('처리 기록 · 저장 식별 정보'):
         st.caption('작업 ID: ' + job['worker_job_id'])
+        if DEMO_MODE and st.session_state.get('cctv_navigation_enabled') and st.button(
+                '이 작업의 MLflow 기록', key='control_mlflow_' + job['worker_job_id'],
+                icon=':material/monitoring:'):
+            st.session_state.demo_mlflow_job = job['worker_job_id']
+            st.session_state.demo_mlflow_job_input = job['worker_job_id']
+            st.switch_page('demo_mlflow.py')
         tracking = job.get('mlflow') or {}
         if tracking:
             st.caption('사고 모델: ' + str(tracking.get('model_id') or '미기록')
@@ -463,54 +530,72 @@ def detail(job, mode):
                  '보고 ID': [r.get('report_id') for r in job.get('reports', [])]})
 
 
-default_mode = os.environ.get('CCTV_UI_DATA_MODE') or ('api' if os.environ.get('CCTV_API_URL') else 'saved')
-if st.session_state.pop('control_refresh_pending', False):
-    api_snapshot.clear()
-with st.container(key='control_shell', gap='small'):
-    with st.container(horizontal=True, vertical_alignment='center', key='control_header'):
-        st.title('CCTV 사고 관제', width='stretch')
-        if st.session_state.get('cctv_navigation_enabled') and st.button(
-                '새 영상 분석', icon=':material/upload_file:', key='control_new_analysis', type='primary'):
-            st.switch_page('analysis_app.py')
-        mode = st.selectbox('조회 자료', ['saved', 'api'], index=1 if default_mode=='api' else 0,
-                            format_func=lambda m: '저장 확인 기록' if m=='saved' else '운영 API 저장 결과',
-                            key='control_source', label_visibility='collapsed', width=180, persist_state='session')
-        if st.button('조회 새로고침', icon=':material/refresh:', key='control_refresh'):
-            api_snapshot.clear()
-            original_bytes.clear()
-            evidence_bytes.clear()
-    try:
-        snapshot = api_snapshot(os.environ.get('CCTV_API_URL', '')) if mode == 'api' else load_saved_snapshot()
-    except Exception as exc:
-        st.error('선택한 자료 조회 실패: ' + str(exc))
-        st.info('다른 자료로 자동 전환하지 않습니다. 저장 확인 기록과 현재 운영 결과는 조회 범위가 다릅니다.')
-        st.stop()
-    metadata = snapshot.get('metadata') or {}
-    scope = 'saved' if mode == 'saved' else 'api:' + os.environ.get('CCTV_API_URL', '')
-    with st.container(key='control_scope', gap=None):
-        st.caption(('저장 스냅샷 · 자동 갱신 없음' if mode == 'saved' else '운영 저장 결과 · GET 조회/30초 캐시 · 버튼으로 갱신')
-                   + ' · 조회 기록: ' + time_text(metadata.get('captured_at') or metadata.get('recorded_at_utc'))
-                   + ' · 집계 범위: ' + str(metadata.get('scope') or '선택한 자료의 고유 작업 전체'))
-    alert_banner(snapshot, scope)
-    selected = st.session_state.control_selected_job
-    job = next((j for j in snapshot['jobs'] if j['worker_job_id'] == selected), None)
-    if job is not None:
-        with st.container(key='control_detail_shell'):
-            rail, body = st.columns([1, 5], gap='small')
-            with rail:
-                monitor(snapshot, mode, scope, selected)
-            with body:
-                detail(job, mode)
-    else:
-        if selected:
-            st.warning('선택한 작업이 현재 조회 범위에 없습니다.')
-        with st.container(key='control_gallery', gap='small'):
-            gallery(snapshot, mode, scope)
+def control_view():
+    default_mode = os.environ.get('CCTV_UI_DATA_MODE') or ('api' if os.environ.get('CCTV_API_URL') else 'saved')
+    if st.session_state.pop('control_refresh_pending', False):
+        api_snapshot.clear()
+    with st.container(key='control_shell', gap='small'):
+        with st.container(horizontal=True, vertical_alignment='center', key='control_header'):
+            st.title('CCTV 사고 관제', width='stretch')
+            if not READ_ONLY and st.session_state.get('cctv_navigation_enabled') and st.button(
+                    '새 영상 분석', icon=':material/upload_file:', key='control_new_analysis', type='primary'):
+                st.switch_page('analysis_app.py')
+            if READ_ONLY or DEMO_MODE:
+                mode = 'api'
+                st.badge('실제 분석 시연' if DEMO_MODE else '조회 전용 공유', icon=':material/visibility:', color='blue')
+            else:
+                mode = st.selectbox('조회 자료', ['saved', 'api'], index=1 if default_mode=='api' else 0,
+                                    format_func=lambda m: '저장 확인 기록' if m=='saved' else '운영 API 저장 결과',
+                                    key='control_source', label_visibility='collapsed', width=180, persist_state='session')
+            if st.button('조회 새로고침', icon=':material/refresh:', key='control_refresh'):
+                api_snapshot.clear()
+                invalidate_snapshot()
+                original_bytes.clear()
+                evidence_bytes.clear()
+        try:
+            snapshot = (public_snapshot() if READ_ONLY or DEMO_MODE else
+                        api_snapshot(os.environ.get('CCTV_API_URL', ''))) if mode == 'api' else load_saved_snapshot()
+        except Exception as exc:
+            st.error('선택한 자료 조회 실패: ' + str(exc))
+            st.info('다른 자료로 자동 전환하지 않습니다. 저장 확인 기록과 현재 운영 결과는 조회 범위가 다릅니다.')
+            st.stop()
+        metadata = snapshot.get('metadata') or {}
+        scope = 'saved' if mode == 'saved' else 'api:' + os.environ.get('CCTV_API_URL', '')
+        with st.container(key='control_scope', gap=None):
+            st.caption(('저장 스냅샷 · 자동 갱신 없음' if mode == 'saved' else '운영 저장 결과 · 진행·완료 알림 자동 확인 · 본문은 버튼으로 갱신' if DEMO_MODE else '운영 저장 결과 · GET 조회/30초 캐시 · 버튼으로 갱신')
+                       + ' · 조회 기록: ' + time_text(metadata.get('captured_at') or metadata.get('recorded_at_utc'))
+                       + ' · 집계 범위: ' + str(metadata.get('scope') or '선택한 자료의 고유 작업 전체'))
+        if DEMO_MODE and not st.session_state.get('demo_live_panel_enabled'):
+            def open_live_case(target):
+                choose_job(target['job_id'], target['event_id'], target['analysis_id'])
+                st.rerun()
+            demo.render_live_notifications(snapshot['jobs'], scope, open_live_case)
+        elif not READ_ONLY and not DEMO_MODE:
+            alert_banner(snapshot, scope)
+        selected = st.session_state.control_selected_job
+        job = next((j for j in snapshot['jobs'] if j['worker_job_id'] == selected), None)
+        if job is not None:
+            with st.container(key='control_detail_shell'):
+                rail, body = st.columns([1, 5], gap='small')
+                with rail:
+                    monitor(snapshot, mode, scope, selected)
+                with body:
+                    detail(job, mode, card_identities(snapshot['jobs'])[job['worker_job_id']])
+        else:
+            if selected:
+                st.warning('선택한 작업이 현재 조회 범위에 없습니다.')
+            with st.container(key='control_gallery', gap='small'):
+                gallery(snapshot, mode, scope)
 
-if st.session_state.pop('control_scroll_to_top', False):
-    # Static presentation-only script: no stored/user text enters JavaScript.
-    # Native reruns retain the old page offset after an off-screen card click.
-    navigation = int(st.session_state.control_navigation)
-    st.html('''<script>/* navigation NAVIGATION */ requestAnimationFrame(() => {
-        document.querySelector('[data-testid="stMain"]')?.scrollTo({top: 0, behavior: 'instant'});
-    });</script>'''.replace('NAVIGATION', str(navigation)), unsafe_allow_javascript=True)
+    if st.session_state.pop('control_scroll_to_top', False):
+        # Static presentation-only script: no stored/user text enters JavaScript.
+        # Native reruns retain the old page offset after an off-screen card click.
+        navigation = int(st.session_state.control_navigation)
+        st.html('''<script>/* navigation NAVIGATION */ requestAnimationFrame(() => {
+            document.querySelector('[data-testid="stMain"]')?.scrollTo({top: 0, behavior: 'instant'});
+        });</script>'''.replace('NAVIGATION', str(navigation)), unsafe_allow_javascript=True)
+
+
+if not DEMO_MODE:
+    control_view = st.fragment(control_view)
+control_view()

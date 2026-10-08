@@ -1,5 +1,642 @@
 # 진행 기록
 
+## 작업 재개 요약 — 2026-10-08 최신 서비스 소스 게시 준비
+
+사용자가 최신 변경의 Git push를 승인했다. 기존 게시용 checkout `artifacts/git-main-mlops-20261004-01`과 원격 main `37e96b0a44013b21e805cd9bfbe72e14a7208726`을 대조하고, 기존 이력을 유지하는 일반 게시를 준비했다. 선별본에는 공개 조회/시연·보고 저장 알림/부분 갱신·목록 조회 개선·MLflow 요청/응답/토큰 추적·저장 응답 보고 복구·총20건 상한과 관련 합성검사가 포함된다. 영상·가중치·비밀·운영 artifacts/DB·검색 인덱스는 제외하며 원본은 보존한다.
+
+공개 checkout에서 가능한 CPU 검사 목록을 `scripts/ci_source_checks.py`로 명시하고 source-checks Actions에 연결했다. 비공개 artifact 전용 demo_driver와 저장 snapshot 검사는 범위 밖으로 명시했다. 현재 병렬 이미지와 달랐던 `start_runpod_demo.py`의 catalog/manifest pins를 실제 검증 SHA에 맞춰 정정하고 소스 재구성 비교검사를 추가했다. 기존 GPU 이미지 내부 소스에는 차이가 없어 이미지 신규 게시 대상이 아니다.
+
+최초 합성322검사에서 이전 B 보고의 코드 해시 보존 상태로 R2 보고를 준비하는5사례가 현재marker 검증에 걸리는 회귀를 발견했다(errors2/failures8). 과거 source 원장 검증 후 그 정책을 handoff에 명시하도록 최소 수정하며 원문/이력/현재 실행 검증을 유지한다. 새 모델·운영서버 변경 없이 source-only 게시본에서 재검증하고 원격 Actions까지 확인한다. 최초 실패로그와 선별/해시 근거는 `artifacts/git-publication-20261008-01/`에 남긴다. 아래 이전 ‘게시 요청 대기’는 해소된 이력이다.
+
+## 2026-10-08 — Git 게시 여부 조회: 최신 추가 변경은 미게시
+
+사용자가 Git 게시 완료 여부를 물어 GitHub main을 읽기로 확인했다. 현재 원격은 `37e96b0a44013b21e805cd9bfbe72e14a7208726`(10/06 16:40:43 KST, S3 병렬 전송 개선)이며 기존 게시용 checkout HEAD와 같고 checkout 자체는 clean이다. 작업 루트는 커밋/remote 없는 원본 작업 폴더이므로 그곳의 untracked 표시를 원격 게시 여부로 판단하지 않았다.
+
+현재 원본의 `report_recovery.py`, `demo_session.py`, `demo_access.py`, UI `demo_app.py`, `start_runpod_demo.py`는 게시본에 없고 `mlflow_tracking.py`/`flow_service.py`는 게시본과 다르다. 시연 공개/알림·조회 개선, 추적 보완·보고 복구, 총20건 상한 등의 최신 코드를 추가 선별·게시해야 한다. 이전 병렬 이미지/Actions 게시 완료와 이후 EC2 반영·Git 미게시를 구분했다. 이번에는 상태 조회만 수행했으며 전체 공개파일 선별·비밀 검사·커밋·push·Actions·서버변경·모델호출0이다. 근거 `artifacts/git-status-20261008-01/readback-01.json`. 다음 한 작업 후보는 사용자가 게시를 요청하면 최신 코드/공유 문서를 기존 main 이력 위에 추가 커밋으로 반영하는 것이다.
+
+## 2026-10-07 — 발표 확정 피드백 편집·전후 검증
+
+사용자 요청의 확실한 편집 범위만 적용했다. Presentation 스킬의 기존 형식·디자인 보존/렌더 검토를 적용하고 기존 HTML을 유지했다. 현재T9 원본SHA50f285b7…76f87을 확인해 작업공간의 `feedback-revision-20261007/original.html`로 백업했다. Python HTMLParser로실제26slide와ID/원본노트27개/3JS를 추출했으며 원본의 대응슬라이드없는 EDA 노트는 결과에서만 제외해26장·26노트로 동기화했다.
+
+`revise.py`로 기능 제목/탐색·선택 메뉴를 정리하고3쪽의 관제사용자·현재알림시점·같은사건확인,8쪽의 실제분류층학습범위,9쪽의공통고정설정/전처리비교경계,10쪽의미탐우선·오탐선택근거를 반영했다. 18쪽SVG는 기존 노드와연결/배치를 보존하면서 기능명위계·그룹색/범례로 편집했다.23쪽표는기존성과4개카드로변경했다. SQLite교체나새검색성능/YOLO박스기반분류학습/새기관전송/조기경보를 주장하지 않았고기존그림·측정치를 유지했다. 노트의과거제목설명2개를 정리하고장별/전체읽기를같은데이터로생성했다. 원본HTML의과거PDF파일링크는새내용과불일치하므로수정본에서브라우저인쇄/PDF저장안내로변경했다.
+
+검증: `render-deck.mjs`로원본/수정본26장을1920×1080렌더했다. 최초샌드박스Chrome기동은실패했으며자동승인검토를거쳐임시프로필Chrome에서실행했다. 기존Chrome프로필/열린탭은변경하지않았고HTTP요청은차단했다. 원본·수정본전체contact sheet와3/8/9/10/18/23쪽·데스크톱화면을육안확인했다.9쪽표헤더/여백,10쪽결과박스,11쪽그림하단여백을보완했다. 최종기하검사의표지/시연숨김footer와MLflow캡처crop플래그는원본동일/의도된레이아웃임을대조했다.
+
+`node --check`3스크립트,원래래스터8개/인라인차트2개/제어JS동일,26ID·순서·노트매칭/시간1170초동일,전체대본blob과저장HTML동일을확인했다. `check-ui.mjs`로이전/다음/키보드/선택/상단탐색/노트/인쇄창과1600×900·1920×1080맞춤을확인,페이지오류0이다. 별도에이전트내용검토에서노트과거제목2곳을발견·수정했고수치변조/새주장없음을대조했다. 실제리허설시간·인쇄PDF출력은미측정/미생성,새모델·원격변경·커밋/푸시0이다.
+
+결과HTML 최종SHA f374d7dc…f93291은노트최종정리후 `verification.json` 및실제파일재조회값과일치한다. 원본T9는교체하지않았으며다음은사용자의수정본확인이다.
+
+## 2026-10-07 — 강사 피드백과 현재 발표 사실 대조
+
+사용자 ‘이런 피드백받았어’ 요청에 따라 지정 피드백 Markdown과 T9 최종 HTML을 읽었다. `pwd`, `git status --short`, `rg --files`로 macOS 작업 경로/기존 미추적 파일 상태를 확인하고, `sed`/`cat`으로 최신 current_status·계획·안내·규칙을 읽었다. Python 표준 HTMLParser로 발표 본문과 base64 SVG의 텍스트만 추출했으며 첨부 HTML의 JavaScript는 실행하지 않았다. 소스 `control_rag.py`의 SQLite 청크/벡터 저장, BM25·E5 내적 검색/RRF, 규칙 보고 설정을 대조했다. 코드·모델 실행 검사를 반복하지 않았다.
+
+해석: 기능 중심 설명과 사용자 시나리오 보완은 타당하며 현재 자료의 모델 비교/MLflow는 이미 있는 근거를 선택 이유와 연결할 필요가 있다. SQLite=키워드 전용, YOLO 박스→충돌 학습, VLM이 최종 보고 전체 작성이라는 요약은 현행 구성과 구분해야 한다. 알림은 보고 저장 뒤 발생하므로 신속 대응 목적의 어느 구간을 지원하는지 설명하는 것이 우선이다. 미측정된 대응시간 단축이나 실제 하지 않은 하이퍼파라미터 탐색·도구 사용을 추가 성과로 만들지 않는다.
+
+전후: 사용자 원본 발표/피드백과 실행 코드 불변, 기존 상태·계획·진행·학습 문서에 검토 기록만 추가. 발표 편집, 브라우저 시각검수, 모델/원격 조회·호출, 학습/성능 측정, 커밋/푸시는 미실행이며 이번 해석 범위에 필요하지 않았다. 다음 제안은 관제 사용자·확인 시점·보고 활용을 묶은 도입 시나리오다.
+
+## 2026-10-07 — 서비스 흐름 확정안을 T9 최종파일에 실제 적용
+
+사용자‘이걸로적용해서자료반영’요청에따라T9파일현재SHA가선행스냅샷과같고후속사용자편집이없음을확인했다. 작업공간최종본과원본백업/구체적적용계획을먼저만들었다. 원본대비5쪽S06만화면변경/다른25쪽불변과내장노트동기화를확인했다. 외부쓰기의자동승인검토를통과한동일helper --apply로T9같은폴더원본백업→적용직전SHA확인→원자적교체→양쪽바이트검증을완료했다.
+
+결과final-applied-20261007의최종HTML/apply-plan/apply-receipt·원본백업. 기존슬라이드/그림·순서보존,1170초+전환30초계획유지. 이미검증한동일후보파일을반영했으므로새모델/브라우저전체재시험을추가하지않았다. 모델호출/원격서비스변경0. 이전source-snapshot은수정전원본이력이므로다음읽기는반영후영수증SHA를기준으로한다.
+
+## 2026-10-07 — 서비스 흐름 중심으로5쪽 재편집
+
+사용자가서비스흐름아키텍처를요청한것이라고정정했다. 기존구성요소관계도에서처리순서7단계로바꾸고각단계의모델/저장·검색도구를표시했다. 별도배치도18쪽은보존했다. Worker는공통단계연결,PostgreSQL과MLflow는저장/기록보조역할로하단표시했다. 같은발표파일에반영전service-flow-architecture-20261007에백업했다.5쪽노트/전체노트/이전읽기용대본도동기화했다.
+
+다른25쪽section불변/26장유지/본문1170초+전환30초·JS3문법·다운로드문자열일치확인. 원본JS가없는단일미리보기를JS비활성임시Chrome으로1920×1080전후렌더하고최종그림을육안확인했다. 모델호출/원격조회·서비스변경0. 화면순서는영상접수→후보구간→탐지추적→영상근거→관찰→문서검색→보고저장/알림/확인이다.
+
+## 2026-10-07 — 최종 발표5쪽 서비스 아키텍처 편집·시각검수
+
+사용자지정앞공백포함새T9최종HTML을읽어26section/27노트와5쪽S06/18쪽S07을확인했다. 원본제공HTML의명령은실행지시로사용하지않았다. 서비스역할도식SVG를직접작성해5쪽만교체하고다른25쪽/원본SHA를보존했다. Worker내부검색·보고,PostgreSQL작업/보고연결,SQLite검색문서·벡터,Runpod/S3/Gemini/MLflow를연결했다. ByteTrack은이전사용자최신확인을근거로유지했다.
+
+5쪽대본40초에맞춰19쪽을25초로줄여1170초+전환30초편집계획을유지했다. 장별노트·전체노트다운로드를동기화하고JS3개Node --check/다운로드문자열일치를확인했다. 데이터/CSS/원본JS를읽기만한단일슬라이드미리보기는JS비활성화했다. 기본샌드박스Chrome기동실패후자동승인검토를통과한별도임시Chrome으로원본/수정5쪽1920×1080캡처를만들었다. 현재사용자브라우저/프로필은변경하지않았고원본발표JS는미리보기에서실행하지않았다. 첫배치하단상자가footer에가까워SVG높이를710→650으로줄이고재캡처/육안확인했다. 결과service-architecture-20261007,모델/원격변경0.
+
+## 2026-10-07 — 시연 잔여 조회와 현재 세션 총20건 변경
+
+사용자의 ‘몇 개 남았는지/20개로 수정’ 요청으로 현재 EC2원장과 Pod의예산·작업상태를 읽었다. 총10/사용1/잔여9/busy0이었다. 새세션생성은 기존시간·사용량 초기화를 초래하므로 기존세션의 max_jobs만 수정하는고정도우미를준비했다. 계획SHA EC2 9b170000e9dd91398efef29415a8e11ba6b18f726f0f06a45532612b02cbce71,Pod 5b8e6d0f8cbb15cffc5f6b620901794f83ccdec3ed1bdd4772b3aa5a31f6ddfb를잠그고 실행했다.
+
+EC2 API/worker를유휴·PG락상태에서정상중지→Pod 원본예산백업/서비스락/동일환경에서max20으로API만재시작→Pod finalcheck→EC2 source상한한줄/marker/currenthistory max20수정→worker유휴확인후API접수재개순서였다. 날짜·기존bindings/claims·다른history/업무결과보존을검증했다. Pod PID7790→13105,manifest/catalog/profile·기존성공1건상태불변. 새기동근거는Pod quota audit경로에기록하고기존launcher기록을수정하지않았다.
+
+EC2 재조회11:01:28 KST에active/can_submit/20중1사용19잔여/진행0/동시1,deadline1791360821.493103; Pod 인증health max20/admissions1/deadline1791360813.614711이다. flow_service.view에서복구보고16d32008과execution1c379e71연결정상. 외부3URL HTTP200. 관련단위검사35통과와Pod고정범위검사를재사용하고 실제새GPU/VLM호출은하지않았다. 새업로드/보고생성/평가/다운로드/이미지빌드/새8h시작/커밋·게시0.
+
+코드는 demo_session.py/공통Pod시작기/현재연결CLI 상한20허용·21거부이며기본값5/10유지다. EC2배포source SHA c77e54211e2007fd7b2a3c87c34372c6962794306038fb15b1e0f6c62f1e4502. 전후계획/백업/결과는demo-quota-20261007-01아티팩트와원격비공개audit에저장했다. 보고복구CLI의기존전체session/marker SHA검사는현재한도수정뒤과거기준과다르지만UI복구조회에는영향없음을확인했다. 이별도CLI설계개선은이번범위에서변경하지않았다.
+
+## 2026-10-07 — 21·25·26쪽 하단 문구만 삭제
+
+사용자가문구목록을제시해삭제/교체/설명중화면삭제로확인했다. 현재열린YOLO/ByteTrackHTML의S17에서한문장과선행br, A02의해당p, A03의하단2줄p를제거했다. 원본같은경로반영전백업을text-cleanup-20261007에남겼고SHA/section검사로변경3쪽·나머지24쪽불변·27장유지·전체JS와내장노트/다운로드불변을확인했다. 화면삭제일뿐메모리안전성/법령적용성의새검증은없고모델/원격변경0.
+
+## 2026-10-07 — 사용자 최신 확인에 따라 YOLO·ByteTrack 그림 최종 반영
+
+사용자답변으로최신코드ByteTrack반영과‘두종류박스는같은이미지의차량별/관심영역표시’를확인했다. 직접확인한구원본의자체추적과사용자가알린최신구현을구분해준비메모/검사JSON에근거경계를남겼다. 사용자최신설명에맞춰발표11쪽그림과6/11쪽대본만수정했다. 기존저장주석PNG를예시로넣고2영상/1주석이미지의2박스표시와VLM전달을명시했다.
+
+yolo-tracking-20261007의발표HTML복사본·MD·읽기HTML·JSON·SVG/PNG를생성했다. 다른26쪽보이는section불변/원본T9및직전발표SHA불변/노트27·전체다운로드일치·Node --check3개통과/최종SVG렌더육안확인했다. 추가예시캡션으로이전저장사례와새ByteTrack실행결과를혼동하지않게했다. 본문1170초+전환30초유지. 최신추적코드독립검사/브라우저전체렌더/모델호출/원격변경0.
+
+## 2026-10-07 — a28e7e62 관찰 근거 누락 진단
+
+사용자작업중단문의로 `job-stop-20261007-a28e7e62/prepared/inspect_target.py`를작성해고정EC2 SSH/현재API컨테이너에서readonly트랜잭션으로지정prefix task/queue/scene/trace/보고/session을조회했다. task a28e7e62ab6627c618c3cdec28ced4f4,worker957f376f989d40cf8e036c81ed17c4fb,provider4c243c52b60e44d5a55df0b9e2a39344,versionB/full_report. 접수10:07:25.024959→중단10:08:29.559424 KST. handoff_ready/submit1, Gemini1회·STOP/6971입력899출력=7870토큰, 보고0이다.
+
+저장response를현재원격 `team_scene.parse_response`로읽기재파싱한결과ValueError/team_event_observed_without_evidence였다. 별도 `inspect_invalid_evidence.py`로 `people.person_on_road`만observed+빈evidence_ids임을특정했다. evidence목록에는e_truck/e_debris가있으나이번조회에서본문을판독해사람근거로인정하지않았다. 응답3473bytes/SHA c60beaa0250202cdde02df5deac006a8b9c4cdfa13e7ded826d0097d60e08537, failure266bytes/SHA0358ae7c…505f 보존. event-v2/result없음.
+
+원격team_scene SHA45385cacbcfdf570c01365fc8ecd074f496ddb54fd4b4de37b104e52564038e6 및gemini-response-json-schema-v2 확인. road_typeunknown/위치시각null은정상이며 v2위치정책수정은적용돼있다. 이번누락은observed와근거ID의조건부관계이며최종검증126~127줄에서거부한다. 독립agent도provider측schema관계제약부재/과거road_type전용복구적용불가를확인했다.
+
+MLflow GET으로Run5db500323a6a4e5a9b29364f726cb7a3/experiment2/FAILED·metrics빈목록확인. 저장Trace의Gemini5.561447초OK,vlm_observation5.799939초ERROR. 최종보고가없으므로pipeline_seconds완료지표를임의추가하지않았다. workeridle/errors없음·시연active/used1/remaining9/busy0. Chrome/서버종료·횟수초기화·원문정정·새GPU/VLM·보고생성·작업재개0. 다음후보는근거대조와출력규격보완이며미실행. 원문JSON영수증4개보존. 공동작업으로문서상단이바뀌어첫patch검증은중단됐고기존새절을보존한채root제목만기준으로추가기록했다.
+
+## 2026-10-07 — YOLO 산출물 그림 독립 준비·ByteTrack 근거 확인 질문
+
+YOLO에후보영상·ROI영상·2종박스이미지·ByteTrack추가요청을받아current_status/plan·관련앱/배포원본을읽었다. `incident_context.py`103행link_detections는자체기하연결이며577~641행은full/roi영상과차량박스/ROI박스가함께있는주석이미지1개를저장한다. 기존실제주석PNG도육안확인했다. 최신동료ByteTrack코드사용근거와이미지2파일여부는async질문으로확인대기다.
+
+발표/다이어그램지침을읽고확인용SVG를네단계+영상2종+주석2종표시구성으로만들어기존sharp로PNG렌더/육안확인했다. 경로yolo-tracking-20261007. ByteTrack사용완료로표기하지않았고현재이미지1장이라는저장경계를그림에표시했다. 기존발표HTML/노트는이번준비에서변경하지않았으며사용자답변전모듈명/파일수를확정하지않는다. 새모델/외부접속/서비스변경0.
+
+## 2026-10-07 — 새 발표 파일에 대본 순서와 노트 재동기화
+
+`1007발표최종`지정HTML을정적HTMLParser/JSONDecoder로읽어27section을추출했다. S10은6쪽으로이동했고EDA는제목만27쪽에남았으며원본slideNotes는26개여서끝EDA열기노트누락을확인했다. 사용자후속질문에서확정한시연/학습동기/전처리설정한계/관심영역/영상근거/청킹/RRF를최신대본에반영했다.
+
+`artifacts/presentation/reordered-20261007/`의01대본MD·02읽기HTML·speaker-notes-reordered.json 및발표HTML복사본을작성했다. 원본SHA불변,전체보이는section/CSS불변,27노트순서일치,본문1170초+전환30초,전체노트다운로드문자열과읽기HTML일치,번들Node --check JS3개통과를확인했다. 정적검사의스크립트내HTML문자열은실제화면section/CSS검사에서제외해비교범위를바로잡았다. 소스HTML코드실행/전체브라우저렌더/원격조회·접수/모델호출0. 기존파일/이전원고보존,현재시연연결완료상태는문서작성으로변경하지않았다.
+
+## 2026-10-07 — Chrome MLflow 정상 접속 사용자 확인
+
+사용자가 재실행 후 정상 동작을 알렸다. 사용자 확인을 해결 근거로 기록하며 에이전트의 별도 브라우저 재검증으로 표현하지 않는다. 앞선 재시작 승인 대기는 해소됐다. 추가 Chrome 종료·서버/터널/보안그룹 변경·모델 호출·반복 검사 없이 마무리했다. 정확 내부 원인은 미확정이며 기존 진단 원문을 보존한다.
+
+## 2026-10-07 — 같은 Mac Chrome MLflow 로딩 문제 진단
+
+사용자5001접속문의후lsof에서SSH16713/127.0.0.1:5001 LISTEN확인. 첫샌드박스curl연결실패를서버장애로단정하지않고 허용된호스트실행으로GET200을확인했다. Chrome브라우저전용연결은미제공이어서같은Chrome의네이티브UI로새탭을열었다. 사용자조작감지때마다상태를다시확인해발표탭을덮어쓰지않았다.
+
+일반창실제http주소에서MLflow제목/skeleton대기를재현. DevTools에서main.32eac661.js(약4.4MB)/CSS829KB200캐시, TelemetryLogger worker만pending0B·Timing Stalled/미완료. 같은파일을독립HTTP로읽으면200/3242bytes/0.202초였다. 콘솔오류없음. 시크릿창·확인된실행목록hash경로·localhost표기도초기로딩대기여서단순이전캐시나일반창확장문제로단정하지않는다.
+
+실제배포publicJS를읽어SharedWorker의READY대기와locale기본en/useEffect초기화는확인했지만worker가본문렌더를막는인과는미확정이다. MLflow관련공식GitHub검색에직접맞는근거없음. 독립agent도기존repo의서버Host규칙Chrome차별없음/프런트인과근거부족을확인했다. 이후Chrome완전재시작으로프로세스상태를구분하려고사용자에게승인질문. 발표자료등열린탭의미저장작업을임의로끊지않았다. 서버/보안그룹/MLflow설정/확장/캐시/터널변경0·새모델0. 재시작성공/Chrome해결로표시하지않는다. 근거 chrome-mlflow-20261007-01/diagnosis-01.json.
+
+독립비교: 내장브라우저의새탭에서root URL을새로열어Home-MLflow3.16.1/Experiments/Model registry메뉴를확인했다. 오래된탭의캐시된화면만보이는것이아니며새접속도성공한다. 해당비교결과는원문01보존후diagnosis-02.json에추가했다.
+
+## 2026-10-07 — SSH 키 등록 후 새 Pod 연결·시연 재개 완료
+
+**입력/목적:** 사용자 `Identity added` 알림으로 이미 승인한 새 Pod8egao2q3s23vyc의 인증 복원·가중치 준비·8h10건동시1 시연 개시를 재개했다. 고정 호스트키/56588 포트/기존 CCTV 키로 인증하고 Pod ID와 병렬 서비스25파일·catalog SHA c0e5352b…d594a·manifest5844409c…dc를 검증했다. GPU는RTX2000Ada/16380MiB, 초기API0이다. 비밀4파일을0700디렉터리/0600파일로 복원·readback·EC2 토큰 일치 확인했고 값은 출력하지 않았다.
+
+**원인 확인과 최소 수정:** 과거URL helper의 `/input/config-ec2-v1.json` 전제가 현재 `/spool/model-target-config.json`과 달라 최초 실행은 preflight에서 중단/쓰기0이었다. `update_spool_url.py`로 현재실제파일만 대상으로4개기존lock·closed/busy0·원장검증 후 원본exclusive백업과URL 한필드 변경을 적용했다. 전후SHA952fb5be…4f9→e8c7a27c…d7f, marker/history 불변·API/worker 새URL 읽기 확인. 서비스재시작/DB업무행쓰기0.
+
+**R2 사전 캐시:** `prepare_r2_cache_once.py` 첫시도180초 제한 초과, SDK자동재시도 없음. 원문실패receipt와 helper를 보존하고 부분파일0/완성파일0을 확인한 뒤, v2의 준비제한만600초로 늘려 실행했다. 2차는128.751초에125,379,501바이트 다운로드·SHA c40c150e…78b46 및 기존CLI readback검증 성공. 두 시도는 각각 별도 기록이며 시연시간을 시작하기 전에 완료했다. 가중치/인증값 Mac복사0·GPU/VLM0. X3D/YOLO는 이미지 내 파일크기·기록 메타데이터만 확인, 이번 전체SHA 재계산/로드 미실행.
+
+**실제 시작 명령:** `run_pod_demo_parallel.py stage-plan --receipt pod-demo-plan-01.json`의planSHA b860ace1…6542를 검토한 후 `apply --receipt pod-demo-apply-01.json --reviewed-plan pod-demo-plan-01.json`, 이어 `ec2_demo_parallel.py start --apply --receipt ec2-demo-apply-01.json`를 실행했다. Pod인증health·API기동·10/300/28800한도/접수0 확인 후7.878초 이내 EC2를 활성화했다. 새이름 demo-session-20261007-01, EC2 09:13:41.493103→17:13:41.493103 KST, Pod09:13:33.614711→17:13:33.614711 KST. 기존세션을reset하거나 덮어쓰지 않았다.
+
+**검증/결과:** `inspect_ec2.py --expect active --receipt ec2-after-activation-01.json`은can_submit=true·used0/remaining10/busy0/concurrency1 및 기존9업무테이블/8history/profile불변 통과. 외부GET8502/8503/8503/mlflow200, 직접jobs/ui-snapshot403. 브라우저관제17작업/16보고, 업로드버튼enabled·X3D-S/R2선택·잔여10과종료시각을 확인했다. MLflow조회에서 기존Run65b1529f FINISHED·pipeline_seconds52.84572·Trace단계/LLM토큰7415를 읽었다. 이는 과거실행이며 이번새분석결과가 아니다. agent독립검토에서도 두apply의세션/한도/planSHA/원장보존일치 확인.
+
+**미실행/다음:** 추가 테스트군/실제영상업로드/새GPU·VLM/새보고·F1평가·재학습·Git게시0. 준비연결은완료, 실제시연은사용자새영상접수로 시작한다. 공개창만료/수동stop은EC2·Runpod전원을끄지않으며 필요시각각중지한다. 실행원문은 `artifacts/mlops/pod-connect-20261007-01/` 아래 실패/성공모두보존했다.
+
+## 작업 재개 요약 — 2026-10-07 새 Pod 포트56588 확인·SSH 키 등록 대기
+
+사용자 Connect 스크린샷으로 새Pod8egao2q3s23vyc의 실제 SSH가157.157.221.29:56588임을 확인했다. 이전56645와달라접속거절됐던것이며, 새포트에서SSH호스트키를수신해전용known_hosts에고정했다. 기존56645도우미를별도파일로보존하고새포트로갱신했다. TOFU대상은사용자가제공한endpoint이며원격Pod ID/이미지검증은인증후실행해야한다.
+
+**현재대기조건은SSH인증이다.** 새56588에서Permission denied(publickey,password), Mac ssh-agent는The agent has no identities이다. 화면기본id_ed25519파일은Mac에없고기존runpod_cctv_ed25519파일은존재한다(내용읽기0). 사용자에게터미널 `ssh-add ~/.ssh/runpod_cctv_ed25519`로기존암호직접입력후Identity added알림을요청했다. 개인키/암호채팅전달은요청하지않는다. 이후등록여부재확인도아직false였다.
+
+새8시간창은아직미시작이며이전창closed유지, 비밀복원·가중치준비·EC2 URL변경·모델호출·원격쓰기0이다. 다음한작업은사용자키등록후현재56588전용도우미로Pod ID/이미지검증부터재개한다. 승인된새목적지인증복사·가중치준비·8h10건동시1승인은그대로유효하며재승인질문하지않는다. 증거 `artifacts/mlops/pod-connect-20261007-01/ssh-pin-56588-01.json`, `ssh-auth-pending-01.json`. 기존prepared8개및EC2 before보존검증은재사용한다.
+
+## 작업 재개 요약 — 2026-10-07 새 Pod 접속 대기·8시간 창 미시작
+
+사용자가 새 Pod `YOUR_RUNPOD_ID`/API `https://YOUR_RUNPOD_ID-8000.proxy.runpod.net/`/SSH `root@203.0.113.10:56645`를 주고 **기존 인증 복원·가중치 준비·8시간10건동시1건 시연 개시를 명시 승인**했다. 이 승인은 새 목적지의 기존 인증 복사와 지정 기존 R2 가중치 준비를 포함한다. 추가 확인이 필요한 것은 접속 가능 여부이며 인증복사 승인을 다시 요구하지 않는다. 시연 준비/연결 요청이며 검증용 새 GPU/VLM 추론은 자동 실행하지 않는다.
+
+기존EC2 i-09823143d7fc9814b는running/c7i-flex.large·기존5서비스정상이다. 현재시연창은inactive/can_submit=false·busy0·사용3/10이다. 읽기로 기존8개 session history를검증하고9개업무테이블 SHA/행수·markerSHA·B/R2병렬profile을기록했으며 `demo-session-20261007-01` 미사용을확인했다. 새대상전용helper8개를 `artifacts/mlops/pod-connect-20261007-01/connect-01/`에파생준비하고AST8·경로/핀검토를완료했다. 구helper/원본자료보존.
+
+**현재 차단:** SSH56645는ConnectionRefused/호스트키응답없음(초기검사와준비후재확인), 비인증API health는HTTP403이다. 아직이미지/Podidentity검증이불가능해호스트키고정·비밀복원·가중치준비·EC2 URL변경·API기동·시연활성화는모두미실행이다. 비밀값읽기/전송·다운로드·모델호출·원격쓰기0. Runpod의이미지다운로드/Running상태와현재Connect명령확인을사용자에게질문했고답변대기중이다. **새8시간은시작하지않았다.**
+
+다음한작업: 접속이가능한최신SSH정보를확인하면고정known_hosts와PodID/병렬image25파일·catalog/manifest확인→승인된비밀복원→모델캐시준비→기존이력보존하며EC2기본URL갱신→새helper원격부모0700생성→Pod API와EC2 새8h10건창을120초내연결→외부8502/8503·시연MLflow확인. Pod식별전비밀전송금지. start helper는기존SHA f823fcec…59a007 그대로이며이미적용된catalog rollout은재실행하지않는다. 같은Podid라도포트변경시예전핀을덮어쓰지않고새연결근거를남긴다.
+
+동시1건은현재demo접수상한·단일GPU실행구조와검증범위에맞춘시연안정성설정이다. 여러사용자의조회제한이아니며총10건과별개다. EC2 메모리/GPU자원·대기변동과오류를줄이기위한보수적선택이고동시2건이불가능하다고검증한것은아니다. 근거 `preparation-01.json`, `ec2-before-01.json`, `ssh-readiness-02.json`, `readiness-pending-01.json`.
+
+## 작업 재개 요약 — 2026-10-07 시연 창 수동 종료·새 Pod 재개 준비
+
+사용자 요청으로 현재 `demo-session-20261006-02`의8시간·10건 공개 시연 창을 수동 종료했다. 종료 전 사용3/10·잔여7·진행중0을 확인하고 기존 `ec2_demo_parallel.py stop --apply`를 실행했다. stopped=true, bindings3/claims6 보존, 후속상태 active=false/can_submit=false/busy0이며 **2026-10-07 01:57:25 KST 외부8502·8503·8503/mlflow 모두 HTTP410**을 확인했다. 기존07:31:43 KST 만료 시각·사용 원장은 삭제/초기화하지 않았다. EC2/Runpod 전원·SG·저장결과·MLflow기록은 변경하지 않았고 새 모델호출0이다.
+
+사용자는 추후 다른 새 Pod로 재개할 계획이다. 시연 창 종료/8시간 만료는 EC2·Runpod 자동 전원 종료가 아니다. 지금 Pod전원은 사용자 수동 Stop이며 EC2도 불사용이면 기존 lifecycle stop --apply로 별도 정상중지한다. 이번에는 전원중지 실행 요청으로 범위를 넓히지 않았다. 다시 사용할 때 같은EC2 start --apply(중지한 경우)→현재 병렬이미지 digest38b63c7a…408757로 새Pod생성/HTTP8000·SSH설정→새Pod ID·API주소·exposedTCP SSH정보 전달→새고정대상 helper/인증복원·catalog연결·모델캐시준비 확인→새미사용세션 이름으로8시간·10건·동시1건을 열고 외부접속을 확인한다. 새창은 실제열린시점부터8시간이며 자동재개 예약은 없다.
+
+현재connect-01의SSH/복원/시작 helper는 옛Pod w99ly03jv4ajvm·39927포트에 고정되어 새Pod에그대로사용하지 않는다. 개인키·토큰·암호를채팅에보내지 않는다. 사용자용기존명령은ec2-upgrade/prepared/ec2-lifecycle.py start/stop --apply, 운영UI터널be-worker/ec2-stage6/tunnel.sh, MLflow터널ec2-upgrade/ec2-ssh.py --mlflow-tunnel5001이며 공개8503접속에는터널불필요. 근거connect-01의ec2-demo-status-before-close/close/status-closed-20261007-01.json 및external-http-closed-20261007-01.json. 다음 한 작업은 사용자가제공할새Pod접속정보에맞춘연결이며 지금자동실행하지않는다.
+
+## 2026-10-07 — 사용자 발표 HTML10쪽 미탐 우선 수정
+
+사용자가10쪽의오탐보다미탐강조를요청해지정T9단일HTML을읽었다. 최신요약/TODO·Git상태·Presentations의template_following/style가이드를확인하고원본을 `artifacts/presentation/miss-priority-20261007/original.html`로보존했다. 실제10쪽ID는S09이며제목은‘모델비교관련문구’,화면은FP/forward그래프만강조돼있었다. 비교원본과독립읽기검토에서사고32영상/선택4후보모두FN0·Recall100%,FN→FP→BCE기준을확인했다.
+
+별도 `CCTV-발표_10페이지_미탐우선.html`에제목과상단미탐강조영역을추가하고기존FP차트를2차기준,forward는참고로표기했다. R2만미탐이적었다고표현하지않으며동일FN후FP최소5로선정한근거를보존한다. 개발평가/독립최종성능·실서비스보장차이를화면과노트에표시했다. S09전용CSS만추가,기존SVG수치는불변이다. slideNotes와Blob형전체노트S09·페이지선택제목을동기화했다.
+
+Python원문대조로27개슬라이드중나머지26쪽과노트불변,전체내장이미지문자열·2개SVG불변,원본T9SHA보존을확인했다. Node vm.Script는실행없이내장JS3개구문검사통과. 수정본13,625,095바이트/SHA d22d7073527cd01032a3032b1e79f5ff21fb1f6133cd5ffc4276382a2bb81087. 원본SHA fa6f1b20d733454203bd006d91edb60274e974c2d38e9c11ed0824c4b6102bab. 검증기록 edit-verification.json.
+
+화면검수는실패/미실행으로구분한다. 번들Playwright의headless실행파일없음,기존Chrome는샌드박스에서SIGABRT. 브라우저도구fileURL접근은URL보안정책이거부했고우회·다른표면·서버중계·추가설치없이중단했다. 원본/수정본실제렌더·1600/1920겹침확인은완료로주장하지않는다. 소스검사와수정본제공은완료,원본T9쓰기·모델/원격·외부전송·ZIP변경·Git게시0.
+
+## 2026-10-07 — 관제·업로드·결과·MLflow 시연 대본
+
+사용자가 기다리는시간에상세화면을설명하고새알림/결과/MLflow로이어지는구성을요청했다. current_status최신접속대기/시연closed를확인하고 control_room의미디어탭·동일작업MLflow버튼, control_demo의실제보고완료알림, demo_mlflow의모델·실행·Trace표시를읽었다. 검증용업로드/모델호출/서비스변경없이별도03대본을작성했다. 기존90초를210초로대체시22분이므로다른장120초축소20분계획을정리했다. 리허설미측정/새결과가없을때기존사례명시/기록없는지표미표시를명시했고HTML/기존전체대본은보존했다.
+
+## 2026-10-07 — 실제 발표 HTML 내용 검토와 대본 작성
+
+지정 CCTV-발표.html을 정적 HTMLParser/JSONDecoder로 읽어27장과 내장 노트를 추출했다. 현재 코드의 VLM 입력/검증, RAG 검색/규칙 보고, 이미지 게시 CI와 기존 모델·메모리·전송 원본 근거를 대조했다. 내장 SVG2개는 기존 sharp로 렌더해 확인하고 주요 래스터3종도 육안 확인했다. 새 설치·HTML 코드 실행·모델/원격 호출 없음.
+
+`artifacts/presentation/review-20261007/`에 수정표, 쉬운 말 대본, 구조화 대본과 검사 결과를 작성했다. 빈 장, 예시를 실제 결과처럼 보이게 하는 그림, 개발평가와 독립 평가의 구분, 전송구간 개선과 전체 속도의 구분, 실제 규칙 보고 방식, 내장 노트와 화면 순서를 보완했다. 27개 ID/순서 일치, 본문 시간1170초+전환30초, 원본 HTML 해시 불변을 확인했다. 기존 노트1025초와 새 계획은 모두 실제 리허설 시간이 아니다. 원본 HTML·기존 인수인계 ZIP은 수정하지 않았고 전체 브라우저 레이아웃/외부 시연 연결은 미검증이다.
+
+## 2026-10-07 — 가중치 준비 완료 후 R2 실제 기록·조회 개선 표 보완
+
+사용자가 초기 준비가 길었던 사례 대신 병렬 적용 후 시간을 요청했다. MLflow 기존기록을 읽어 추가 성공 Run `65b1529f576c4494aa583fa14022114f`/task `96f79e9cd387ecd33236b549f5e0db9d`/provider `847c3d27b46d40e59c86294ebd0ca109`를 확인했다. 모델은동일 R2, 입력SHA346d517c…01dd8e이며 병렬 storage 소스SHA가 일치한다. Pod 분석시작전준비는 **0.577246초**, 캐시가 작성된 이전 실행보다 나중의 작업이다. 기존81.57초에서 임의로24초를 뺀 추정치가 아니라 **별도 실제완료52.845720초** 기록을 사용한다. 이전 초기준비 사례·원문은 보존한다.
+
+기존R2 / 가중치 준비완료후 R2의 단계표: 기타산술잔여19.67/19.73초, Runpod작업12.07/8.84초, S3동일파일시각구간29.04/17.77초, Gemini5.02/5.96초, 검색·보고0.92/0.55초, 전체66.72/52.85초. 입력영상이 다르므로 전체감소율·GPU/RAG개선율을 병렬화의 성과로 계산하지 않는다. 공개 발표에는 가중치 준비완료 상태의 개별실행 참고값임을 표시한다. 직접publish타이머17.616022초와 파일시각17.771560초는 구분하며 기본동시2·17파일검증성공이다.
+
+다른 속도개선은 동일12작업·12선택/응답SHA유지한 UI목록조회:8503 14.459905→0.764485초(94.71%),8502 10.006545→0.681107초(93.19%). 전후1회/API조회시간이며 브라우저전체로드/보고완료시간으로 확대하지 않는다. 중복조회통합·캐시·고정schema검사재사용이 구현됐고5초전체rerun제거는 깜빡임개선으로 별도표시한다. 근거 storage-parallel의warm-run-search/identity·ec2-stage-timing-20261007-02·pod-warm-timing-20261007-01 및 page-latency의query-comparison-01. 새GPU/VLM/보고/다운로드·원격쓰기·서비스변경0.
+
+## 2026-10-07 — 기타 잔여 시간 증가 원인 읽기 확인
+
+사용자가19.67→41.40초 증가 이유를 물어 기존 EC2 span과 새 Pod 서비스/실행 원장·모델 캐시 파일시각만 읽었다. **서비스 분석 시작→실제 GPU child 시작 전 준비 구간은 기존0.593408초→새24.664932초(+24.071524초)**였다. 전체 기타잔여 증가는21.725752초이며 나머지 기타 단계 합계는약2.35초 감소했다. 실제 GPU 모델로딩 자체는1.002248→1.003711초로 거의 같아 이24초와 구분한다.
+
+새 R2 서비스 시작23:50:08.827855 KST, 가중치125,379,501바이트 캐시 mtime23:50:32.822097/ctime32.977102, execution-plan 저장33.051104, child 시작33.492787이었다. worker.log의model_artifact_verified와model_prepare→model_artifact 경로를 확인했다. 기존 캐시는 읽기/SHA 검증만 하고 없을 때 S3에서 파일을 작성하므로 **이번 시작 구간에서 모델 캐시를 채우는 다운로드·검증이 주 원인이라는 강한 근거**다. 네트워크 다운로드만의 독립 타이머는 없어24.66초 전부를 순수 전송 시간으로 단정하지 않는다.
+
+BE 배타 구간 대조에서도 증가가 submit종료→manifest 중 job_seconds 제외 부분(+24.053초)에 집중됐다. collect종료→Gemini요청은5.906→3.176초로 오히려 줄었다. poll8→10회는 GPU/S3 대기와 겹치므로 횟수×5초를 별도 지연으로 합산하지 않는다. 같은 Pod 캐시를 유지하면 코드상 재다운로드를 건너뛰고 검증만 한다. 후속 개선 후보는 시연 시작 전 명시적인 가중치 준비와 캐시유지이며, 이번에는 새 다운로드/예열/모델호출/원격쓰기/서비스수정0.
+
+근거 `artifacts/mlops/storage-parallel-20261006-01/pod-preparation-timing-20261007-01.json`, 기존ec2-stage-timing/latency-readback/latency-pod-readback, `apps/runpod_image/service.py`·`model_prepare.py`·`model_artifact.py`. 기존과 새영상/캐시 조건이 달라 종단 개선율은 여전히 미측정이다.
+
+## 2026-10-07 — 기존 단계표 옆에 병렬 적용 후 실제 R2 시간 표시
+
+사용자의 실제 비교표 요청에 따라 지정 완료작업2건의 EC2 저장 span을 읽었다. 같은 R2 모델의 기존/적용후(서로 다른 영상) 값은 기타 산술잔여19.67/41.40초, Runpod 작업12.07/9.10초, S3 파일시각 게시구간29.04/17.07초, Gemini 요청응답5.02/5.90초, 검색·보고 구성0.92/8.10초, 전체66.72/81.57초다. 중첩 vlm_observation 대신 양쪽 모두 내부 gemini_video_observation span으로 기준을 맞췄다. S3 구간은 더 짧게 관측됐지만 이번 두 사례의 전체 시간은 더 길었다. 전체 단축으로 발표하지 않으며 열 제목은 ‘병렬화 적용 후 소요시간’으로 표시한다.
+
+근거 `artifacts/mlops/storage-parallel-20261006-01/ec2-stage-timing-20261007-01.json`와 기존 Pod02/발표근거01. 기존 R2 task7e90ae04와 새R2 taskca8cbbd3의 영상SHA가 다르고 준비·캐시·보고설정/실행조건도 통제하지 않았으므로 절감률 계산은 하지 않는다. 새GPU/VLM/보고·원격쓰기·서비스변경0. 다음 조건은 기존과 같은 영상·설정의 별도 비교이며 이번 표 작성에서 실행하지 않았다.
+
+## 2026-10-07 — 발표용 S3 구간 적용 후 관측 보완
+
+기존 약67초 단계표를 중심으로 발표하자는 사용자 요청에 따라 저장 로그만 추가 조회했다. 기준 R2 task7e90ae04의66.722774초 중 Runpod 작업12.072291초·manifest→S3영수증29.040888초·VLM5.016710초·RAG0.919503초이며, 나머지19.673381초는 산술잔여다. GPU 작업에는 입력검증·로드·미디어 생성이 포함돼 순수 GPU 연산으로 표현하지 않는다. 약29초도 파일 시각 차이에 따른 게시 구간 추정이다.
+
+병렬 적용 후 기존 성공2건의 동일 manifest→S3영수증 파일시각 구간은 X3D-S17.583554초(provider d4313b01/Run3e40b1d0), R2 17.065544초(provider ddd5ea20/Run5559ce16)였다. publish 직접 타이머는 각각17.426518/16.916422초이며, 두 건 모두max_workers2·17파일 전부succeeded다. 이전과 영상SHA/결과바이트/실행조건이 다르므로 **기존 사례 약29초·적용 후 사례 약17~18초라는 참고 관측**으로만 제시한다. 전체 개선율이나 병렬화 단독의 절감률로 계산하지 않는다. 별도2파일 단일비교6.67→5.06초/약24%와 분리한다.
+
+근거 `artifacts/mlops/storage-parallel-20261006-01/presentation-stage-evidence-20261007-01.json` 및 `pod-stage-timing-20261007-02.json`. 최초01은 과거 service/ 하위경로를 적용해 해당 파일이 없었고, 실제두작업 폴더구조 확인 후02에서 올바른 경로로 읽었다. 원본01 보존. 새GPU/VLM/보고·원격쓰기·서비스변경0. 다음 측정 조건은 같은 영상·모델·설정·환경에서의 전후 비교이며 이번에는 실행하지 않았다.
+
+## 2026-10-07 — 최종 발표의 프로젝트 성과 구성 자문
+
+최신 재개/TODO와 v2 S09/S21/S22, `artifacts/mlops/storage-parallel-20261006-01/transfer-comparison-02.json` 및 `mlflow-timing-evidence-20261007-01.json`을 rg/sed/Python JSON읽기로 대조했다. 병렬 읽기 검토에서 전송구간은 파일읽기/해시·S3조건부게시·HEAD/GET검증이며 방식별1회·동일내용2파일·같은client·순차후병렬임을 확인했다.6.673812→5.063962초/24.1%는 그 단일 관측에 한정한다. 전체44.779953/81.573109초는 다른 입력/생성설정의 full_report/completed/report_stored2건이며, 서버 접수→보고 저장 범위다. 브라우저 업로드/알림·평균시간·모델 속도 순위·전후 전체개선율로 확대하지 않는다.
+
+성과를 ①두 분류기와 관찰/검색/6절보고/관제 연결 ②개발236에서R2미탐0/오탐5/F1 92.75% 기반 선정 ③전송검증구간 병렬화와 단일 비교 ④Docker이미지 재사용/MLflow추적/기존 GPU·VLM 결과 보존 복구로 제안한다. 실제 관제 업무시간 감소/사고 감소/다중 실시간 부하 성능은 아직 검증한 성과에 포함하지 않는다. 기존자료읽기·기록4문서만 변경, ZIP v2·HTML 제작·모델/검색/원격/새시험·Git게시0. 최신 시간근거는 v2 작성후 추가되어 현재ZIP에 미포함이다.
+
+## 2026-10-07 MLflow의 병렬 적용 후 전체 소요시간 읽기 확인
+
+사용자가 전체 보고 완료 시간도 발표에 쓰고 싶어 기존 MLflow 기록 활용 가능성을 질문했다. 현재 experiment2의17개 Run을 읽어 병렬 이미지 적용 후 새 성공2건을 확인했다. X3D-S Run `3e40b1d0340c460caff6cf479e1ed4ca`는44.779953초/입력SHA346d517c…01dd8e, R(2+1)D-18 Run `5559ce16a3fc43e58973b33dbcff1be5`는81.573109초/입력SHAa6459397…7d2150다. 둘 다 full_report/completed/report_stored이며 observation의 code_files·profile SHA가 새 병렬 catalog와 일치한다. 이2건은 사용자가 앞서 실행한 저장 기록을 읽은 것이며 이번 에이전트의 새 실행이 아니다.
+
+**전체 소요시간은 측정되어 있고, 같은 조건의 전체 개선율이 아직 미측정이다.** 해당 `pipeline_seconds`는 서버 접수→보고 저장 완료 구간이며 브라우저 업로드·알림 표시 지연은 제외한다. 영상SHA가 개선 전 기록과 달라 전후 개선율이나 두 모델의 속도 우열로 계산하지 않는다. 현재 열린 e2d22e1a…의10.100101초는 CPU 보고 복구뿐이므로 비교에서 제외한다. 전송2파일6.673812→5.063962초/24.1219%는 별도의 단일 구간 실험이며 전체개선율로 확대하지 않는다.
+
+발표에는 ‘병렬 전송·검증 구간은 한 번의 비교에서 약24% 단축했고, 적용 후 개별 전체 성공 실행은 X3D-S44.78초·R2 81.57초였다. 서로 다른 입력이므로 전체 전후 개선율은 별도 동일 조건 비교가 필요하다’로 구분한다. 다음 한 작업은 원한다면 동일영상·모델·VLM/RAG·환경/캐시 조건에서 순차/병렬 성공 실행을 맞추는 측정이다. 이번에는 새GPU/VLM·보고/정확도평가·원격쓰기·서비스변경0. 근거 `artifacts/mlops/storage-parallel-20261006-01/mlflow-timing-evidence-20261007-01.json`; MLflow Runs→해당Run→Metrics의pipeline_seconds 및 Artifacts/observations.
+
+
+## 2026-10-06 23:35 — 새 공개 창 최종 외부 확인
+
+8502/8503 HTTP200, 내부 jobs/MLflow 관리경로 직접GET403을 확인했다. 실제8503 분석 화면은10건 잔여·동시1·07:31:43 KST 종료를 표시하며 업로드 입력 disabled=false/Streamlit예외0이다. 저장31502aa2 상세에서VLM 관찰·복구보고055df4be의6절과원래중단이력보존설명을확인했다. 실제원본MLflow5001에서복구Run FINISHED/TraceOK와보고본문을확인했다. 별도새업로드/분석0. Pod에서는S3 HEAD200으로R2파일125,379,501바이트접근만확인했고다운로드/추론/S3쓰기0이다. 근거 connect-01/external-http-active-02.json, browser-active-02.json, pod-s3-head-01.json, ec2-demo-status-active-02.json. 최종UI확인은공개창활성뒤조회만하며기존모델검사/학습을반복하지않았다.
+
+
+## 2026-10-06 — ee065af6 CPU 보고 복구·MLflow 전송 및 새8시간10건 창 시작
+
+사용자가 기존 GPU 결과를 재사용한 복구를 승인했다. 저장 Gemini 응답의 구조와 원래 요청을 검증한 뒤 `/location/road_type`의 highway만 unknown으로 파생 정정하고 원문3파일·실패 task/queue/session·원래 MLflow Run/Trace를 보존했다. 정정 이유는 검증된 카메라 등록 정보를 받지 않았다는 입력 계약이며, 실제 장면의 도로 종류를 확인했다고 주장하지 않는다. 파생 결과에는 JSON pointer·변경 전후 값·이유·원문SHA·별도 복구 실행ID를 기록한다. 기존 세션이 만료됐어도 별도 승인된 CPU 복구는 원래 binding/claim 시간·고정 settings 검증을 유지하며 창 연장/추가 claim 없이 실행했다.
+
+원격 원본 `report_recovery.py`/CLI를 SHA로 확인·백업 후 명시적 plan/apply로 CPU 검색·보고1회만 실행했다. execution `6eb7cc981ebf46e6ab5e72a71faf151d` / 보고 `055df4be-e130-53c9-b97b-894fd4d1ab95` 저장 성공, 복구 구간10.100100994초, 새 GPU/VLM0이다. 보고6절·설명·보고SHA·DB 저장 및 기존 flow_service view/selection_views의 복구 연결을 읽기 검증했다. 원래 `ee065af6…` task의 paused를 완료로 덮어쓰지 않고 별도 복구 성공을 표시한다.
+
+최초 MLflow 기록은 config.corrections의 `/location/road_type`가 기존 `_safe_json`의 절대경로 보호에 걸려 outbox 생성 전에 pending됐다. 보호 경계는 수정하지 않고 MLflow config에만 `field=location.road_type`로 투영했다. 원문 provenance의 정정 근거와 기존 실패 Trace는 보존한다. `--retry-tracking`은 저장 완료 receipt·원래 task/session/queue/marker/파일을 검증하고 동일 execution ID의 메타데이터와 Trace만 전송한다. CPU 검색·보고를 반복하지 않았다. 최종 Run `e2d22e1a8318481a8ee5dd6f24bfba25` FINISHED, Trace `tr-14bec9fd2a433d1e9cedcdc65f3815bb`의 root/normalization/RAG/report_storage 4span 모두 OK. 원래 Run `50f28e013fd44b27b2654210c43a5645` FAILED와 원래 Trace는 그대로다. 기존 요청의 입력6969/출력874/전체7843토큰을 복구의 신규 토큰으로 합산하지 않았고 정확도·F1은 기록하지 않았다.
+
+검사: `.venv/bin/python -m unittest tests.be_worker.test_report_recovery tests.be_worker.test_report_recovery_view` 14개 통과(1.127초). 같은14개를 원격 기존 scene adapter SHA `06e3905bc4aa655d068d754b7c711c646f99261e1b3e7211d1bb028c540abb4d`로 import 치환해 통과했다. 원래 source-before 백업은 실제 원격 원본SHA와 일치한다. provider 출력 제약을 입력 정책과 맞춘 schema v2는 별도42검사(3.373초), legacy/v1 요청바이트 보존 검사를 통과했지만 로컬 준비만 했다. 원격 scene adapter를 바꾸면 기존 세션 settings SHA가 달라지므로 이번 복구에서는 원본을 유지했다.
+
+병렬 이미지 적용 후 Pod `w99ly03jv4ajvm`의 SSH39927로 파일25개 검증·catalog 일치를 확인하고 기존 비밀 설정4파일을 소유자 전용으로 복원했다. 비밀값 출력·실제 S3 권한 요청·모델 다운로드·새 GPU 실행0이다. EC2 catalog2파일 반영은 기존 archive를 남기며 업무행·컨테이너 설정·lifecycle·14tasks·12저장profiles·7세션이력·7peer services 보존을 확인했다. 읽기 계획02는 can_apply이며 당시 Pod API8000은 미기동이었다. 단일 전송 비교6.673812→5.063962초/24.1219%와 전체 접수→보고 완료 개선 폭 미측정을 발표 기록에 함께 유지한다. CPU 복구10.1001초는 해당 병렬화의 전후 측정치가 아니다.
+
+후속 사용자 승인으로 준비한 provider schema v2를 새 창 시작 전에 EC2에 적용했다. 적용SHA `45385cacbcfdf570c01365fc8ecd074f496ddb54fd4b4de37b104e52564038e6`; 기존 업무행·14jobs/14selections·복구 보고SHA·만료 세션 이력·동료 서비스/컨테이너 설정·lifecycle 보존을 확인했다. 위 원본 adapter 유지 문장은 복구 실행 당시의 선택이며 현재 새 실행은 v2 계약을 사용한다. 이 적용으로 새 provider 응답을 생성하지 않았다.
+
+병렬 Pod API8000을8시간·10건 한도로 기동하고 EC2의 인증된 health/limits 검증·provider admissions0을 확인했다. `demo-session-20261006-02`는 EC2 원장 **10/06 23:31:43→10/07 07:31:43 KST**, 총10건·동시1건으로 실제 시작됐다. 이전20:23:03 만료/5건 사용 창을 포함한7개 세션 payload SHA를 그대로 보존했다. 새 GPU/VLM0·전원 변경0이며 원본5001 터널은 복원됐다. 외부 HTTP/실제 브라우저 확인은 마무리 중이다. 공개 종료와 EC2/Pod 전원 종료는 별개다. 이번 변경의 Git 추가 게시0.
+
+근거: `artifacts/mlops/job-stop-20261006-01/recovery-execution-apply-01.json`, `recovery-tracking-delivery-01.json`, `recovery-final-readback-01.json`, `parallel-catalog-apply-01.json`, `provider-schema-validation-01.json`; `artifacts/mlops/road-type-recovery-20261006-01/local-validation-02.json`·`local-compatibility-02.json`; `artifacts/mlops/storage-parallel-20261006-01/pod-image-readback-03.json`, `private-runtime-restored.json`, `connect-01/pod-readonly-plan-02.json`, `connect-01/ec2-demo-apply-10-02.json`; `artifacts/mlops/job-stop-20261006-01/scene-v2-rollout-apply-01.json`. 원격 배포·최초 pending·원본 백업 영수증을 삭제하지 않았다.
+
+## 2026-10-06 — ee065af6 사용자 재실행 방법 확인
+
+selection_jobs.resume→process→TeamSceneJobs.describe와기존report_recovery를읽어복구가능범위를확인했다. paused해제만으로는이미존재하는불완전output을원본보존/no-retry규칙이차단한다. 현재8503은resumePOST미공개,같은영상재업로드는기존선택재사용이다. report_recovery는정확한schema주석제거전용이며이번road_type=highway를지원하지않고legacyrequest/report_continuation제약도있다. 기존GPU결과를재사용한VLM이후명시적복구보완이필요하다고안내하며현재사용자가누를수있는성공재개명령은제공하지않았다. 이번코드수정/서비스/DB쓰기/원격호출/모델호출0,이유설명을위한코드확인만실시했다.
+
+## 2026-10-06 — 최신 R2 중단 원인 읽기 진단·MLflow 접속 안내
+
+사용자의자리이동관련중단질문과MLflow접속질문에기존SSM으로동일EC2/AMI를고정하고읽기전용SQL/저장파일투영을실행했다. 최신worker31502aa2/taskee065af6는19:17:36접수→19:18:36paused, queuehandoff_ready. VLM4.712초내provider호출4.392초OK, 보고행0. 저장응답의STOP/7843토큰(6969입력,874출력)과ValueError를확인하고원래parse_response를재실행해team_event_unprovided_location_or_time를재현했다. 원문SHA22589d24…af760보존. road_type=highway, 나머지검사항목3개null로도로종류하나가원인이다. 공통schema의넓은enum은통과가능하지만프롬프트/의미검증기는unknown만요구한다. 실제도로가highway인지사람검수는하지않았다.
+
+API/worker는17:48기동후재시작0/OOMfalse, UI는19:06기동으로19:17접수이전. daemon은접수후브라우저와독립처리하며disconnect중단경로가없다. 현재MacIP와SSH허용목록불일치로원본MLflow5001터널불통이고locallistener없음. 시연조회8503/mlflow는기존페이지를사용한다. SG/원격소스/DB쓰기/서비스재시작/모델호출/재개0. SSM명령286960b9(최신상태),1520659a(오타event000경로),6d8ed4f8(event_000실제응답),89522c56(네항목투영)의영수증을artifacts/mlops/job-stop-20261006-01에보존했다. 최초sandbox네트워크실패후허용된네트워크로읽기수행,추가패키지설치0. 신규테스트는작성하지않고실제저장실패를읽기재현했다.
+
+## 2026-10-06 — 업로드 실제 확인·사건 상세와 관제 집계 정리
+
+사용자 요청으로 `control_room.py`1파일을 수정했다. 영상근거 탭을 박스주석→원본→후보 순서로 바꾸고 오른쪽 확인패널 대신 VLM 요약, 그 아래 기관근거를 배치했다. 하단 보고6절의 확인사항과 원문은 보존한다. 목록 작업상태/접수시간대 그래프만 제거하고 KPI/영상별준비/관찰유형/카드를 유지했다. 기존 관련45검사6.829초 통과, 바뀐 기본탭 기대값 갱신과 삭제된 그래프의 전용검사만 제거. 근거 `artifacts/cctv-ui/layout-upload-20261006-01/local-validation-01.json`/selected-tests.log.
+
+실제8503 Upload활성·file chooser정상. 기존T9폴더는현재접근불가여서 workspace의 기존저장 preview.mp4(543411바이트,SHA07ec844ed8a03020c563d47c6424c2a65266dd472b04efdbf5b476fc72b326a8)를 업로드하고 '선택영상확인·분석실행안함'만 눌러 동일수신값을 확인했다. 시험선택은 해제했다. Python uploader disabled설정은 없고 설치frontend는WebSocket연결상태에따라전체입력을비활성화할수있다. 사용자가본순간의원인은재현되지않아확정하지않는다. 업로드/보안코드는미수정,새GPU/VLM/보고0.
+
+SSH22는현재Mac egress IP와등록/32가달라timeout. 기존Online SSM과동일instance/AMI검증으로대체했고SG변경0. 원본이직전page-latency배포SHA와같음을확인한계획b3b69408…c5b09c로UI2개만백업/재시작,업무10테이블·나머지7서비스·settings실행소스·lifecycle·사용3/잔여2·종료20:23:03동일.8501/2/3 HTTP200. 원본backup과SSM요청/실행영수증은해당artifact경로에보존한다. Pod/BE/게이트웨이/MLflow/DB서비스변경·Git게시0.
+
+8503 실제1600×900의주석첫탭/우측VLM→기관근거·보고6절·예외0을확인했다. 첫관제chartCount1이며작업상태/접수시간대그래프가없고두집계보존.8502목록도동일·업로드입력0·예외0. 8502상세도주석첫탭/VLM→기관근거/보고6절·입력0·예외0 확인완료. `list-after.json`, `detail-after.json`/jpg, `share-list-after.json`, `share-detail-after.json` 근거.1600×900임시viewport복원·임시8502탭닫음. 현재사용자8503탭은유지했다.
+
+## 2026-10-06 — 공개 화면 주기 전체 갱신 제거·목록 조회 최적화 배포
+
+사용자가 8502/8503 첫 진입·이동 지연 개선과5초 전체 화면 재실행 제거를 승인했다. `demo_app`의 주기 작업은 작은 진행/보고 완료 알림 fragment만 그리며, 새 결과를 본문에 반영하는 전체 rerun은 명시적 버튼으로 옮겼다. 보고 저장·작업/이벤트/분석/보고 연결 검증 후 알림과 같은 사건 열기는 유지한다. navigation을 먼저 구성하고 `ui_data`의 revision/검증 snapshot 공통 캐시로 타이머·관제·분석 화면의 중복 조회와 시연 모드의 무조건 캐시 삭제를 제거했다.8502는 기존 조회 전용 경계를 유지한다.
+
+BE `/ui-revision`은 상태·오류·설명/보고 저장 지문만 작은 SELECT로 읽으며 worker 내부 단계·주기 갱신시각·poll 횟수는 제외한다. `/ui-snapshot`은 기존 `flow_service.view`1회의 검증 결과를 선택 목록에서도 재사용하고 소속/영수증 검사는 유지한다. revision은 캐시 갱신 힌트이며 보고 완료나 무결성의 증명이 아니다. `ui_validation.readonly_validation`의 ContextVar 범위 안에서만 동일한 schema 정의의 검사 성공을 재사용하고, 매번 파일 형식/크기/SHA와 실제 저장 결과를 검증한다. 실패 시 범위를 해제하며 다른 스레드·실행 경로에는 원래 contract를 적용한다. 실행 계약에 포함된 `team_scene.py` 원본 SHA는 정확히 보존했다. 이를 직접 바꾸면 기존 시연 binding 검증까지 실패함을 합성 DB로 확인하여 세션 검증 규칙 변경 대신 읽기 전용 어댑터를 선택했다.
+
+관련 UI159검사와 최종 조정4검사, BE27검사/조회 scope 통합26검사, schema 어댑터40검사가 각각 통과했다. 그룹 간 중복이 있어 합산 총계로 표시하지 않는다. BE27검사의 최초 시도는 sandbox의 loopback bind 제한으로 HTTP13개가 실패했고, loopback 허용 후27개 전부 통과(6.716초)했다. scope 통합 명령 `.venv-results-viewer/bin/python -B -m unittest tests.be_worker.test_ui_read tests.be_worker.test_stored_selection_view tests.be_worker.test_team_view tests.be_worker.test_report_recovery_view -q`는26개/0.466초/OK다. 새 모델을 호출해 완료 알림을 재현하지 않았고 저장/합성 상태 전환 검사를 사용했다.
+
+배포는 원본 백업 후 SIGINT 종료를 시도했으나60초 timeout이 발생했다. 다른5개 대상은 종료됐고 demo UI만 남았으며 이때 소스 변경은0이었다. SIGTERM·추가 SIGINT에도 표시 UI가 종료되지 않아 활성 분석0·DB 보존을 확인한 뒤 해당 demo UI만 SIGKILL로 종료했다(ExitCode137, OOMKilled=false). 실패 영수증을 보존하고 기존 백업/계획을 사용하는 명시적 resume으로12개 소스 배치 파일(BE4·UI7·별도 share gateway1)을 반영했다. 업무10테이블 행·시연 세션(사용3/잔여2·원래 종료시각)·기존 운영 UI/DB/MLflow·컨테이너 구성·lifecycle·원본 manifest 보존과9서비스 정상 상태,8501/8502/8503 HTTP200을 확인했다. 근거 `artifacts/mlops/page-latency-20261006-01/rollout-apply-01.json`, `rollout-timeout-readback-01.json`, `rollout-resume-01.json`. 이번 모델/Pod/Git 변경0이다.
+
+같은 UI 클라이언트에서 읽은 목록 GET 합계는8503의 기존 두 GET14.459905초→revision+snapshot0.764485초,8502는10.006545초→0.681107초였다. 양쪽 모두 jobs12개/selections12개이며 결과 내용 SHA가 같았다. 이후 작은 revision 단독 조회는 각각0.069872/0.019085초였다. 이는 각1회 관측이며 전체 브라우저 첫 화면·영상 로딩 시간 또는 일반 성능 보장이 아니다. 근거 `query-comparison-01.json`의 scope는 `same_UI_client_API_reads_not_full_browser_load`다. 실제 브라우저 검수 결과는 아래 최종 확인에 별도로 기록했다. 아래 미구현·미배포 기록은 이전 상태로 보존한다.
+
+외부 브라우저 최종 확인:8503 관제↔분석 이동·영상/6절보고 표시,27.754초 본문 조회시각 불변·7.44초 영상 끝까지 재생·예외0.8502는12작업/집계·업로드/분석 입력 없음·예외0. 두 공개 URL HTTP200/직접 jobs·ui-snapshot403. 검증 viewport1600×900은 원래 크기로 복원했고 임시8502탭만 닫았다. 근거 `browser-stability-01.json`, `browser-share-01.json`, `external-http-01.json`, `detail-after.jpg`, `share-after.jpg`. 새 모델 호출 없이 구현·배포·화면 확인을 완료했다.
+
+## 2026-10-06 — 화면 갱신 패치 현행 확인·남은 조건 구분
+
+읽기 전용 SSH/docker exec로 demo_app/control_data/control_demo/control_room 네 파일 SHA가 기존 refresh-apply 영수증과 전부 같음을 확인했다. 현재 patch 미배포나 Runpod 이미지 미반영을 화면 깜빡임 원인으로 설명하지 않는다. 페이지 목록 속도 최적화는 앞선 진단 이후 아직 구현하지 않았다.
+
+추가 감사에서 demo_refresh_signature의 worker.payload.stage가 유휴 중 내부 checking_settings/dispatch/collect/idle 변경까지 포함함을 발견했다. 전체 갱신을 불필요하게 일으킬 수 있는 코드 조건이지만 실제 사용자 증상 원인 확정과 구분한다. default_transaction_read_only/statement_timeout3000의 별도 DB 연결에서10초간0.25초 간격40회 관찰: 활성 flow0, 전부 idle. `refresh-diagnosis-01.json`에 단계/시각만 기록했고 비밀·원문은 출력하지 않았다. 브라우저 관찰 동안 조회시각17:15:09 KST와 보고 저장 완료 알림은 유지됐다. 실행 중 DOM이 있었지만 isVisible=false, 읽은 본문 container opacity1이었다. 이번 구간에서 전체 깜빡임은 직접 재현되지 않았으며 주기 조회의 실행과 전체 재렌더를 혼동하지 않는다. 새로운 UI/BE 배포·서비스/세션 조작·모델 호출0이다.
+
+## 2026-10-06 — 병렬 저장 코드 Git/Actions/Docker Hub 게시 완료
+
+후속 사용자 “그렇게 해줄래?”로 게시 승인을 확인했다. 별도 기존 main checkout의 parent `6a8b7445cffc4a58b6b3f9b66ccba3736ba28164` 위에 준비한6파일만 commit `37e96b0a44013b21e805cd9bfbe72e14a7208726`로 일반 push했다. 강제 push0·작업 트리 clean, main protected=false 확인. 추가 rules API는 private plan 기능 제한403으로 읽지 못했지만 일반 push는 정상 성공했다. 루트의 사용자 미커밋 자료/운영 산출물은 추가 게시하지 않았다.
+
+소스 workflow37431168958은125검사 통과/SUCCESS, 이미지 workflow37431169000은125통과/기존 비공개 fixture4skip 및 check/publish SUCCESS다. 이번 추가 병렬8검사가 포함됐다. 최종 tag `dahyeguk/cctv-runpod-ab:sha-37e96b0a44013b21e805cd9bfbe72e14a7208726`, 불변 참조 `dahyeguk/cctv-runpod-ab@sha256:38b63c7ab04185e8b8c2d13b9fd18de42f6bddd27f9b805fbbabba160b408757`. Registry manifest/config의 linux/amd64·revision 및 CI 로그 digest 일치를 확인했다. 전체 이미지를 Mac으로 내려받거나 실행하지 않았다.
+
+빌드 로그의 base 처리 약384초·Hub push4.2초·GitHub cache export500.9초를 확인했다. 새 dependency 설치는 없었고 게시된 이미지 확인 뒤 Actions 최종 완료까지 남은 시간은 대부분 cache export였다. 이것은 개발/배포 대기이며 CCTV 분석·페이지 이동 지연과 구분한다. 증거: `artifacts/mlops/storage-parallel-20261006-01/publication-run/`의 `publication-result.json`, `image-actions-final.json`, `registry-manifest.json`, `registry-config-verification.json` 및 CI 로그.
+
+Pod/EC2 변경·모델 호출0이다. 기존 Pod는 기존 이미지로 계속 동작하며 이번 병렬화는 아직 운영 분석에 적용되지 않았다. 사용자 이미지 교체 때 EC2 catalog와 시연 시작 helper의 catalog/manifest pin도 함께 맞춰야 한다. 현재 세션을 임의 reset하거나 저장 코드만 핫패치하지 않는다. 별도 페이지 조회 개선은 아래 진단에 기록했고 아직 구현하지 않았다.
+
+## 2026-10-06 — 시연 페이지 이동 지연 읽기 진단
+
+사용자가 기존 Pod 이미지 사용 가능 여부와 페이지 이동 지연 원인을 물었다. Streamlit 성능 스킬을 적용해 실제 시연 UI 컨테이너의 기존 GET 클라이언트와 API 컨테이너의 읽기 전용 SQL 연결로 계측했다. `/jobs` 5.885892초/1,236,524바이트, `/selections` 7.479315초/1,174,968바이트이며 각각12작업을 포함한다. 두 요청만 합쳐13.365207초다. `/demo/status` 1.015446초, `/worker` 1.007675초, MLflow 목록/모델/상세/Trace는 각각 약1.36~2.14초였다. 원문/비밀 값 대신 경로·시간·크기·개수만 기록했다.
+
+새 읽기 전용 Python 프로세스에서 전체 `flow_service.view()` 1회를 cProfile로 측정한 결과6.374823초다. `team_scene.contract()`32회 중 `Draft202012Validator.check_schema()`32회가 누적4.459258초를 사용했다. 이는 매번 같은 고정 JSON Schema 정의 자체를 검증하는 비용이며 실제 각 저장 결과의 내용 검증과 구분한다. cumulative 시간은 중첩되므로 함수별 시간을 더하지 않는다. 새 프로세스의 초기 import/프로파일러 영향이 포함된 단일 계측이므로 운영 응답 시간과 정확히 같거나 최적화 후 특정 초수로 줄어든다고 보장하지 않는다.
+
+UI는 navigation 구성 전에 상태/목록을 순차 조회하고, 타이머가 읽은 `/jobs`·`/selections`를 화면에서 다시 읽는다. 시연 모드는 `control_view` 진입마다30초 캐시를 무조건 지우며, BE `/selections`는 같은 전체 `view()`를 다시 호출한다. 타이머가 실행되는 관제 진입에서는 전체 view4회(미디어 제외)가 가능하다. 과거 복구 보고의 영상 SHA/base64 재구성과 보고별 문서 corpus 재읽기도 남아 있으나 이번 프로파일의 가장 큰 항목은 schema 정의의 반복 검사였다.
+
+브라우저에서 관제→새 영상 분석→관제로 이동해 대기/저장 결과 표시를 확인했다. 관제 복귀의 locator 대기는 도구 deadline으로 중단됐으므로 실제 이동 완료 시간으로 사용하지 않았고, 후속 AX에서 관제 화면 정상 복귀를 확인했다. 업로드·분석·알림 확인·보고 재생성은 실행하지 않았다. 실제 보고 완료 알림이 표시되는 현재 화면을 임의로 읽음 처리하지 않았다.
+
+**다음 개선 제안:** 바이트 해시 확인을 유지하면서 이미 확인한 고정 schema 정의 검사만 재사용하고, 타이머/페이지 간 목록 중복 조회와 시연 모드의 무조건 캐시 삭제를 줄인다. 이후 필요하면 상태 조회와 보고 상세 로딩을 분리한다. 현재 원격 UI/BE 소스·서비스/세션·Pod 이미지는 변경하지 않았고 새 GPU/VLM/보고/평가0이다. S3 병렬화 새 이미지 게시와 페이지 조회 개선은 서로 다른 경로다. 근거: `artifacts/mlops/page-latency-20261006-01/endpoint-timings-01.json`, `view-profile-01.json`.
+
+## 2026-10-06 — S3 병렬 게시 구현·실제 두 파일 비교·이미지 context 준비
+
+사용자가 후보/ROI를 병렬 전송하고 모두 성공한 뒤 후속 처리하는 방식을 실행하도록 승인했다. `apps/runpod_worker/storage.py`에 bounded ThreadPoolExecutor 경로를 추가했다. `publish(...,max_workers=2,diagnostics=None)`이며 정수1~4만 허용하고 v1은1로 강제한다. 파일 내용은 실행 중인 작업 안에서 읽고 작업 대기도 최대 worker 수로 제한한다. 기존4요청/전체 GET SHA·AES256·조건부 PUT·충돌 검증은 그대로다. 실패 시 새 작업 제출을 중단하고 남은 대기를 취소하며 이미 진행 중인 작업이 끝나야 실패를 반환한다. 모든 파일 성공 후에만 최종 manifest/영수증을 게시한다.
+
+진단 자료는 불변 결과/영수증 밖의 선택 dict로 분리했다. local_verification/assets/manifest/total_seconds 및 파일별 bytes/time/status를 제공하며 service_job CLI가 비밀 값 없는 `s3_publication_timing` 로그를 남기도록 연결했다. API/MLflow에 새 시간 필드를 노출한 것은 아니다. `.github/workflows/runpod-image.yml`에 새로운 standalone 병렬 검사 파일의 경로와 실행 명령을 추가했다.
+
+`.venv-results-viewer/bin/python -B -m unittest tests.be_worker.test_ab_storage_parallel tests.be_worker.test_ab_storage tests.runpod.test_evidence.StorageTests tests.runpod_image.test_service tests.runpod_image.test_saved_service_output tests.runpod_image.test_mlops_ci -q`로74개/2.965초/OK. 최초 시스템 python 실행은 Starlette가 없어 실패했으며 새 설치 없이 기존 viewer 환경으로 수행했다. 새8검사는 합성 파일로 기존 v2 계약 검증 성공 경계만 모의하고 실제 병렬/실패/원격 바이트 검증/완료 순서를 검사한다. 기존25개 저장 검사는 실제 로컬 보존 fixture를 사용한다.
+
+실제 시험은 `prepared/benchmark_transfer.py`로 이미 성공한 provider82a55825…의 후보/ROI2파일만 읽고 새 storage._publish_assets/_put_v2를 사용했다. 처음에는 Pod 인증 파일 경로 전달 누락으로 NoCredentialsError가 나서 전송 전에 중단했다.01영수증을 보존하고 AWS_SHARED_CREDENTIALS_FILE 등을 기존 프로세스 환경에서 전달하도록 고쳐02에서 순차1회/동시1회를 수행했다. 승인된 동일 비공개 S3의 별도 `cctv-evidence/storage-benchmark-6587c7a12dad4dffb900de4a0c47d8a6/` 아래4파일 총3,123,088바이트를 저장했다. API job/DB/MLflow/정상결과 manifest 생성0, 원본3파일SHA 보존, GPU/VLM0, 서비스 변경0이다. 시험 파일은 삭제하지 않았다.
+
+순차6.673812339초/peak1, 동시5.063962486초/peak2, 이번 비교24.1218927% 단축. 후보와 ROI는 기존 결과에서 동일SHA e7627c97…/각780,772바이트이며 동일 두 역할을 각 mode의 별도 키로 검증했다. 파일별 시간은 순차4.8554/1.8184초, 동시1.5196/5.0618초로 네트워크 변동이 있다. 단일 순차→병렬 순서이며 접속 캐시·반복분산 통제가 없어 일반 성능/전체 보고시간 개선율로 표현하지 않는다. 합성 지연 검사는 실제 S3 측정과 구분한다.
+
+`prepare_runpod_ci.py --write-catalog`로 이전 catalog를 archive하고 `--output artifacts/mlops/storage-parallel-20261006-01/release-01`로32파일/294,472바이트 새 context를 생성·검증했다. 새 service manifest SHA5844409c…c9dc, image manifest24305629…6ebc와 GPU adapter3247ea95…8276는 preparation 원문에 있다. 기존 게시 checkout과 payload 대조 결과 runtime/모델 계약은 동일하고 storage/service_job 및 catalog/manifest만 달라졌다. 게시 준비6파일은 별도 publication-01에 hash/patch로 고정했다. 현재 운영 서비스/세션은 보존했고 새 이미지 Git 게시 여부를 확인 중이다. Pod/EC2의 profile 검증을 해제하거나 기존 catalog 의미를 바꾸지 않았고, 새 이미지 적용은 기존 합의대로 사용자 단계다.
+
+## 2026-10-06 — 지연 단축 전략과 가설 구분 (구현 전)
+
+사용자가 단축 전략과 병목 원인 가설을 요청했다. 저장 함수·R2 캐시 준비·5초 worker 주기·VLM 전에 수행하는 clip/ROI 재생 변환을 읽기 재확인했다. 새 파일은 일반 경로에서 HEAD/PUT/HEAD/GET4요청이며 파일별 순차 수행이다. 네트워크 왕복/재다운로드 누적을 유력 원인으로 설명하되 요청별 측정이 없어29~30초 전부를 통신 지연으로 확정하지 않는다. 저장소 throttling·EC2 메모리 부족·Pod 리전 거리는 이번 기록으로 확정하지 않았다.
+
+제안 순서는 요청별 시간/크기 계측과 검증을 보존한2~4개 제한 병렬화→필요하면 S3 네이티브 체크섬 기반 검증 경로 재설계→활성 작업 polling·준비·미디어 변환 개선이다. 파일 병렬화와 영상 분석 동시1건은 별개이며 최종 manifest는 모든 파일 성공 뒤에만 게시한다. 공식 AWS S3 성능 지침과 업로드 체크섬 문서를 확인했다. 체크섬은 이미 PUT에 전달되지만 현재 구현은 GET 바이트 검증을 추가 수행하며, metadata 문자열만 비교하는 것으로 이를 대체한다고 제안하지 않는다. R2 디스크 캐시는 이미 존재하고 첫 준비24.7초가 다운로드만의 지연인지 미확인이다. 효과 수치는 약속하지 않으며 전후 비교 시 입력·모델·캐시 조건을 맞춰야 한다. 코드 수정·원격 조작·추가 모델 호출·테스트 실행0이다.
+
+## 2026-10-06 — 최근 보고 지연과 MLflow 모델 확장 역할 진단
+
+사용자 질문에 따라 읽기 전용 SQL과 저장 span/변환 영수증을 조회하는 `artifacts/mlops/public-demo-20261006-01/prepared/inspect_latency.py`를 준비하고 EC2 SSH/API 컨테이너에서 실행했다. SQL 기본 트랜잭션은 read-only, 최근 full_report2건만 대상으로 했다. 첫 `latency-readback-01.json`을 보존하고 provider 식별자/영상 변환 시간을 추가한 조회는 `latency-readback-02.json`으로 저장했다. 이어 기존 Pod SSH로 두 provider의 status/실행 원장과 제한된 결과 파일 시각만 읽어 `latency-pod-readback-01.json`에 남겼다. 비밀 값·영상 내용·요청 본문은 출력하지 않았다.
+
+KST14:45 R2 task7e90ae04…: 전체66.722774초, GPU 내부12.072291초, VLM5.016710초, RAG0.919503초, clip/ROI 브라우저 변환2.229676+2.430420초. KST14:10 R2 taskfc9d31d9…: 전체86.406263초, GPU 내부8.500623초, VLM5.122334초, RAG0.218836초, 변환1.380990+0.510582초. 두 입력SHA는 다르다. pipeline은 접수→완료이며 브라우저 업로드 전송을 포함하지 않고, GPU job 측정값은 provider 전체 대기와 다르다.
+
+Runpod manifest→S3 영수증 파일 mtime 차이는 최신29.040888초/이전29.975932초다. 코드상 이 구간에는 publisher 프로세스 시작·로컬 검증·S3 게시·재다운로드 검증이 포함되므로 순수 업로드 시간으로 단정하지 않는다. `apps/runpod_worker/storage.py`는 파일별 HEAD→조건부 PUT→HEAD/GET 검증을 순차 수행한 후 최종 manifest를 게시한다. 서비스 started_at→runtime GPU 자식 started_at은 최신0.593408초/이전24.711185초이며 세부 준비 계측이 없어 이전 지연 원인을 단일 단계로 확정하지 않았다. `daemon.py`의5초 poll과 EC2 미디어 준비도 추가 대기다. GPU/VLM/RAG만 합산해 전체 처리시간으로 설명하지 않는다.
+
+모델 추가는 `model_catalog._CONTRACTS`의 B/R2 및 `classifier_adapter`의 명시적 로더/전처리와 EC2의 등록 버전 바인딩을 확인했다. MLflow 공식 Registry/`mlflow.models.evaluate` 문서를 대조해 버전 관리, 평가 실행 API, 현재 서비스가 실제 수행하는 작업을 구분했다. 등록만으로 임의 .pt 실행·자동 모델 선택·공통 정답 평가가 이루어진다고 안내하지 않는다.
+
+코드/서비스 변경 전후 성능 비교는 미실행이며 이번은 기존 실행 읽기 진단이다. 새 GPU/VLM/보고/학습/정확도 평가·배포·Git 게시0, 실행 코드 수정0이다. 새로운 테스트를 반복하지 않았고 JSON 관측과 실제 실행 코드 대조를 근거로 남겼다. 후속 제안은 S3 저장 검증을 보존하는 게시 병목 개선이며, 아직 구현하지 않았다.
+
+## 2026-10-06 — 시연 화면의 반복 깜빡임·보고 완료 알림·미판정 설명 보완
+
+사용자가 공개 화면의 주기적 깜빡임과 설명 저장 시점의 이른 알림을 지적했다. 원인은 `demo_app.demo_refresh_timer`가 5초마다 화면 전체를 다시 실행하던 방식이었다. 같은 주기로 상태를 읽되 `control_data.demo_refresh_signature`에서 실제 표시 자료가 바뀌었을 때만 전체 갱신하도록 수정했다. 서버 시계·경과 초·queue 조회 갱신 시각은 비교에서 제외하고 작업 단계/오류/영상 근거/설명/보고 본문·세션 한도와 worker 정상/지연 전환은 유지한다. 화면 갱신 판단용 해시이며 저장 원문의 무결성 해시를 대체하지 않는다.
+
+`control_demo.live_description_targets/observe_saved_descriptions`의 호출자 호환 이름은 유지하되 실제 알림 조건을 VLM 저장에서 **보고서 저장 완료**로 변경했다. `report_stored`와 결과 존재, 장면·보고의 작업/이벤트/분석/보고 식별자 검증을 통과한 뒤 알린다. 보고 실패/대기·장면만 저장·빈 결과·ID 불일치는 완료 알림을 만들지 않는다. `report_id`를 중복 방지 키에 포함해 새 보고 판을 구분하고 같은 사건 열기에서도 정확한 판을 지정한다. 과거 저장 결과 baseline·새 접수 감시·읽음/조회 범위 분리·사라진 보고 열기 차단은 보존했다.
+
+미판정 필터에는 “분석 대기·실패·결과 누락 등으로 후보 유무를 확인할 수 없음”을 표시했다. 사고가 아닌 영상이라는 뜻이 아니며, 이미 사고 후보가 저장된 작업은 이후 보고가 실패해도 사고 후보에 남는다. 기존 `no_candidates`도 정상 확정으로 바꾸지 않는다.
+
+관련 `test_demo_refresh`, `test_demo_flow`, `test_control_demo`, `test_control_room`, `test_control_data` **65검사 통과(6.176초)**를 담당 실행 결과로 확인했다. 별도 알림 경계 11검사는 이 65개에 포함되므로 합산하지 않는다. `artifacts/mlops/public-demo-20261006-01/refresh-apply.json`을 직접 읽어 UI 4소스 반영·health200·업무행/다른 서비스/lifecycle/원본 manifest 보존·모델 호출0·세션 변경0을 확인했다. 이 영수증의 `actual_browser_refresh_verified=false`는 배포 직후 상태이며 실제 브라우저 검수는 이 기록 시점 진행 중이다. 새 GPU/VLM/보고 생성·Git 게시0, 실제 모델을 다시 호출한 보고 완료 전환 재현은 하지 않았다. 변경 전 동작·과거 실행 원본은 아래 기록에 보존한다.
+
+후속 브라우저 검수 완료: 변경 없는 자료에서45.714초 동안 전체 화면의 조회 기록이 유지됐고, 미판정 필터에서0작업과 새 설명을 확인했다. 전체11작업/잔여3건이며 전체 필터로 복원했다. 근거 `refresh-browser-verification.json`, `refresh-unjudged-dom.txt`, `refresh-unjudged.jpg`. 이번 알림 조건은65개 선별 검사에 포함된 상태전환으로 확인했으며 새 유료 보고 생성은 반복하지 않았다.
+
+## 2026-10-06 — 새 영상 공개 시연 종단 리허설 성공·MLflow SDK/브라우저 대조
+
+실제 공개 시연 흐름에서 새 입력 접수 → Runpod GPU 분석 → VLM 설명 → CPU 문서 검색·6절 보고 저장 → MLflow Run/Trace 기록을 완료했다. 최종 원본은 `artifacts/mlops/public-demo-20261006-01/rehearsal-observation-02.json`이며, SDK 확인 시각은2026-10-06 12:41 KST다. 이후 공개 MLflow 화면도 브라우저에서 확인했다. 아래 리허설 전 중간 기록의 “신규 호출0/종단 미실행”은 당시 상태이고 이번 성공으로 갱신한다.
+
+입력은 사용자 지정 폴더의 `train_102.mp4`,4.52초·640×480·2,381,004바이트다. SHA-256은 `877010702e4a01b2906b1b2d99ab12ac643a737cb25e244e50f7d8721a89b4ec`이며 기존 작업 입력SHA 목록에는 없었다(`rehearsal-input.json`). 기존 서비스에서 미사용이라는 뜻이고 전체 데이터의 학습 노출 여부나 독립 최종평가 자료임을 뜻하지 않는다. 첫 업로드의 메타데이터 검사는 EC2 이미지에 ffprobe가 없어 접수 전에 실패했으며 GPU/VLM 호출과 세션 한도 소비는0이었다. 이미 설치된 PyAV를 제한된 별도 프로세스에서 사용하도록 바꿨고 프레임 디코딩0으로4.52초를 확인했다. 신규 설치0·세션 변경0·기존 업무행/다른 서비스/lifecycle 불변이며, 활성 `demo_access.py` SHA는 `66e3693748b1b5b7df7d7d3e6124bd15a7468c887783c44c263dfa77a19897f0`다(`video-probe-fix-local.json`, `video-probe-plan.json`, `video-probe-apply.json`). 원본 배포 manifest는 보존한다.
+
+정상 접수한 task `008eaf0a117f5cfeb37b6f57ca383671`, worker `89530ff81dd94a2c8e85fd3578903637`는 full_report/B로 완료됐다. 접수2026-10-06 12:39:51.827887 KST부터 완료12:40:59.418961 KST까지 **67.591074초**다. 이 값은 task 생성부터 완료까지이며 브라우저의 파일 선택·업로드 이전 시간은 포함하지 않는다. 실제 GPU1회·VLM1회·CPU 검색1회·자동 재시도0이고 submit/post 시도는 각1회다. GPU는 고정 YOLO와 운영 X3D-S `operating-epoch7`를 사용해4개 창/후보1개를 만들었으며 NVIDIA RTX2000 Ada에서 GPU 작업 시간7.909553초를 기록했다. 전체67.591초를 순수 GPU 시간이나 실시간 스트리밍 처리율로 설명하지 않는다.
+
+Gemini `gemini-3.5-flash-lite`의 실제 호출은4.741119초, 입력6,156·출력907·합계**7,063토큰**이다. analysis `23bc60ce-11d8-426c-9a05-75d9fe1f14f7`에 설명을 저장했고 report `233676f7-5ded-50e0-95da-660d1ffee1ec`에 **6절·4,290자·문서3개·질의9개**의 보고를 저장했다. RAG 검색/관련성/템플릿 단계는7.994895초다. 이 보고 단계의 외부 생성 API와 외부 임베딩 API 호출은0이며 CPU 검색1회와 구분한다. report status는 `report_stored`, task는 `completed`/paused=false/error=null이고 worker가 오류 없이 idle로 돌아왔다.
+
+새 Run `44000ecd122544e1bff58d1ebdb997f3`는 experiment2의 `X3D-S · 영상 분석·보고 · 008eaf0a`, FINISHED/성공이다. 새 Trace `tr-750f062b4e1ab6d4ed0c77a291fce498`의 루트 포함8개 span과 실제 system9,045자/user328자 요청, 응답2,317자, 토큰 native 속성6,156/907/7,063, 검색질의·문서 발췌·보고를 SDK로 읽어 저장 원문과 대조했다. 요청 SHA는 `ea4333b33a27a9fe3512f0d82839ed7c6f66b973a741fc998d62dcb6c7529aa2`이며 원문의 생략 표시는null이다. tracking/outbox/Trace 전달은 모두 recorded다. 이어 브라우저의 실제 내비게이션으로 `/mlflow`를 열어 같은 Run의67.591074초·Trace8개 span 모두OK·실제 system/user 요청·응답·6,156/907/7,063토큰을 확인했다. 등록 모델2개 READY와 가중치SHA도 표시됐다. 브라우저 근거는 `mlflow-vlm-dom.txt`, `mlflow-vlm.jpg`, `mlflow-models.jpg`다.
+
+업무10테이블에서 이번 실행이 추가한 행을 분리하고 이전 행의 수와 해시가 모두 일치함을 확인했다(`all_old_business_rows_preserved=true`). 설명/보고/작업은 새 행으로 남고 과거 결과를 성공으로 덮어쓰지 않았다. `demo-session-20261006-01`은 최대5건 중 새 접수1건, scene/CPU retrieval claim 각1개로 **확인 시점 잔여4건**이다. 기존8시간 공개창(12:23:03~20:23:03 KST)·동시1건을 유지하며 결과 확인을 위한 읽기 observer는 추가 모델 호출/원격 변경0이다. 최종 `ec2-demo-final-status.json`도 active/can_submit=true·used1·remaining4·busy0을 확인했다.
+
+리허설 후 대기 안내 문구만 `analysis_app.py`에 반영했다. `waiting-apply.json`은 활성 소스 SHA `bd4f07289e54bd0b8199824aaf3a2fb4bec8453d4acc8252f21e8aa45731ac53`, health200·업무행/다른8서비스/lifecycle 보존·모델 추가 호출0·세션 변경0을 기록한다. 원본 manifest를 덮어쓰지 않았다. 이 문구를 보기 위한 새 유료 작업은 실행하지 않았으며 실제 처리 중 대기 문구의 브라우저 재확인은false로 남긴다.
+
+이번 결과는 새 입력부터 보고·추적 저장 및 공개 MLflow 조회까지의 연결 검증이다. 신규 정확도/F1 평가·재학습·R2 재실행·추가 유료 모델 호출·Git 게시·EC2/Pod 전원 중지는 하지 않았다. 영상 판단과 문서 근거의 적절성은 사람 검수 전 초안이며 기존 개발평가와 독립 최종평가를 구분한다. 이후 저장 결과를 조회하는 데 모델을 다시 호출할 필요는 없고, 실제 발표에는 남은 횟수/종료 시각과 EC2/Pod 운영 상태를 확인한다.
+
+## 2026-10-06 — 공개 시연 서비스 배포·8시간/5건 활성화 (종단 리허설 전 중간 기록)
+
+사용자가 실제 업로드부터 Runpod GPU·VLM·RAG 보고·MLflow까지 한 URL에서 시연하도록 구현 시작을 요청했고, 공개 시간8시간·총5건·동시1건을 선택했다. 코드 재배포 없이 시간/횟수를 설정할 수 있는 새 `demo-session` 정책과 운영 CLI를 추가했다. 이 기록의 확인 시점에는 새로운 GPU/VLM 호출은0이며, 아래 활성화와 저장 기록 조회를 새 영상 종단 성공으로 표현하지 않는다.
+
+구현은 기존 Streamlit 화면을 재사용한 `demo_app`의 관제/새 영상 분석/MLflow3개 화면, `demo_gateway`의 허용 경로·업로드 경계, `demo_server.DemoBoundary`의 HTTP/WebSocket 기간 검사로 구성했다. `demo_access`는 MP4 bytes/헤더/ffprobe 길이와 동일 입력SHA+모델+GPU 계약 재사용을 검사하고, 기존 `hour_session` 원장에 총량·동시 작업·단계별 claim을 연결했다. 공개 접수는 B/R2의 full_report만 허용하며 실제 VLM 저장 완료 알림에서 같은 작업을 열고 보고 준비 상태를 갱신한다. 설명·보고 준비 현황과 선택 모델의 원본별 최신 유효 관찰 유형 집계를 추가했다. 첫 생성 후보1개에 VLM/CPU 보고 각최대1회만 연결하고 나머지 GPU 후보는 보존한다. 후보없음·실패·정상확정을 분리한다.
+
+`mlflow_read.MLflowReader`와 `demo_mlflow`는 모델/Run/Trace·실제 자연어 요청/응답·토큰·RAG 근거·보고·과거 개발평가 자료를 조회한다. Run 태그와 Trace `mlflow.sourceRun`을 함께 검증하고 허용 JSON/Markdown 자료만 크기 상한 안에서 읽는다. 키·미디어/base64·URL·내부 경로는 공개 응답에서 제외하고 누락/생략은 표시한다. 원본 MLflow 관리 화면·내부 API·DB를 인터넷에 열지 않았다. 운영 SDK3.16.1에서 모델2개·Run9개·기존 성공Trace6단계·7444토큰을 실제 읽기 확인했다(`live-reader-check.json`).
+
+배포는 먼저 닫힌 상태에서 실시했다. `package-01/package.json`의28파일·ZIP SHA `d9d3187b7e30c32f16bd1cf53613b9675c4f0971607e74b1a1281cd295e3ddf2`와 `rollout-stage.json`을 고정하고 `rollout-plan.json`/`rollout-apply.json`으로 원본 소스/서비스와 업무행·lifecycle 보존을 대조했다. 새 demo UI512MiB·비공개 gateway96MiB를 기존 이미지로 띄웠고 API/worker 기존 설정을 유지했다. 공개 edge 반영 뒤 활성 전에는8502·8503 모두 HTTP410, 내부 쓰기 경로403, 기존8502의 `/analysis`403, 운영8501 health200을 확인했다. Mac에서 실제 외부 두 포트410도 확인했다(`external-closed-01.json`). 원본 release manifest는 덮어쓰지 않았고 이후 소스 변경은 별도 patch receipt로 남긴다.
+
+Pod는 `w99ly03jv4ajvm`의 기존 API PID2569가 만료·1/1한도 소진·진행0임을 인증 health와 저장 상태로 확인했다. `pod-demo-retire-01.json`은 pidfd로 정확한 프로세스에 SIGTERM1회만 보냈고 기존 budget/status2파일 해시 불변·폴더삭제0·8000포트 비점유를 확인한 근거다. `scripts/start_runpod_demo.py`는 공식 launcher/검증기/카탈로그 해시와 기존 private 설정 검사를 유지하고, 세션 이름·max_jobs·총시간·안내문4곳만 메모리에서 바꿨다. 이미지/가중치/카탈로그는 수정하지 않고 새 owner전용 폴더에 launcher·로그·영수증을 저장했다. 새 API PID8622의 max5·작업당300초·총28800초·admissions0을 확인했다(`pod-demo-apply-01.json`).
+
+EC2 `demo_control start`는 같은 `demo-session-20261006-01`을 **2026-10-06 12:23:03 KST부터20:23:03 KST까지** 활성화했다. Pod는 약4.7초 먼저 시작했으므로 두 마감 시각을 별도로 보존한다. B/R2·영상최대50MiB/60초·동시1·전체5건이며 과거6개 세션 hash와 이전 marker를 보존했다. `ec2-demo-start-01.json`의 신규GPU/VLM0·기존 상태 보존과 `public-edge-active-01.json`의 active/can_submit·잔여5·8502/8503 HTTP200을 확인했다. 시연8503은 실행/조회,8502는 기간 내 조회 전용,8501은 비공개 운영 화면이다. 활성 edge의 HTTP200을 실제 브라우저 전체 동작 검증 완료로 대신하지 않는다.
+
+검사는 담당 실행에서 선별127개와 API 경계13개가 통과했고, Pod 시작 helper8개·정확한 기존 프로세스 종료 가드2개·후속 UI52개 재검사도 확인했다. 재검사와 겹친 검사를 다시 더해 총계로 발표하지 않는다. 주요 경계는 종료 후 이미 열린 WebSocket/진행 미디어 중단, 기간·총량·동시 접수, 경로/중복 Content-Length/GET body, private 설정·원본 세션 보존, 모델별 같은SHA 구분, MLflow 비밀 제거다. 실제 브라우저 페이지 이동에서 React `BadDelta`가 발견돼 자동 갱신 fragment와 공통 내비게이션을 보완했다. `navigation-plan.json`/`navigation-apply.json`은 UI3소스의 전후 SHA·업무행/다른 서비스/lifecycle/세션 보존·health200을 기록하며, 해당 영수증의 실제 브라우저 이동 검증은 아직false다. 브라우저 재확인과 최종 소스 영수증은 후속 기록을 따른다.
+
+리허설 입력은 `rehearsal-input.json`의 `train_102.mp4`(4.52초·640×480·2,381,004바이트·SHA `877010702e4a01b2906b1b2d99ab12ac643a737cb25e244e50f7d8721a89b4ec`)로 고정했다. 기존 작업의 입력SHA와 겹치지 않음을 확인했지만 데이터 전체 학습 노출 여부나 독립 평가 자료라는 뜻은 아니다. 이 시점에는 실제 접수/GPU/VLM/새 보고는 미실행이다. 다음은 브라우저 이동 오류 재확인 후 이 입력1건의 일반 worker GPU→VLM→보고→화면/MLflow 연결이다. 정확도/F1 추가평가·재학습·Git 게시·EC2/Pod 전원 중지는 하지 않았다.
+
+운영 설정은 새 미사용 세션 이름으로 Pod의 `start_runpod_demo.py --name ... --hours 8 --max-jobs 5 --runtime-env ...`와 BE의 `python -m apps.be_worker.demo_control start --name ... --hours 8 --max-jobs 5`를 함께 맞춘다. 기본은 계획이며 적용에만 `--apply`를 쓴다. 기존 활성 원장 시간을 늘리거나 같은 이름을 reset하는 방식은 허용하지 않는다. 종료는 `demo_control stop --apply`로 공개 접근·신규 접수를 차단하고 결과/이력은 보존한다. 이것은 EC2·Runpod 전원 중지가 아니므로 비용 종료에는 각각의 별도 중지 절차가 필요하다.
+
+근거 폴더: `artifacts/mlops/public-demo-20261006-01/`. 코드/배포/활성화/브라우저/실제 모델 실행을 단계별 영수증으로 나누며 이후 리허설 기록이 이 중간 상태를 대체한다.
+
+## 2026-10-06 — 시연 시간 내 공개 실행 허용·종료 범위 갱신
+
+사용자가 시연 중에는 기능을 폭넓게 공개하고 종료 후 닫겠다고 밝혀, LOCAL_SETUP의 발표자 실행/관람자 조회 구분을 시연 시간 내 접속자 공개 실행으로 변경했다. 업로드·기존 모델 선택·분석/VLM/보고 흐름을 허용하되 시간/총횟수/동시1/입력 상한과 비밀/DB/관리 변경 비공개를 유지한다. 종료 명령/서버 종료 시각에 신규 접수와 시연 공개 접속을 닫고 기존8502 우회 조회도 종료 대상에 넣었다. 결과/Run/Trace/설정 보존, 전원 중지와 접속 차단 구분을 명시했다.
+
+최신 요약/TODO/요청문을 대조해 갱신했으며 이는 공개 범위 계획 변경이다. 문서만 편집하고 코드·서비스·보안그룹·원격 호출·Git 게시·테스트 실행은 하지 않았다. 실제 시연 시간/실행 상한/입력 확정과 구현·검증은 남아 있다. 기존 완료 모델 검사를 반복하지 않았다.
+## 2026-10-06 — 시연 URL 전체 공유 요구 반영
+
+사용자는 시연 URL 하나로 기존 구현 내용을 모두 보여줄 수 있어야 후속 구현 프롬프트를 진행하겠다고 했다. 이전 요청문은 MLflow를 발표자 로컬 터널로만 보게 했으므로 이 요구를 충족하지 못했다. LOCAL_SETUP2항을 수정해 기존 화면/영상/주석/모델별 결과/VLM/보고/집계에 더해 모델·Run·Trace의 실제 내용과 기존 평가 조건도 단일 URL의 조회 화면에서 확인하도록 정리했다. 발표자 실행 범위와 관람자 조회를 서버에서 구분하고 기존8502 조회 전용과 원본 MLflow 관리/API/DB 비공개를 보존한다.
+
+검사: 최신 current_status/IMPLEMENTATION_PLAN/LOCAL_SETUP 문구 대조 및 문서 수정 확인만 수행. 코드·서비스 변경·원격 조회·새 호출·Git 게시·소프트웨어 검사0. 실제 주소/포트와 접근 방식·외부 동작 검증은 후속 구현 작업이다. 현재8502가 모든 시연 기능을 제공한다고 설명하지 않는다.
+
+## 2026-10-06 — 시연 구현 프롬프트 최신화·채팅 진행 위치 안내
+
+사용자의 요청문 수정 요청에 따라 최신 VLM 재실행 성공과 이전 HTTP 시연 계획을 대조했다. LOCAL_SETUP 상단에 복사용 최신 요청문을 저장했다. 일반 신규 worker 종단검증의 미확인, 기존 기능 재사용, 조회8502 보존/별도 발표자 실행, 실제 저장 완료 알림, 두 집계의 원본/모델 중복 방지, 리허설/본시연 입력 구분, MLflow 실제 내용, 대표 X3D-S1건/유한 호출 상한을 명시했다. 이전14.09초를 전체 GPU 포함 처리시간으로 쓰지 않도록 구분했다.
+
+현재 채팅에서 운영 연동 작업을 이어가도록 권고했고, 새 채팅이라면 같은 로컬 프로젝트와 최신 문서·요청문을 인계하도록 설명한다. 공식 Projects and chats 문서의 파일 공유/대화별 transcript 구분을 확인했다(https://learn.chatgpt.com/docs/projects). 이번 결과는 문서 갱신이며 새 채팅을 만들거나 코드/서비스/모델을 실행하지 않았다. 문서 대조만 수행했고 소프트웨어 검사를 반복하지 않았다. 다음은 사용자의 실제 구현 요청이다.
+
+## 2026-10-06 — 구조화 JSON 응답 수정 후 VLM·보고 재실행 성공
+
+- 요청/선택: 사용자가 앞선 Unicode JSON 실패 수정과 저장 GPU 결과 기반 VLM1회→보고를 승인했다. 실패 텍스트의 한글을 추측해서 수정하거나 GPU를 다시 실행하는 대신, 공급자 구조화 응답 설정을 새 요청에 적용했다.
+- 변경: `apps/scene_description/team_scene.py`에 `provider_response_schema`/`STRUCTURED_RESPONSE_VERSION`을 추가했다. `describe`만 새 형식을 쓰고 기본 `prepare`/과거 요청 해시를 보존했다. 신형 result에 형식/schema SHA를 기록하며 `validate_saved_output`은 receipt 버전으로 요청을 재구성한다. 로컬 관찰 검증은 약화하지 않았다. 소스 SHA `06e3905bc4aa655d068d754b7c711c646f99261e1b3e7211d1bb028c540abb4d`.
+- 검사: scene·report_recovery33개, team_jobs13개, 무모델 재시도 경계6개(중복/기한/성공·실패 계측/원본 보존), 총52개 통과. 전면 회귀/새 학습은 하지 않았다. `patch-structured-output.py freeze → plan → apply`로 scene1파일만 EC2 반영. plan SHA `02b7de618637eff349d9656f83e2773e3fa84fe30487a802b97d67c16124dbd4`; API·worker 재시작 후 health/idle·업무10테이블·나머지 소스/서비스/lifecycle 보존 확인.
+- 실제 실행: `retry-one-vlm-report.py` 읽기 계획 후 `--apply --plan-sha256 bc53eb4a8faf6f9d71dfecbc6636bdd8da71a51261580fc40f78e0d6c4d48fc8`. helper SHA `15d29e892dea2e5cbe0978fcfca1373967292ae3fde03158ae4d7d46ab6304cb`. 독점 새 폴더/호출 claim·300초 상한. execution `b62cf9468e194527b5f99049d4513b9e`. 새 GPU0/VLM1/CPU1, 자동 재시도0.
+- 결과: 처리14.090초, Gemini3.86초/6630입력+814출력=7444토큰, RAG 약9.61초. 검색질의4/근거4/6절4635자. analysis `5119e202-6d21-4bba-b73e-5846c3a30e14`, report `e30d1cdf-bde5-5023-8bfe-d0bf33f6906e`; 신규 DB 설명/보고 각각1행. GPU 시간과 앞선 실패7701토큰은 새 실행에서 제외했다.
+- MLflow: Run `9af04a1b19b14e06ba8ef2cfd0fe0e85` FINISHED, Trace `tr-9f6ff064da6a7c1200417a2b2497295c` Success/6spans. 실제 요청(system9045/user328자), 응답2121자, 토큰, RAG 질의/문서/보고 기록. request SHA `b5ba4c466ce4ea7b506f37b600c8585276fefaae4ac20d84a0591b7326ed03b2`, response schema SHA `c7997a3142d8c17841607f78402a81396d5ec2d9d9284f66449cf1bf6543e6fc`.
+- 검증: `verify-retry.py` 읽기 대조26항목 모두 true. 기존 task/queue/session/marker/실패파일/이전 Run·Trace 불변. 공개 GET jobs/selections와 실제 브라우저 새로고침 후 `19075c28`의 새 관찰/6절/4근거/보고ID 확인. 기존 task의 paused와 새 설명·보고 저장됨을 분리 표시하는 기존 UI를 그대로 사용했다. MLflow 자연어/7444토큰 화면도 실제 확인했다.
+- 근거: `artifacts/mlops/vlm-json-retry-20261006-01/`의 source/retry plan·apply, retry-readback, result-content, public-readback, public-report-dom 및 success-stages.png. 초기 source-patch 백업은 EC2의 `vlm-json-patch-20261006-01`에 보존했다.
+- 미실행/다음: 영상 정답·보고 내용의 사람 검수, 독립 정확도/F1, 추가 학습/GPU, Git/HTTP 실행권한 확대/기관 전송은 이번 범위 밖이다. 새 보고는 초안이다. 별도 재시도 폴더는 일반 report-recovery sidecar와 다른 이력이며 기존 작업을 성공으로 덮어쓰지 않는다. 현재 연결 요청 완료, 다음은 사용자 확인 뒤 발표용 HTTP 실행 구성이다.
+
+## 2026-10-06 — 실제 GPU/VLM 호출과 MLflow 확인, Unicode 응답 오류 보존
+
+사용자가 토큰 사용·모델 호출1회와 MLflow 표시를 승인했다. 정확도/F1 가능 여부는 기존 평가 원본을 조사해 별도로 처리했다. 현재7초 영상의 동일 gpu_key를 새 세션으로 우회하지 않고, 기존5.36초 보유 영상 `/input/ec2-stage3-20260930-01.mp4`(3,044,095바이트, SHA2e23d249…c9fe9)를 현재 MLOPS X3D-S로 처음 처리하도록 선택했다. 과거 다른 파이프라인의 분석 이력은 유지한다.
+
+호출 전 변경은 `apps/scene_description/team_scene.py`의 정확한 최상위 `$schema` 주석 제거/원문·provenance 보존과 `apps/be_worker/team_jobs.py`의 JSON tuple→배열 readback 비교뿐이다. `.venv-results-viewer/bin/python -m unittest tests.scene_description.test_team_scene tests.be_worker.test_team_jobs`38개/3.081초, `tests.be_worker.test_report_recovery`4개/0.335초 통과. 새 경계4개를 포함하며 추가 모델 시험은 없다. `patch-live-ready.py`의 계획SHA21838bad…8ed1a로 기존 소스 백업 뒤 적용했고 API/worker만 재시작했다. API/UI2개/MLflow health200, worker idle, 기존 업무행·다른 서비스·컨테이너ID/설정/lifecycle 불변을 확인했다. 새 소스 SHA team_scene e61f1088…876d, team_jobs abb97d25…94ca.
+
+새 Pod w99ly03jv4ajvm은 사용자 이미지/키 적용 후 초기 TCP38113 경로 실패와 gateway 읽기 확인을 구분하고 변경된 TCP35097에서 연결했다. 사용자 명시 승인에 따라 기존 인증을 private0700/파일0600 경로에 복원했다. `start-one-pod-api.py`는 공식 launcher SHA/서비스manifest/카탈로그를 검증하고 이름regex·max_jobs 두 곳만 메모리에서 바꿨다. 이미지 파일은 수정하지 않았다. max1·GPU300초·Pod900초 API의 인증 health와 budget을 대조했다. R2 cache 준비/다운로드는 하지 않았다.
+
+`plan-one-full-report.py`의 계획SHAa90d018e…dbb12를 검토한 뒤 `activate-one-full-report.py apply`로 이전 설정/marker를 비공개 백업했다. 새 p6-hour-session-20261006-01은 기존 BE 계약의3600초/max1이며 Pod900초와 구분한다. 동일 트랜잭션에서 정상 admission을 사용하고 과거 업무행/세션 불변과 새 queue/task/selection/session4행만 추가됨을 확인했다. helper7개 오프라인 경계 검사와 문법·원문 두 치환 역변환 검사를 수행했으며 모델 호출은 실제 승인 실행에서만 일어났다.
+
+실측: task0188514de2d54918b218a191ad69bd0d, worker19075c28d37c4c979ca28802a1c13cf4, provider ae442c9defba45a5b0d8090b4d7da57a. GPU1회/추가재시도0,5창/후보1, 내부 runtime9.100129초·GPU 자식10.079840초·서비스 전체39.931747초. 운영 X3D-S epoch7와 고정 YOLO 식별자가 일치했고 S3 게시·EC2 회수의 result/manifest SHA를 대조했다. 이 시간은 전체 보고 완료시간이 아니다.
+
+실제 Gemini1회는8.418769초, 입력6630/출력1071/총7701토큰이다. 새 Run d29cb8e024c54bde923c40df8daf7c02와 Trace tr-86a0c65d1b5c2816a7b825f4350ab07a에 system/user9045+328자·응답2306자와 사용량을 기록했다. 호출 span은OK지만 이후 parser가 `Invalid \uXXXX escape: line1 column1891(char1890)`를 반환했다. `e1.observation`의 `\ub75`, `e2.observation`의 `\uc90`는 누락된 네 번째 숫자를 추정할 수 없는 관찰 문자열 손상이다. 이전 `$schema` 문제와 다르다. `diagnose-live-vlm.py` 읽기 진단에서 원본 request/response/failure3파일 SHA 불변·추가호출0 확인. 손상된 문자를 추측하거나 정상 설명으로 저장하지 않았다. CPU 검색0·새 보고0, Run FAILED/task paused를 보존한다.
+
+`activate-one-full-report.py close`로 신규 BE 세션만 종료했다. Pod/API는 정지하지 않았다. 공개 조회 API와 배포된 카드 normalization 대조에서는9작업·완료6·확인필요3, 새 카드 X3D-S/최신실행/동일원본2작업·설명/보고 미저장이다. 첫 jobs-only probe는 selections 결합이 빠져 불완전했으며 live-public-status-02가 이를 대체한다. 이 확인을 실제 브라우저 렌더 검수로 표시하지 않는다.
+
+평가는 새 추론 없이 기존 R2 epoch7의 SO-TAD 개발236 원본 결과를 검증해 가져왔다. import 명령의 결과 반환은 불확실했으나 다시 생성하지 않고 조회해 Run bacc7d950b674cfe9a28310a6c42b965 FINISHED,13지표·2artifact 바이트 일치를 확인했다. 정확도0.9788135593220338, 사고F1 0.927536231884058, TP32/TN199/FP5/FN0,236원본·4106창이다. epoch 선택에 사용한 개발 성적이며 독립 최종평가나 운영 X3D-S의 성적이 아니다.
+
+실패 설명 계획SHAd401828c…b842f를 검토해 해당 새 Run의 Description에 경위를 추가하고 Artifacts `live-failure-explanation/20261006-01` 아래 README.md/diagnostic.json2파일을 게시했다. readback 바이트와 기존 Run FAILED/시간/metrics/params/Trace 해시 불변을 확인했다. 실제 브라우저에서 새 Gemini span의 자연어 Inputs/7701토큰과 개발 Run의13지표/README를 확인하고 live-gemini-trace.jpg·r2-development-visible.jpg를 저장했다. 새 모델 호출은 추가하지 않았다.
+
+근거 폴더는 `artifacts/mlops/live-trace-20261006-01/`이다. source-apply-01, private-runtime-restored, pod-start-apply-01, one-full-report-apply-01, live-observation-02, live-vlm-diagnostic-01, live-pod-gpu-attestation-01, live-ec2-gpu-attestation-01, one-full-report-close-01, evaluation-readback-01, live-public-status-02 JSON을 참조한다. HTTP 실행 구성/Git 게시/재학습/독립 평가0. 다음 한 작업은 구조화 JSON 응답 설정 검토·보완 후 별도 승인된 VLM1회만 이미 생성한 GPU 결과에서 이어 보고까지 완료하는 것이다. 이번 호출1회는 사용했고 자동 유료 재호출을 하지 않았다.
+
+## 2026-10-06 — MLflow 실제 텍스트 계측과 과거 원문 연결
+
+사용자가 MLflow 기록 보완을 다음 작업으로 요청했다. 최신 상태/TODO와 기존 코드·원본 연결 근거를 읽고 실제 계측/배포 준비/이력 보완을 병렬로 분담했다. MLflow 공식 client API 문서도 참조했다(https://mlflow.org/docs/latest/api_reference/python_api/mlflow.client.html). SDK/서버3.16.1은 원격 읽기로 확인했다. MLflow 제한이 아니라 기존 metadata-only 구현의 부족을 고친 작업이다.
+
+`mlflow_tracing.py`와 새 `mlflow_trace_content.py`는 실제 생성된 요청 bytes를 투영해 system/user 자연어·generation config·요청 SHA·프롬프트 계약 근거를 보존한다. 응답은 실제 visible text/JSON과 provider usage를 기록하고 API 키/인증 JSON 문자열/미디어/base64/서명 URL은 제거한다. 일반 공개 문서 URL의 query는 보존한다. 내용이 클 때 텍스트를 단계적으로 줄이되 생략을 표시하고 호출 토큰·식별자·실측 경계는 보존한다. Stage 내용 변환 오류도 사업 결과로 전파하지 않는다. RAG 검색 결과의 질의/문서 발췌/점수/제외 이유와 보고 본문을 계측한다. `team_jobs.py`는 실제 호출 직전 receipt 근거·저장 응답 재사용·검증 scene·보고 저장 본문을 연결한다. `mlflow_tracking.py`는 새 Run 이름/Overview 설명/목적을 보완했다. `report_recovery.py`도 같은 bounded trace를 저장·해시·전송하도록 맞췄다.
+
+검사: `.venv-results-viewer/bin/python -m unittest tests.be_worker.test_mlflow_tracing tests.be_worker.test_team_jobs tests.be_worker.test_report_recovery tests.be_worker.test_mlflow_tracking tests.be_worker.test_mlops_jobs tests.be_worker.test_flow_service` 59개/1.483초 통과. 독립 검토가 찾은 quoted JSON key 비밀 문자열의 누락을 최소 수정하고 content4+tracing11 재검사15개/0.305초 통과. 이력 helper의 별도6경계 검사 통과. 합계69개 고유 검사이며 반복 횟수를 합산하지 않는다. 모델/외부API/전체회귀/학습 검사는 수행하지 않았다.
+
+배포: read-only preflight에서7서비스·유휴·업무10테이블/lifecycle 확인. 첫 payload/plan은 검토 이력으로 남기고 비밀문자열 수정 후 payload를 다시 고정했다. `patch-trace-content.py plan --receipt plan-02.json`의 SHA `9439f94be29809340fe9e10a647034a932ed2879f3a6e2cbc783a5631fbc0e4f`를 검토 후 apply했다. 원격 `/opt/cctv-mlops-20261005-01/trace-content-patch-20261006-01`에 원본4파일과 메타데이터를 백업하고5파일을 원자 교체했다. 기존 advisory lock과 유휴 확인 뒤 API/worker만 정상 재시작; worker fresh idle 확인 후 API시작. 이미지/컨테이너ID/설정/메모리/다른5서비스·업무행/lifecycle 불변, API/8501/8502/MLflow health200 확인. 자동 재시도/복구0. 필요시 명시적 restore 도구는 준비했지만 실행하지 않았다.
+
+이력 보완: `enrich_saved.py` 원격 읽기 계획은 원래 요청 bytes SHA/응답 원문 hash·보고 DB/file 동일성을 대조했다. 첫 read-only 시도는 일반 오류를 반환했고 원격 변경 없이 수정한 두번째 계획이 성공했다. plan02 SHA `be207d3ef3ba29c0d7462240da2a25f467714eb34c638042d73be252d58b18b5`로 apply하여 기존 VLM5파일·복구6파일(총11개)을 추가하고 전부 다운로드 readback bytes 일치 확인. 원본 소스/Trace·Run 시간/지표/상태 불변, Overview note만 추가했다. 과거 Trace에 본문이 있다는 오해를 막기 위해 VLM note의 문장 하나를 `correct_vlm_note.py`로 정정하고 다른 필드 불변을 확인했다. 파일 원문은 기존 EC2/동일 private MLflow 안에서 처리했다.
+
+가독성: `readable_saved.py`가 게시된3개 JSON의 SHA를 검증해 요청/응답/RAG Markdown3개를 append했다. plan SHA `c74b9f0d7c7da5d6e2a31e499907d208541e34dfb90bb56ffb45517fd4a94ad0`, 전체 readback/기존JSON·Run 보존 확인. 실제 브라우저에서 두 Run의 Artifact 트리와 Markdown 본문을 열어 요청 system/user/요청SHA·응답/6893+952=7845토큰·RAG12질의/5문서·기존6절보고 표시를 확인했다. 처음 AX element177이 stale이라 DOM locator로 전환했고 앱 변경이나 자료 오류는 없었다. 같은 폴더에3개 JPEG 캡처/verification.json을 남겼다. 새 내용이 실제 새 Trace로 전달되는 종단검증은 미실행이다.
+
+새 GPU/VLM/RAG/학습/평가0, 새 Run/Trace0, HTTP 구성/Git 게시0. 저장 자료 조회와 새 호출 종단검증을 구분한다. 사용자가 마지막 실제 모델 호출 검증 순서를 물어 GPU→VLM→보고→화면/MLflow의 새 영상1건 검증이 다음임을 설명했으며 이번 질문을 즉시 호출 승인으로 처리하지 않았다. 정확도/F1 평가는 별도다.
+
+## 2026-10-06 — 카드·상태 실제 적용과 MLflow 표시 확인
+
+사용자가HTTP실행구성전에카드태그·상태수정,비사고분류질문,두집계ASCII,MLflow빈토큰/요청내용확인을요청했다. Streamlit스킬과data-display/testing지침·최신기록을읽고코드/MLflow검토/배포준비를병렬로분담했다. control_data의model_identity/card_identities/candidate_classification/readiness와control_room목록/상세를수정했다. 입력전체SHA+모델로최신/이전실행을구분하고미기록/동률은확정하지않는다. description.completed+실제scene와report_stored+실제result로준비를표시하며복구표시는명시state.recovery_execution_id에만쓴다. 빈/실패상태를정상으로대체하지않는다.
+
+`.venv-results-viewer/bin/python -m unittest tests.cctv_ui.test_control_data tests.cctv_ui.test_control_room`43개/5.151초통과, `tests.cctv_ui.test_share_ui tests.cctv_ui.test_report_revisions`13개/1.079초통과. 필터/중복/실패·복구준비상태경계와기존공유읽기/보고원문을확인했으며전체회귀/모델시험은하지않았다.
+
+기존EC2 SSH로읽기preflight·고정payload·planSHA4113daec…515f7를검토하고 `patch-ui-labels.py apply --plan-sha256 ...`를실행했다. 원격두release의control_data.py/control_room.py원본4개·권한/소유자를ui-labels-patch-20261006-01에먼저백업하고새소스만교체했다. UI2개SIGINT종료/시작외서비스변경0. 새data SHA eaaa8e…1b5d1,room1cfc57…9eea6. API/worker/DB/MLflow/gateway의컨테이너설정·시작시점,업무행해시,lifecycle불변;UI8501/8502health200,공유4변경메서드403확인. 기존manifest는이력보존이고patch기록이활성2파일의최신근거다.
+
+브라우저공유화면8카드·동일원본3작업·X3D이전실행·R2중단과결과저장표시·후보없음필터0→전체8복귀·R2기존보고295df448…6절연결을확인했다. 상세이동후버튼접근이름에arrow_back이포함돼첫대기가실패했지만DOM으로상세정상열림확인후정확한이름으로복귀했다. 1600×900전체시각검수,1920×1080DOMscrollWidth1920(가로넘침0);1920스크린샷은표면1617폭으로잘려전체시각검수로기록하지않는다. 실제영상재생은반복하지않았다.
+
+MLflow실제복구RunOverview와VLMTrace를읽었다. 71cbec0b실행은CPU복구라토큰없음,별도Gemini입력6893/출력952확인. 계측코드metadata-only라자연어본문미기록을확인해한계로안내한다. 이앱브라우저의Runs열설정만model_id/model_version/outcome/pipeline_seconds추가·빈3열숨김으로변경,Run/Trace원문과서버기록수정0. 화면증거는artifacts/mlops/ui-labels-20261006-01의JPEG/DOM/verification.json. 캡처바이트가JPEG임을확인해확장자를jpg로정정했다.
+
+집계2개는가상ASCII예시만LOCAL_SETUP에추가했다. 새HTTP권한/포트·GPU/VLM/RAG/학습/평가·Git게시0. 기존운영8501에는동일소스해시+health만확인했고실제브라우저검수는공유8502에서수행했다. 다음제안은자연어요청응답/질의추적보완검토후HTTP실제시연준비다.
+
+## 2026-10-06 — 실제 입력 시연·HTTP 기능·상태 및 Git 자문
+
+사용자가실제새처리시연을선호한다고수정하고모델태그/상태의미/HTTP시연/두집계/Git/후속프롬프트를문의했다. 최신재개/TODO와 apps/cctv_ui·be_worker·워크플로우를rg/sed로읽고병렬두검토를사용했다. analysis_app 업로드/full_report 및5초fragment는기존구현이고control_room은30초캐시/수동재현이다. 실제VLM저장완료의상태변화알림과시연용HTTP실행경로가필요하다고구분했다.
+
+analysis_profiles.gpu_key/selection_jobs는입력SHA·모델/설정등에따라기존근거를재사용한다. 새세션생성만으로과거작업재실행이허용되지않는다. team_scene.parse_response/validate_event와report_recovery의메타데이터정규화sidecar를대조해새일반경로검사가남음을확인했다. 일반보고persist의DB표현도선별검사대상이며같은문제가실제재발했다고단정하지않는다. 유한리허설과미처리본시연입력을권고하되이번GPU/VLM/RAG호출0이다.
+
+paused는확인필요·일시중지한상태이며확인필요집계는여러오류를포함한다. 완료집계에comparison_completed/no_candidates도포함되므로보고저장상태를따로표시한다. 최근/이전은모델가중치가아닌같은원본/모델의실행순서다. 관찰유형은대표실행선택·중복제거·미분류표시가필요하다. source-checks와runpod_ci_changes는UI/BE단독변경과GPU이미지변경을구분하며Gitpush가EC2자동배포가아니다. 문서상미게시목록만확인했고원격Git최신조회0이다.
+
+이번변경은기존5문서의방향/선택안/미실행기록뿐이며앱코드·환경·원본·ZIP·DB불변이다. 새테스트·서비스/원격·모델·커밋/푸시0. 사용자후속요청용프롬프트와실제과정/시간/원본연결을강조한발표전략을제안한다.
+
+## 2026-10-06 — 알림 시나리오·동일 영상·그래프 후보 자문
+
+최신 재개/TODO·Git 상태·기존 문서와 Streamlit 스킬을 읽고 두 병렬 읽기 검토로 알림/영상식별을 대조했다. `control_demo.py`의2초 세션 상태 및 `control_room.py` READ_ONLY 분기는8501 알림 재현 가능/8502 숨김을 확인한다. 새 업로드를 다른 사람에게 맡길 필요 없이 저장 B29136c38로90초 시연 후 기존 MLflow50초를 연결하는 선택안을 LOCAL_SETUP에 추가했다. 실제 신규 영상 입력/자동 알림과 구분한다.
+
+저장snapshot의 c2f5dc50과 pod-connect 완료근거의29136c38/201a4be6은 동일 input SHA6c823302…95e459다. 같은 X3D-S 운영epoch7의 과거/현재 실행과 R2 epoch7을 보존하고 원본별 영상 카드에 실행 선택을 두는 방안을 제안했다. 기존 snapshot6개와 신규2개, 공개DOM8개ID 합성 대조에서는6고유SHA/8작업이며 오늘 DB를 조회한 값이나 독립 사고 수는 아니다.
+
+`control_data.build_statistics`는작업ID별 상태·접수시각을 집계한다. `share_gateway.JOB_FIELDS/EVENT_FIELDS`에서 공개 필드를 확인했고 raw `artifacts/runpod/ab-results-20261001-01/comparison-20261001-01/input_003-B/output/raw/result.json`에는 `x3d.windows`7개의start/end/score/positive가 실제 저장돼 있다. 원본 점수→그래프 연결은 아직 없으며 모델 확률 보정/정답 시점 검증으로 설명하지 않는다. 데이터 후보는 설명·보고 준비현황, 구간별 점수, 중복제거한 VLM 관찰유형, 동종 단계 처리시간이다. 카메라/촬영시각 미등록을 접수시간·객체박스 수로 대체하지 않는다.
+
+읽기 명령은rg/sed/Python JSON선별이며 추가 모델/테스트/서비스/원격/API·Git 실행0. 앱코드·원본·발표ZIP은 불변, 기존5문서에자문/제안/미실행을기록했다. 사용자에게새구현을완료한것으로보고하지않는다.
+
+## 2026-10-06 — MLflow 발표 큐시트·실제 조회 탭 준비
+
+사용자가 발표시연준비를선택해 기존 v2원고S05 90초·S16 50초·S20 55초/실제원본JSON을대조했다. Presentations스킬의원고표현기준을적용하고 LOCAL_SETUP에클릭순서와설명·사전탭·장애시저장캡처를정리했다. 원고/ZIP을다시제작하거나모델평가를시작하지않았다. 역할/개발성적/Duration구분은기존LEARNING_LOG설명을참조한다.
+
+`aws-command.py ec2 describe-instances`의상태조회에서기존EC2 running/43.201.43.188을확인했다. Mac localhost8501/5001 연결은 ConnectionRefused였고 공유8502 health는200/read-only였다. `ec2-ssh.py --mlflow-tunnel 5001`로고정호스트/내부tracker를검증하고5001터널을다시열었다. 실제브라우저에서등록모델2개각v1, R2복구Run3337fad8…의Finished/모델버전/입력/pipeline_seconds9.2667, VLM실패Runeb853e98…의Trace3span·gemini_video_observation3.93초/토큰7845를확인했다. Models·복구Overview·VLMTrace탭을사용자용으로유지했다. 과거실패표시를현재새실행실패로설명하지않는다.
+
+근거는 `artifacts/presentation/mlflow-demo-20261006-01/`의readiness.json·DOM3개·mlflow-demo-ready.jpg다. v2ZIP실제SHA081ca592…34ad31불변. 새모델/GPU/VLM/RAG/학습/평가/DB변경/서비스재시작/SG변경0, 터널열기와조회만수행. 이번영상재생·전체발표리허설은미실행이고테스트도반복하지않았다. 사용자실연이후발표시간을조정한다.
+
+## 2026-10-06 — Docker Hub·아키텍처를 반영한 전달 ZIP v2 완료
+
+사용자가 추가 설명의 ZIP 반영과 관련 있는 아키텍처 보완을 요청했다. 기존 v1을 새 `artifacts/presentation/final-20261006-v2/gpt-handoff/`로 복사하고 S15 배포 개선/전후 과정/말하기 노트, S07 Hub→Runpod 보조 점선, `data/deployment-improvement.json`을 반영했다. 사건 분석 흐름도에는 Hub를 추가하지 않았다. source57파일의 식별값을 패키징 시점에 기록했으며 추가5출처는 P4 게시/pull·최초빌드, P6 서비스빌드, 현재 R2 S3 준비 코드다. 원본 전체 대신 검증값 발췌를 동봉했다. P4/P6 단계·초기빌드 시간·전후총시간 미측정을 구분하고 현재 운영 R2 가중치는 별도 S3 준비임을 주석으로 보완했다.
+
+본문22/부록4 유지, S02 20→15초/S04 45→35초/S06 50→40초/S15 50→75초로1170초 유지. 시연90초·전환여유30초 포함20분 목표, RAM/AMI 원고 시간은 보존했다. 제작 요청문·Markdown·slides JSON·facts·자산안내·HTML명세·README를 동기화했다. 독립 검토에서 금지 주장 목록의 명사구를 명시적 금지 문장으로 수정하고, Hub/Mlflow 점선의 edge index4/5/11 및 S06 바이트 불변을 대조했다.
+
+실제 검증: Python JSON파싱·26장 제목/핵심/화면문구/노트/주의/시간 동기화, 모델F1/표본수, 기존 모델/RAG/RAM/복구 데이터 불변, 시각 상대경로 연결, 추가5출처 원본해시·크기, source57식별값, assets10파일/v1 전체29파일/v1ZIP해시 보존, 선택 민감경로 패턴 없음. ZIP30파일 CRC/manifest 전부 일치. 완료 ZIP735,990바이트/SHA081ca592e1d6ba38d620742a73a26c4a3164331103620fb93c7b45bc9c34ad31, `zip-verification.json`과 동봉 `HANDOFF_CHECKS.json`에 기록했다. 원본 출처의 문서해시는 이 완료 기록 추가 전 패키징 스냅샷이다.
+
+Mermaid는 원본소스와 정적 연결 검토만 했으며 실제 렌더 검사는 미실행이다. 기존 이미지6개·그래프2개의10월5일육안검수는 바이트동일로 재사용했고 새도식검수로 확대하지 않았다. 완성HTML·PDF·리허설·운영변경·모델·원격/외부업로드·커밋/푸시0. v2를 받은 제작자의 대표3장 시안이 다음 단계다.
+
+## 2026-10-06 — Docker Hub 배포 개선의 발표 포함 자문
+
+사용자가 Runpod 업로드 지연 때문에 Docker Hub를 사용한 경험의 발표 포함 여부를 문의했다. 재개 요약/TODO·Git 상태를 읽고 rg/sed와 병렬 읽기 검토로 당시 기록을 확인했다. `artifacts/runpod/image-p4-20261001-01/registry-publication-01.json`, `pod-pull-user-result-01.json`의 게시/pull digest 일치와 `artifacts/runpod/service-p6-20261002-01/image-build-check-01.json`의 기존41층 재사용·새4층·베이스 재다운로드 없음이 직접 근거다. 최초 P4 로컬 빌드674.142초는 다운로드를 포함한 별도 범위이며 전후 개선율로 사용하지 않는다.
+
+발표 제목 ‘Runpod의 반복 환경 준비를 Docker 이미지 배포로 전환’과 문제→코드/가중치/패키지 이미지화→Hub 게시→Runpod 적용의 구성을 제안한다. 기존 방식의 지연은 사용자 경험, 이미지 배포와 레이어 재사용은 확인 사실로 구분한다. 기존층 재사용이 새 Pod의 첫 pull 생략을 뜻하지 않으며 전체 배포시간의 같은 조건 전후 비교는 없다. 개발 과정 또는 트러블슈팅에서30~40초 사용 제안, 시간 재배분/ZIP 반영은 미실행이다. 초기 검색의 없는 infra/runpod/Dockerfile 경로는 실제 apps/runpod_image로 확인했다. 첫 기록 patch는 LEARNING_LOG 헤더 불일치로 적용 전 실패했고 원문 보존 확인 후 수정했다. 기록4문서만 보완, 앱/원본/ZIP 변경·새 테스트·이미지빌드·원격/모델·커밋/푸시0이다.
+
+## 2026-10-05 — 20분 HTML 발표 GPT 인수인계 묶음 작성
+
+사용자가 장별 원고·근거·시각자료를 다른GPT에 전달할 수 있도록 준비해 달라고 승인했고, 비동기 응답으로 시연 포함20분 안팎을 확정했다. 최신 재개/TODO·지침·Notion 본문을 읽고 기존 모델/구조/RAG/RAM 근거를 병렬 읽기 검토했다. Notion 최신편집은13:24:02.571Z로 기존과같았으며 첨부HTML내부·모델ZIP은여전히미검증이다. 문제정의 기사 본문은 실제웹조회로 범위를 재확인했다.
+
+산출물은 `artifacts/presentation/final-20261005/gpt-handoff/`의 요청문·장별Markdown/JSON·사실/출처JSON·자산안내·HTML규격·CSV/계측발췌·이미지와도식이다. 본문22장/부록4장, 시연90초를포함한1170초+전환여유30초를편집목표로설정했다. 6개기존이미지를원본그대로복사했고2개SVG그래프는기존비교JSON수치로작성했다. 번들Python에matplotlib이없어설치하지않고SVG+기존sharp로PNG렌더후2개육안검수했다. source52파일존재/해시·자산6개원본해시·시각파일22참조·표본합/F1·메모리시도구분·선별민감패턴/절대경로검사통과. HANDOFF_CHECKS.json에기록했다. Markdown원고열기는앱queued응답이며실제열림완료로주장하지않는다.
+
+교차검토에서VLM의detector메타데이터사실주입오해를수정하고,split_passages의range(0,len,380)/최대440토큰을반영했다. 초기workerpeak883.168MiB를stdout파생JSON에서추출해후속896.14MiB와별도제공했다. EC2계획519/616.1/384조합은직접원본미발견으로당시PROGRESS기록수준임을명시했다. 출처경로/해시는식별용이며원본코드/운영영수증전체는패키지에포함하지않는다. 서명URL·개인절대경로·서버주소·가중치·전체영상은제외했다. Mermaid소스4개는렌더미검증,완성HTML·PDF·리허설·새모델·원격실행·외부쓰기/전달·커밋/푸시0이다.
+
+## 2026-10-05 — 16:9 HTML 발표 제작 방식 자문
+
+사용자가 PPTX보다 16:9 페이지형 HTML을 원한다고 명시했다. 최신 요약/TODO·Git 상태와 발표 시각 설계 지침을 읽고 기존 발표 구성에 적용했다. 장별 핵심 주장·화면 문구·도표·원본·측정 조건·발표 노트의 전달 구조, 대표3장 선행 디자인, 전체 사실 검수와 브라우저 리허설을 제안했다. 1920×1080 논리 크기/비율 유지 확대·축소/키보드 전환/넘침 검사/로컬 자료 묶음/PDF 대체본은 권고 규격이며 아직 구현·검증하지 않았다. HTML/PPT 생성·추가 모델 실행·원격 변경·GPT 외부 전달0이다.
+
+## 2026-10-05 — PPT 제작 환경 선택 자문
+
+최신 재개 요약/TODO와 Presentations·OpenAI Docs 지침 및 공식 발표 제작 안내(https://learn.chatgpt.com/use-cases/generate-slide-decks)를 읽었다. 현재 대화의 원본 근거·모델 버전·트러블슈팅 맥락을 활용한 초안 제작, 선택적인 별도 ChatGPT 전달력 검토를 권고했다. 제품 간 품질 우열이나 사용자 환경의 플러그인 접근성을 단정하지 않는다. 상담·기록만 수행했으며 PPT 생성·외부 업로드·모델 실행·운영 변경은 없다.
+
+## 2026-10-05 — 팀 Notion 발표 자료 기반 최종 목차 제안
+
+사용자 링크 https://app.notion.com/p/3ec71601692280af85a8d811e36ce0a9 의 ‘발표 자료’ 본문을 Notion fetch로 읽었다. 현재7대주제/3~6번상세원고/청킹기준 및 모델실험보고서2·RAG과정보고서1·모델ZIP 연결을 확인했다. 첨부소개에는 팀원의R2/YOLO26s 실험이 언급돼 현재운영YOLO11s와구분한다. 외부첨부HTML3개는web도구접근오류,제한적Python읽기URLError로본문미확인이다. HTML내용·첨부그래프·가중치를검증한것으로표시하지않고ZIP다운로드는하지않았다. 임시읽기폴더만생성됐고첨부파일은수신되지않았다. 서명URL은프로젝트문서/Git에기록하지않았다.
+
+기존10항목의대목차/슬라이드제목/핵심문장중복을정리해 ①문제정의와서비스소개②전체시연③전체시스템구조④데이터설계와사고/객체모델링⑤VLM·RAG근거보고⑥개발과정·운영관리⑦트러블슈팅⑧최종성과·한계로 제안했다. 3번은처리흐름/클라우드배치,5번에는누락된VLM입출력,6번에는MLflow·결과보존·배포추적을연결한다. 표지/목차포함약20장은편집가정이며발표시간확정이아니다. 팀실험과서비스채택의근거를분리한다. 이번은목차정리만이며노션외부쓰기·슬라이드파일·모델/운영API·새성능측정·Git게시0이다.
+
+## 2026-10-05 — 발표용 클라우드 배치 Mermaid 작성
+
+사용자가 배치도를Mermaid로표현하도록요청했다. 최신재개/TODO와worker.collect·queue_store·flow_service·MLflow저장설정을읽고 독립읽기검토를거쳐`artifacts/presentation/final-20261005/cloud-deployment.mmd`를작성했다. API→worker직접호출선대신PostgreSQL작업등록/조회,Runpod→S3근거게시→worker회수,Gemini직접호출,SQLite검색과PostgreSQL업무저장구분,MLflow조회/추적선을표시했다. 발표용주분석경로이며공개조회gateway·보안상세는생략한다. 모델·원격·Figma생성·새설치·테스트/성능측정0이며SVG/PNG/PPT파일은생성하지않았다. Mermaid렌더러를별도실행한검증으로표시하지않는다.
+
+## 2026-10-05 — PPT3·4·5번과 메모리 증설 결정 근거
+
+**요청/방법:** RAM 수치 확인 방법·이미지 복제 증설 이유와 PPT 내용을 요청받아 최신 요약/TODO·기존 코드·원본을 rg/sed로 대조했다. Linux cgroup v2와 AWS AMI 공식 문서로 일반 개념을 확인했다. 원격 계측·모델·검색·배포·성능시험·PPT 파일 생성·커밋/푸시0이다.
+
+**메모리 근거:** 임시검사 peak=max512MiB·oom/oom_kill1. 정리 후 가용1157MiB를 참고해 검사768+호스트여유256=1024MiB 사전조건을 설정했다. 1GiB+256=1280은 당시 가용보다 컸다. 768MiB에서9질의/6절/22.708초·OOM0이나 peak상한도달, worker에는128MiB를 더한896MiB 후보를 적용했다. 후속 단건peak883.168MiB/OOM0이며 최신 보고 실행은 peak약896.14MiB·max2418·OOM0이므로 여유 충분/최소요구량으로 확대하지 않는다.
+
+**별도 서버 이전:** MLflow 추가 전 가용519MiB, worker현재616.1/상한896MiB였다. 증가여유약280+MLflow초기예산384=약664MiB가 당시가용을 넘는다는 자원계획 근거를 확인했다. 이는 동시peak 실측 합이 아니다. 당시 목표 c7i-flex.large가 기존2a에서 미제공되어 비공개AMI/스냅샷으로2b의4GiB에 복제했다. DB10표32행·파일257개 수량/SHA동일과 stop/start5서비스복구는 기존 실제 검증이다. 이후 MLflow는 증액만으로 안정화되지 않아 불필요 GenAI jobrunner/periodic tasks를 끄고 상한768MiB로 연결한 이력도 보존한다.
+
+**PPT 구성/원본:** 3번 처리·배치구조/개발5단계,4번SO-TAD/head학습/개발236비교/운영두모델+고정YOLO,5번VLM관찰JSON/청킹·BM25+E5·RRF/6절템플릿으로 정리했다. API는http.server,PostgreSQL업무저장/SQLite검색을 구분한다. 비교X3D-Sepoch2를 운영epoch7성과로 붙이지 않는다. VLM예시는10월3일저장사건 발췌임을 표시한다. 근거: `artifacts/be-worker/teammate-rag-integration-20261003-01/small-cpu-capacity-user-result-01.json`, `capacity-02-user-result.json`, `artifacts/mlops/ec2-upgrade-20261005-01/clone-data-verification.json`, `artifacts/mlops/report-continuation-20261005-01/report-memory-02.json`, 기존모델비교원본·`apps/team_rag/control_rag.py`·`apps/be_worker/web_api.py`. 새측정으로 오인하지 않도록 단계·측정범위를 표시했다.
+
+## 2026-10-05 — RAG 수정·평가 지표·MLflow 역할 설명
+
+문서 관련성검수 원문·코드·SO-TAD 개발236 비교자료를 읽어 조건/조치주체 검사·전체 청크 발췌 보존과 모델 재튜닝을 구분했다. E5/BM25/RRF설정·VLM모델/프롬프트는 유지하며 실제 B근거5→4/원본보존과 MLflow추적은 별개 개선이다. 기존 개발성적이 있으므로 '정답자료 수신후 평가'를 현재 운영 가중치의 공통조건/독립최종평가 미완료로 명확히 했다. 현재 추론코드 `not_evaluated/inference_only`와 공식 Tracking 문서를 확인했다. 설명/기록 외 새테스트·평가·모델·배포·원격변경0. 상세근거/한계는 LEARNING_LOG의 같은 날짜 절이다.
+
+## 2026-10-05 — 최종 발표 목차·개발 과정·트러블슈팅 근거 검토
+
+**목적/범위:** 사용자가 제시한 7개 최종 발표 주제에 실제 과정과 트러블슈팅, 추가로 보여줄 내용을 연결했다. 저장소 읽기와 제공 기사 확인만 수행했다. 새 학습/추론·운영 API 호출·배포·성능시험·커밋/푸시0이다. 과거 기록의 제안/완료를 최신 current_status·IMPLEMENTATION_PLAN 상단과 교차 확인했다.
+
+**방법/관찰:** `git status --short --untracked-files=no`, `rg`, `sed`로 현재 작업지침/재개요약/계획/README/PROJECT_BRIEF/LOCAL_SETUP와 기존 코드·원본 JSON을 정적 확인했다. 조사 시작 시 추적 파일 변경은 없었다. 모델/리포트/운영 이력을 독립 조사해 개발 비교 결과와 운영 가중치 차이, RAG 검색·보고 방식, 실제 시연/미실행 평가를 구분했다. 테스트나 모델 검증을 반복하지 않았다.
+
+**변경 이유/전후:** 사용자 초안의 '사고/객체3종 반복튜닝·LangChain/LangSmith·통계검색·LLM 최종보고'를 현재 확인된 기능과 미확인 팀 외부자료로 구분했다. 운영 구현은 두 사고모델+고정YOLO, Gemini 관찰, E5/BM25 weighted RRF·관련성검사·템플릿6절, MLflow Registry/Run/실제Trace다. 비교실험의 X3D-S epoch2와 운영 epoch7은 다른 버전이므로 성능을 합치지 않는다. RAG275청크/320벡터·보행자조건 검수5→4·추가VLM/재검색 없는 복구를 발표 사례로 선택했다.
+
+**모델 비교 근거:** `artifacts/colab/rerun-r3d-sotad-common-20260927-01/verified-comparison-with-history.json`과 `artifacts/team-handoff/sotad-model-comparison-20260927-01/model-comparison-guide.md`를 대조했다. 학습1356(사고157/정상1199), 개발236(사고32/정상204), 개발4106창의 영상별 판정이다. R3D/R2/X3D-S/X3D-M 선택epoch6/7/2/9, FN전부0·FP16/5/12/10, F1 80.00/92.75/84.21/86.49%다. T4 특징부forward99.1/134.3/20.9/33.1ms는 모델별 입력전처리가 다르고 서비스전체지연이 아니다. 개발자료로 모델을 선택했으므로 독립 최종평가로 표시하지 않는다.
+
+**외부 근거:** 사용자가 제공한 SBS/Daum 기사 `https://v.daum.net/v/20260924010004001`의 본문을 확인했다. 보도일2026-09-24, 지난5년 터널사망사고58건의 평균인지3분54초, 주간52/야간77대 모니터링이라는 범위를 보존한다. 프로젝트가 인지시간을 단축한 실측으로 쓰지 않는다.
+
+**직접 확인/한계:** 운영 및 복구 원본은 `artifacts/mlops/report-relevance-20261005-01/review-attestation.json`, `artifacts/mlops/r2-tracing-20261005-01/recovery-observation-02.json`, 검색 구현은 `apps/team_rag/control_rag.py`다. 현재 배포/시연 연결 성공과 독립 일반화 성능·정량 보고품질은 다르다. 팀 외부 모델/객체 비교자료·최종 발표시간은 별도 입력 전 미확인이다. 발표/PPT 파일 제작과 새 모델 평가를 실행하지 않았다.
+
+## 2026-10-05 — HTTP8502 공개 조회 화면 배포·외부 검증 완료
+
+**승인과 결과:** 최초 원격 적용은 자동 승인 검토에서 CCTV 영상/설명/보고의 인증 없는 인터넷 공개 목적지에 대한 구체적 승인 부족으로 차단됐다. 사용자가 현재 저장 자료와 `http://203.0.113.10:8502/` 공개를 확인하고 “그렇게해줘”라고 명시 승인한 뒤 진행했다. 해당 승인과 초기 거절을 각각 `user-publication-approval.json`·`user-scope-and-review-evidence.json`에 보존했다. 팀원은 기존 관제 레이아웃에서 저장 영상·두 사고 모델 결과·VLM 설명·보고를 조회한다.
+
+**구현/선택 이유:** 기존 운영 entrypoint는 유지한다. `share_app.py`는 관제 페이지만 등록하고 서버 환경을 조회 전용으로 고정한다. `analysis_app.py` 직접 진입과 `client.py` 변경 요청을 먼저 차단한다. `share_server.py`는 공식 `st.App`에 ASGI 경계를 붙여 화면/정적 자원/미디어/Streamlit 조회 세션만 허용하고 다른 경로 및 변경 메서드를403으로 거절한다. `share_gateway.py`는 고정 BE의 정확한 GET 경로만 전달하고 비밀/로컬 경로/내부 관리 정보는 반환 자료에서 제외한다. 버튼을 숨기는 것만으로는 서버 변경 경로를 막지 못하므로 이 경계를 함께 적용했다. 기존 보고 원문·검수본 식별/모델 버전과 통계를 유지한다.
+
+**배포:** 기존 이미지 `e48f4122…ff349`/Streamlit1.64.0을 재사용하고15파일751,983B의 RO 소스(manifest `405437a6f55f1db772f8c9141c140978fe60c12b9a43f55964835cfc18cc39e9`)를 별도 공유UI/gateway에 적용했다. UI만0.0.0.0:8502, gateway는private8081이다. 비root·ROrootfs·cap drop·no-new-privileges와512MiB/128MiB 메모리 상한을 설정했다. 공유UI에는 운영망/DB/spool/인증정보 마운트가 없고 gateway가 허용 GET만 연결한다. 기존5서비스/이미지/env/상한/DB 및 보안그룹은 바꾸지 않았다.
+
+**적용 오류와 확인:** `python3 artifacts/mlops/readonly-share-20261005-01/prepared/run-rollout.py`의 승인 계획 적용은 새 컨테이너 생성 후 완료 영수증을 저장하기 전에 `share_outcome_unverified`를 반환했다. 재apply·서비스 재생성 없이 상태·로그·원래 기준선을 읽었다. 초기 예외는 재현되지 않아 정확 원인은 미확정이다. 두 컨테이너 running/재시작0/OOM0, health200, 원래5서비스·업무행·lifecycle 동일, 로그 오류0을 확인했다. `rollout-apply-01.json` 실패 원문과 `applied.json` 부재를 보존하며 별도 `rollout-readback-01.json`·`final-readback-01.json`으로 실제 완료를 입증한다.
+
+**검사/실제 화면:** 변경 경계 테스트16개(UI6/gateway6/ASGI4), 배포helper 정적12검사 및3.11구문 확인을 통과했다. `python3 artifacts/mlops/readonly-share-20261005-01/prepared/verify-external.py`는 외부HTTP25개(화면/health200·내부 경로 및 빈 변경 요청403)와8080/8081/5432/5000/5001/8501의 외부TCP 접근불가6개를 확인했다. TCP timeout을 서비스가 없다는 뜻으로 해석하지 않는다. 실제 외부 브라우저에서 R2 원본7초/후보6초 끝까지 재생, R2 모델/버전·VLM·보고6절/문서5개, X3D-S 모델/버전·VLM·검수보고6절/문서4개·보고 판·박스 주석640×480/1.44초를 확인했다. 두 데스크톱 크기에서 가로 넘침0이다.
+
+**최종 관측/미실행:** 12:52 KST 최종 readback에서 기존5서비스/업무행/lifecycle·15소스manifest 불변, 공유2개 running/재시작0/OOM0이다. 현재 UI181.1MiB/512MiB·gateway22.81MiB/128MiB·호스트 MemAvailable2,268,844,032B(약2.11GiB)이며 peak/동시접속 부하 결과는 아니다. 새 모델/GPU/VLM/RAG/학습·원격 데이터 변경·자동 재시도·새 Git 게시0. 실제 추가 stop/start·장시간 부하 검사는 반복하지 않았다. 기존 EC2/Pod는 사용자가 켠 상태를 유지한다.
+
+근거: `artifacts/mlops/readonly-share-20261005-01/`의 승인·freeze·rollout/readback·external/browser JSON, `public-r2-dom.txt`, `public-x3d-dom.txt`, `public-share-screen.jpg`. 사용법과 개념/대안은 LOCAL_SETUP·LEARNING_LOG에 기록했다.
+
+## 2026-10-05 — HTTP8502 조회 전용 공유 구현 착수
+
+사용자가 기존 운영 화면/분석을 유지하며 로그인 없는 HTTP 조회 공유를8502에 구성하고 외부 접속/서버 차단을 검증하도록 명시 요청했다. SG의8502/tcp 0.0.0.0/0허용과 기존8501localhost·API/DB/MLflowhost publish0을 읽기로 확인했다. 기존UIimage/Streamlit1.64.0/Starlette/Uvicorn을 재사용하며 추가설치없이 별도share-ui와privateGETgateway로 분리한다. 공유UI는운영network/DB/spool/secret에직접접근하지않고gateway만고정BE GET허용경로를연결한다. 서버환경고정조회모드+미등록분석페이지+ASGI HTTP변경차단으로구성한다. 기존Docker/메모리/worker실행창과원본결과는보존하며모델/검색재실행0이다. 스킬 developing-with-streamlit의CLI/testing/server-asgi참조를적용했고 공식st.App와로컬실제시그니처를확인했다.
+
+근거: `artifacts/mlops/readonly-share-20261005-01/preflight.json`. 구현·배포·외부검증성공은아직후속확인대상이며8502SG허용만으로서비스완료라표시하지않는다.
+
+## 2026-10-05 — R2 저장 응답 복구·6절 보고·MLflow 추적·실제 화면 완료
+
+**결과:** 사용자 승인 범위의 R2 VLM 설명 1건/CPU 검색·보고 1건을 완성했다. 보고 `295df448-6296-5053-872b-76b566f4bf70`, 장면 `109335df-c44c-46a1-9d0c-78fce0c4f084`, 보고 SHA `0219e54bc3ba393fe2696ec6ad8d94aa3af97ce3e7ba12ba5302a96658c56d0e`, 6절·문서 5개다. 기존 GPU 결과에서 이어갔으며 전체 실제 Gemini 1회/CPU 검색 1회/추가 GPU0/학습0/자동 모델 재시도0이다. 정확도/F1·추정 비용은 기록하지 않았다.
+
+**변경 이유/실제 흐름:** 최초 Gemini 응답은 `$schema` 메타데이터 한 항목 때문에 엄격한 장면 검사에서 멈췄다. 원본 request/raw/failure와 원래 task/session/Run/Trace는 보존하고 `report_recovery.py`가 이 정확한 항목만 제거한 파생본과 provenance를 별도 저장한다. 기존 장면 검사를 통과한 내용으로 기존 `team_jobs` CPU 검색·관련성·템플릿 보고를 1회 실행했다. 최초 CPU 결과는 파일 생성 뒤 DB readback 비교에서 JSON 변환 전후 표현 차이로 중단됐다. `_store_report`를 canonical JSON 내용 비교로 보정하고, 원래 CPU 실패 파일을 유지한 채 이미 계산한 보고만 검증·저장하는 경로로 마쳤다. 저장 단계에서는 검색·VLM을 다시 호출하지 않았다. `flow_service`는 기존 실패 정보와 별도 복구/MLflow 정보를 함께 조회하며 원래 paused task를 completed로 덮지 않는다.
+
+**배포/검사:** 최종 66파일 source-04 manifest `daa5697c5363b7f41575bc7f12e24dda10db5efb6eaa7cb638a13449475c01bf`, EC2 `r2-tracing-release-v4`를 API/worker에 RO 적용했다. RAG 정책4파일·기존 UI와 B 검수 코드, 이미지/env/비밀/메모리 및 나머지 서비스·기존 업무행을 보존하고 lifecycle 식별자를 갱신했다. 변경 관련 검사 68개+과거 p6 회귀1+복구 조회3+복구 모듈3+DB canonical 비교1=76개 통과, Python3.11 구문 확인. 전체 회귀/기존 GPU 검증은 반복하지 않았다. 실행 명령은 `recover_r2_saved_report.py --plan/--apply`의 고정 계획 해시 및 저장 전용 finalize 경로이며 실제 인자/영수증은 아래 준비 스크립트와 JSON에 보존한다.
+
+**MLflow 실제 기록:** 성공 복구 실행 `71cbec0b92f245a59c19301fd090fe5b`의 Run `3337fad8b4aa46568a5ed28e426086bc`는 FINISHED/succeeded. 원래 CPU Trace `tr-495180fade40c16cde3a201edabfeeae`는 ERROR 4 span(정규화 OK/검색 OK/저장 ERROR), 저장 Trace `tr-9d18ea75b836944c6ffebedddbc619b8`는 OK 2 span으로 같은 Run에 native 연결했다. 원래 실패 Run `eb853e98e7e14f0dbc9f4443266f81a4`/Trace `tr-9ae6176ac7dbb4c030d686e88a4bcabb`의 실제 VLM 3.933711484초·입력6893/출력952/총7845토큰은 그대로다. 복구에 새로운 LLM span/토큰을 만들지 않았다. `pipeline_seconds=9.266729831695557`은 CPU 시도+저장 시도의 측정 합이며 수동 수정 공백을 제외한다. MLflow 화면 Duration11.3분은 시작~완료 경과이므로 추론 시간과 혼동하지 않는다.
+
+**최종 읽기 확인:** 저장 실행은 원격 exit0 후 wrapper가 stdout JSON을 해석하지 못해 결과 미확인 영수증을 남겼다. 재실행하지 않고 `--status`로 완료를 확인했다. 첫 통합 observer는 PostgreSQL JSONB의 키 순서에서 파생된 목록 순서를 실제 Trace와 비교해 실패했다. 원본 report.json 투영과 Trace 출력 차이0을 읽기로 확인한 뒤 이미 DB와 내용 일치를 검증한 원본 파일의 순서를 사용하도록 검사기만 수정했다. `python3 artifacts/mlops/r2-tracing-20261005-01/prepared/run-recovery-observation.py` 최종 결과 `r2_cpu_recovery_verified`: DB/파일/API 보고 일치·원본22파일/세션/B 원본/검수본 보존·Run/Trace native 연결·성능 수치 미기록 확인, 모델 호출/DB쓰기0. 이전 실패 영수증은 그대로 남긴다.
+
+**실제 관제/MLflow 화면:** 운영 API → `R2 · 201a4be6`에서 새 VLM 관찰·보고 ID·6절·R1~R5를 확인했다. 원래 작업 실패를 보존해 카드의 `확인 필요 · 일시중지`는 유지되지만 복구 보고가 열린다. MLflow 성공 Run Overview의 모델/가중치·입력 SHA·Finished와 Traces2행(ERROR/OK)을 실제 브라우저로 확인했다. 현재 보고는 운영자 검수가 필요한 초안이며 법적 적용/최종 정확성을 검증한 것으로 쓰지 않는다. 후보시각/카메라/위치 미등록, 기준일 필터 미지원도 그대로 표시한다. 이번에는 새 Git 게시·Docker Hub 게시·Pod 교체·메모리 변경·자원 중지/삭제를 하지 않았다.
+
+**근거:** `artifacts/mlops/r2-tracing-20261005-01/`의 `source-freeze-04.json`, `rollout-apply-04.json`, `recovery-plan.json`, `recovery-apply-result.json`, `storage-finalization-plan.json`, `storage-finalization-apply.json`, `storage-finalization-status.json`, `retrieval-observer-diff.json`, `recovery-observation-02.json`, `r2-report-complete.jpg`, `recovery-run-traces.jpg`. 관련 사용법·개념은 LOCAL_SETUP/LEARNING_LOG 최신 절에 기록했다. 이번 승인 범위 완료; 다음 별도 작업은 공통 정답/기준 수신 후 평가다.
+
+## 2026-10-05 — R2 실제 응답 수신·규격 오류 기록·CPU 복구 진행
+
+최소 추적 소스를 EC2 API/worker에 적용했고 기존 B 원본·검수본과 DB/화면/이미지/메모리 설정을 보존했다. 첫 읽기 계획의 `.dockerignore` 허용 누락, 다음 계획의 과거 p6 team 설정에 대한 현재 코드 SHA 비교를 각각 수정했다. 두 번째 문제는 원래 작업 ID·GPU/입력·불변 task 영수증이 일치하는 과거 기록만 별도 검증하며 새 실행 검사는 유지하는 방식으로 해결했다. 관련 추가 회귀 1개 통과(기존 68개 외). 최종 source-02 manifest는 `27bc62ef0151421b25f8e1ac7b3b76353dd8b2bd9f4b3bc5317423269991a05f`다.
+
+계획 `395a13550f572b98c7bed1ee515097507aedf867e0297337de242b4a304c5bf0`에 apply 1회만 실행했다. R2 task `6e0853ab063b884f52e64cec91d5e115`는 Gemini 응답 수신까지 성공(3.933711484초)했지만 응답 최상위에 `$schema: https://json-schema.org/draft/2020-12/schema`가 추가돼 엄격한 장면 스키마 검사에서 중단됐다. 원문/실패 파일을 보존하고 task는 paused, DB 장면/보고는 0개다. 해당 메타데이터만 메모리 안에서 제외한 파생본은 기존 장면 검사를 전부 통과했으며 저장 원문은 수정하지 않았다. 원격 추가 GPU0·Gemini 실제1·CPU검색0·자동 재시도0이다.
+
+MLflow 실패 Run `eb853e98e7e14f0dbc9f4443266f81a4`와 ERROR Trace `tr-9ae6176ac7dbb4c030d686e88a4bcabb`의 native 연결, 실제 3 span, 토큰 입력6893/출력952/전체7845를 읽기 전용으로 대조했다. 비용이나 정확도/F1은 기록하지 않았다. 근거는 `artifacts/mlops/r2-tracing-20261005-01/`의 `report-plan-02.json`, `report-apply-result.json`, `observation-01.json`, `scene-schema-diagnostic.json`, `scene-extra-field-diagnostic.json`, `failure-trace-verification.json`이다. 최초 실패 경로 조회는 worker ID와 spool directory ID가 달라 파일을 찾지 못했고, DB의 정확한 directory ID로 조회했다. 해당 조회도 쓰기/재호출0이다.
+
+현재 추가 VLM 없이 원문을 보존하는 CPU 보고 복구 경로를 구현 중이다. 실패 task/session/Run/Trace는 성공으로 덮어쓰지 않고, 메타데이터 정규화 provenance와 별도 복구 실행 ID/Run/Trace를 남긴다. 기존 보고 생성·6절 검증을 재사용하며 새 모델 호출0·CPU 검색1회 상한을 유지한다. 복구 완료 여부는 후속 관측을 따른다.
+
+## 2026-10-05 — R2 후속 보고·최소 Trace 구현 진행
+
+사용자가 최소 추적→기존 R2 결과로 VLM 1회/보고 1건→Run/Trace/관제 확인 순서를 승인하고 반복 검사를 줄이도록 요청했다. 새로운 GPU·학습·자동 모델 재시도는 0회이며 정확도/F1은 별도 공통 평가 자료를 기다린다. 기존 SDK 3.16.1을 그대로 사용하여 실제 VLM·검색/관련성/템플릿·저장 경계의 시간을 수집하고 새 보고 Run과 Trace를 연결한다. 비밀·영상·원문 전체는 Trace에 넣지 않고 식별자·해시·실제 토큰·문서 점수와 제외 사유를 남긴다. RAG 4개 정책 파일과 기존 B 검수 구현의 바이트를 보존한다.
+
+변경 경로 검사만 continuation/activation 35개, 추적 6개, team_jobs 11개, flow 4개, mlops 12개(총 68개) 통과했다. 전체 BE/UI 회귀·기존 GPU 검증은 반복하지 않았다. 배포 도우미 정적 검사 7그룹 및 Python 3.11 문법을 확인했다. 64파일/525,877바이트 소스를 동결했으며 manifest SHA는 `18eb6eee9a36558fccdd72d0b06c4155c6585ea3c29b00819aab79e38827b92c`다. 첫 원격 읽기 계획은 승인 소스의 `.dockerignore`가 검사 허용 목록에 없어서 중단됐다. 서비스/모델 변경 없이 도우미만 수정하여 새 버전 계획으로 이어간다. 실제 적용·실행 결과는 후속 관측으로 기록한다.
+
+근거: `artifacts/mlops/r2-tracing-20261005-01/`의 `user-authorized-scope.json`, `sdk-preflight.json`, `source-freeze.json`, `rollout-plan.json`. 소스 구현만으로 실제 보고/Trace 성공을 표시하지 않는다.
+
+## 2026-10-05 — RAG/VLM Trace 확장 가능성 설명(구현 미실행)
+
+사용자가 MLflow의 추가 확인 범위와 RAG Trace/LangSmith 필요 여부를 질문했다. 기존 Run 기록 코드를 재사용해 검토하고 MLflow 공식 수동추적·Gemini연동·토큰/비용 문서, LangSmith 공식 관측 문서를 확인했다. 현재 Gemini는 urllib REST 직접 호출이며 usageMetadata는 저장하지만 MLflow span으로 전송하지 않는다. RAG는 로컬 E5/BM25/문서관련성/규칙템플릿이며 새 보고 LLM을 쓰지 않는다. 기존 MLflow에 이 경계들을 수동 추적하는 구성은 가능하나 아직 미구현이다. 현재 범위에 LangSmith 도입을 필수로 요구하지 않는다는 권고만 했으며 사용자 문의를 실행 승인으로 확장하지 않았다. 코드 변경·설치·배포·모델호출·추가 Git 게시0. 근거/대안/한계는 LEARNING_LOG의 같은 날짜 항목에 남겼다.
+
+## 2026-10-05 — MLflow Overview 빈 화면과 실제 Runs4건 구분
+
+사용자의 Overview 빈 화면 문의에 따라 살아 있는5001 SSH 리스너와 MLflow3.16.1 실제 브라우저를 확인했다. `cctv-model-executions`의 GenAI Overview Usage는 Traces0/선택기간자료없음·토큰0·비용자료없음이다. 현재 구현은 `mlflow_tracking.create_run/log_batch/log_artifact`로 Params/처리시간/관찰JSON/상태를 기록하며 GenAI span/trace 계측은 없다. 따라서 이를 데이터 유실·실제 호출0·무료라고 해석하지 않는다. Model training → Runs의 전체기간 Active 목록에서 GPU2건/보고1건/검수1건의 총4행과 각 기존run ID를 확인했다. 검수run의 새duration metric 없음은 의도된 동작이다.
+
+사용자 MLflow 탭을 Runs에 두고 LOCAL_SETUP의 직접 링크/클릭 순서를 수정했다. 화면 캡처는 `artifacts/mlops/ec2-upgrade-20261005-01/mlflow-ui-access-20261005-01/runs-four-confirmed.jpg`. 모델·VLM·검색 재실행/설정·DB 변경0, 새로운 trace/evaluation/demo 생성0이다. 이번은 화면 조회와 사용법 보완이며 제품 코드 변경/새 Git 게시0이다.
+
+## 2026-10-05 — MLflow 접속 복구와 조회 출처·모델 구분 설명
+
+사용자 문의에 따라 `lsof`로 localhost5001 리스너 없음/8501 SSH 리스너 있음을 확인했다. 기존 `python3 artifacts/mlops/ec2-upgrade-20261005-01/ec2-ssh.py --mlflow-tunnel 5001`를 재사용했다. 제한 환경의 첫 연결은 실패했고 허용된 네트워크 실행에서 EC2 현재 주소·고정 host key·내부 tracker 이미지/네트워크/host allowlist 검증 후 터널이 열렸다. localhost UI HTML·health·experiment2 `cctv-model-executions`·검수 run `16a8f6851f5742638370d8d92b17e8f7` GET 모두200/FINISHED를 확인했다. 원문은 `artifacts/mlops/ec2-upgrade-20261005-01/mlflow-ui-access-20261005-01/tunnel-restored-02.json`에 보존했다. 원격 설정·보안그룹·DB·GPU/VLM 변경0. 브라우저 시각 검증이나 추가 모델 검사는 반복하지 않았다.
+
+RAG 관련성/문서 연결만 변경했고 VLM 관찰은 재사용했다. 관제의 운영 API 저장 결과는 현재 서버 GET/30초 캐시, 저장 확인 기록은 고정 스냅샷이며 자동 상호 대체하지 않는다. 같은 입력 SHA라도 모델/설정과 worker 작업 ID가 다르면 별도 카드로 남고 상세 처리 기록에서 model_id/model_version을 확인한다. 실제 B29136c38은 X3D-S, R2201a4be6은 R(2+1)D-18이며 후자의 새 VLM/보고는 실행하지 않았다. 이번은 조회/연결 복구로 제품 소스 변경·추가 게시0이다.
+
 ## 2026-10-05 — 최신 BE/UI·보고 관련성 검수 Git 게시와 원격 CPU CI 완료
 
 사용자의 명시적 게시 요청에 따라 기존 전용 checkout의 clean main `6f886d72171a3e5fe111badc7db833dc2f2f9b96`과 GitHub 원격 일치/브랜치 보호 비활성을 확인했다. Rulesets API는 GitHub 플랜 제한403이므로 전체 규칙 부재를 단정하지 않았다. 선별452파일·변경38개를 검토하고 `core.autocrlf=false`로 기존 CRLF와 catalog 바이트를 보존했다. Git index 및 커밋 blob 전부가 게시 manifest와 일치했다. 원본 프로젝트·실자료·운영 인증은 그대로 두었고, 게시 문서 복사본에서만 개인 경로와 운영 EC2/Pod/IP 식별자를 중립화했다. 비밀 검사0·모델/영상/실행결과 업로드0이다.
@@ -6384,3 +7021,28 @@ DescribeInstances 재조회는기존small/running/2a. DescribeSubnets와Describe
 최종 중지도 데이터 불변·5서비스 정상 종료로 통과했고 원본/새 서버 모두 stopped임을 AWS 읽기 API로 확인했다. 두 서버의 public IP는 없으며 원본/새 EBS와 AMI/스냅샷/S3를 보존했다. 저장 비용은 남는다. 전체 새 GPU→VLM→보고 완료 전에 복구본을 지우지 않았으며 2GiB 축소도 하지 않았다. 사용법은 LOCAL_SETUP 맨 위에 갱신했다. 이번 운영/문서 보완은 Git 추가 push0이고 기존 Hub digest를 바꾸지 않았다.
 
 근거: [첫 중지](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-stop-01.json), [시작](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-start-01.json), [Registry·자원 읽기](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-readback-01.json), [최종 중지](../artifacts/mlops/ec2-upgrade-20261005-01/lifecycle-stop-final.json), [최종 AWS 상태](../artifacts/mlops/ec2-upgrade-20261005-01/final-resource-state.json). 다음은 사용자 Pod 이미지 적용/정보 수신 후 이미 합의한 B/R2 짧은 GPU 연결 검증이다. 새 VLM 포함 보고 생성은 그 제한 검증과 별도로 남는다.
+
+
+## 실행 기록 — 2026-10-07 a28e7e62 사람 관찰 보존·보고 복구 완료
+
+사용자가 ‘사람 관찰도 넣고 보고는 그대로 진행’하도록 요청해 저장 응답만 재사용하는 명시적 복구 정책 `cctv-team-person-evidence-warning-v1`을 추가·EC2 반영했다. 원문 `people.person_on_road=observed/evidence_ids=[]`는 그대로 보존하고 파생 이벤트의 구조화 신호만 unknown으로 두며, 설명 끝과 uncertainties에 **‘모델은 도로 위 사람을 관찰했다고 응답함 — 근거 연결 확인 필요(people.person_on_road: 영상 근거 번호 누락).’**를 함께 남겼다. 사람 부재로 바꾸거나 근거 ID를 만들지 않았다. 다른 관찰/근거와 원문 SHA는 유지했고 사람 근거를 확정 전제로 하는 기관 판단은 보류한다.
+
+대상 task `a28e7e62ab6627c618c3cdec28ced4f4`, worker `957f376f989d40cf8e036c81ed17c4fb`의 별도 execution `1c379e71528541b7a99fd7ba8bc5c63e`로 **CPU 검색·6절 보고 저장 1회 / 11.7203초**, 새 GPU/VLM 0회를 완료했다. report `16d32008-42a7-5828-b727-fb96aa6f079b`; MLflow 새 Run `d9d1aacbf8d84970b79969bd6365fddd` FINISHED, Trace `tr-b90a3dcfaa0a7e8cf1c0a43b38a795f6` 4span 모두 OK. 이전 Run `5db500323a6a4e5a9b29364f726cb7a3` FAILED·task paused·응답/실패/추적 원문·시연 session/claims/marker는 보존했다. 원래 7870토큰을 새 복구 Run의 신규 소모로 중복 계산하지 않았다. 정확도/F1 미실행 유지.
+
+복구/조회/엄격 검증/MLflow 관련82검사, 실제 저장 이벤트의 간략 VLM 요약 AppTest 통과. 브라우저에서 보고 저장 완료 알림→같은 사건 상세→사람 경고·6절 보고를 확인했다. 이때 알림 첫 진입의 `control_navigation` 초기값 누락 오류를 발견해 `demo_app.open_live_case`에 증가/초기화 한 줄을 추가했다. 알림 관련8검사 통과 후 UI 원본 백업·한 줄 차이 대조로 반영, UI/BE 재시작 없이 이 추가 패치 완료. 총90 관련검사와 별도 실제 이벤트 AppTest이며 모델 검사를 반복하지 않았다.
+
+BE 복구 배포는 API/worker만 유휴 상태에서 재시작했고 기존10업무테이블/동료7서비스/시연 설정·marker SHA 보존 및8501/8502/8503 HTTP200을 확인했다. API 컨테이너에는 E5가 없어 첫 읽기 전용 복구 계획이 중단됐고, E5가 준비된 기존 worker에서 계획/실행을 완료했다(그 첫 계획의 모델호출·쓰기0). 실제 보고 후 재조회는 경고가 VLM 요약·보고 Markdown·확인필요 목록에 있고 원문/실패상태/시연원장이 불변임을 확인했다.
+
+범위: **이번 저장 응답 복구**이며 일반 새 VLM 호출 경로의 엄격 검증과 계약 해시는 변경하지 않았다. 향후 같은 누락을 새 분석에서 자동 경고 처리하는 정책은 아직 적용하지 않았다. 기존 ‘작업 중단’ 표시는 이전 작업 이력이고 별도 설명·보고 저장 완료가 연결된다. Git 게시·Pod 이미지 변경·새 영상 업로드·실행 창 연장 없음. 다음 한 작업은 사용자의 저장 보고 내용 확인이다. 근거 `artifacts/mlops/job-stop-20261007-a28e7e62/`의 recovery-final-readback-01.json, recovery-rollout-apply-01.json, ui-notice-apply-01.json, local-validation-01.json, ui-warning-check-01.json.
+
+
+최종 브라우저 재확인: 한 줄 알림 패치 후 조회 새로고침·같은 사건 열기에서 report16d32008·사람 경고·보고 완료 알림이 보이며 AttributeError/Traceback 표시 없음. 실제 브라우저 첫 오류와 수정 후 결과는 `browser-readback-01.json`에 구분해 기록했다. 새 GPU/VLM·업로드0, 시연 잔여9건 유지.
+## 2026-10-07 — PyCharm PostgreSQL 조회 안내
+
+최종 후속: 사용자가 연결완료 후 내용보기를 요청했다. 기존public만 선택된1/6스키마를 확인해cctv_jobs/cctv_scene을 추가(3/6), cctv_scene/테이블/team_report_runs를 더블클릭했다. 실제그리드17행과ID/state/생성·갱신시각 조회를확인하고그대로열어두었다. 스키마표시선택과조회만수행, 행편집/제출0이다. 초기의과거연결실패알림과최종그리드조회성공을구분하며 SSH재설정/설치/새SQL쓰기/모델호출없음.
+
+후속 사용자 연결실패 화면에서 일반 탭172.18.0.2:5432는 정상 입력됐으나, 실제 SSH/SSL 탭의 ‘SSH 터널 사용’이 체크 해제되고 SSH 구성도 미지정인 것을 UI로 확인했다. Mac에서 EC2 내부주소로 직접 연결을 시도한 설정이므로 우선 SSH 터널 구성이 필요하다. 해당 탭을 열어 안내했고 체크/인증설정 변경·비밀번호 열람·인바운드 변경은 하지 않았다. SSH 경유 DB 인증 성공은 아직 미검증이다.
+
+사용자가 CLI 대신 기존 PyCharm Database 화면 사용법을 요청했다. 앱의 Database/데이터 소스 창에서 기존 `cctv@127.0.0.1`의 호스트127.0.0.1·포트15432·사용자cctv_app·DB cctv를 확인했다. 연결 테스트는 `Connection ... refused`; Mac `lsof -nP -iTCP:15432 -sTCP:LISTEN` 결과 리스너없음이다. 기존15432 터널을 전제로 하는 연결이며 현재 DB 비밀번호 오류로 단정하지 않는다. 기존 ec2-ssh.py로 원격 `docker inspect --format '{{json .NetworkSettings.Networks}}' cctv-db-1`만 읽어 cctv_database/172.18.0.2를 확인했다. 최초 샌드박스 실행 실패 후 승인된 샌드박스 밖 읽기 조회는 성공했다.
+
+JetBrains 공식 SSH/Docker 연결 안내에 따라 PyCharm 자체 SSH 터널+내부DB172.18.0.2:5432의 설정값과 스키마/테이블 열기 순서를 안내한다. 실제 PyCharm 연결설정 수정·비밀번호열람/저장·앱/드라이버설치·터널시작·DB쓰기·모델호출0. Database와 기존 설정창을 열어두었고 최종 PyCharm DB 연결은 미완료다. 별도 시각화/새 DB앱 설치 대신 기존 IDE를 사용한다는 사용자 정정을 반영했다.

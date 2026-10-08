@@ -22,14 +22,23 @@ class ReportConnection(ModelConnection):
     def __init__(self, db):
         super().__init__(db)
         self.tasks, self.busy, self.generated = [], False, False
+        self.queue_rows = {}
 
     def execute(self, sql, args=None):
+        if sql.startswith('SELECT * FROM cctv_jobs.queue WHERE worker_job_id=%s'):
+            return SimpleNamespace(fetchone=lambda: deepcopy(self.queue_rows.get(args[0])))
         if sql.startswith('SELECT name,payload'):
             value = [{'name': k, 'payload': deepcopy(v)} for k, v in self.db.rows.items()
                      if k.startswith(('mlops-session-', 'p6-hour-session-'))]
             return SimpleNamespace(fetchall=lambda: value)
         if sql.startswith('SELECT * FROM cctv_jobs.analysis_tasks'):
-            return SimpleNamespace(fetchall=lambda: deepcopy(self.tasks))
+            rows = self.tasks
+            if 'WHERE task_id=%s' in sql:
+                rows = [task for task in rows if task['task_id'] == args[0]]
+            elif 'WHERE worker_job_id=%s' in sql:
+                rows = [task for task in rows if task['worker_job_id'] == args[0]]
+            return SimpleNamespace(fetchall=lambda: deepcopy(rows),
+                                   fetchone=lambda: deepcopy(rows[0]) if rows else None)
         if ' AS busy' in sql:
             return SimpleNamespace(fetchone=lambda: {'busy': self.busy})
         if ' AS found' in sql:
@@ -45,7 +54,8 @@ class ReportContinuationTests(unittest.TestCase):
             CCTV_ANALYSIS_DEPLOYMENT=profiles.MLOPS_DEPLOYMENT, BE_REPORT_PIPELINE='team-rag-v1')
         self.env.start(); self.addCleanup(self.env.stop)
         self.db = FakeDB(); self.conn = ReportConnection(self.db)
-        self.profile = profiles.profile('B')
+        self.version = getattr(self, 'VERSION', 'B')
+        self.profile = profiles.profile(self.version)
         # Only public code/contracts are copied. Private corpus/index bytes are
         # synthetic here: these tests exercise admission identity, not search.
         resources = self.root / 'synthetic-contract-resources'
@@ -86,7 +96,7 @@ class ReportContinuationTests(unittest.TestCase):
         self.config = dict(bucket='test-only', region='ap-northeast-2', job_id=self.provider,
             event_id=self.event, expected_input_sha256=sha, analysis_profile=self.profile, gpu_key=gpu)
         values = {'input.mp4': data, 'handoff.json': json.dumps(handoff).encode(),
-            'normalized-result.json': json.dumps({'status': 'completed', 'version': 'B', 'input_sha256': sha}).encode(),
+            'normalized-result.json': json.dumps({'status': 'completed', 'version': self.version, 'input_sha256': sha}).encode(),
             'model-binding.json': b'{}', 'scene-event_000.json': json.dumps(self.config).encode(),
             'scenes/event_000/input/manifest.json': manifest,
             'scenes/event_000/input/fetch.complete.json': b'{}',
@@ -98,13 +108,13 @@ class ReportContinuationTests(unittest.TestCase):
             versions=['B', 'R2'], purpose='gpu_comparison', max_jobs=2, per_job_seconds=300,
             window_seconds=900, approved_input_sha256=sha)
         old_binding = dict(input_sha256=sha, input_bytes=len(data), gpu_key=gpu,
-                           version='B', settings=None, reference_date=None, event_ids=[self.event])
+                           version=self.version, settings=None, reference_date=None, event_ids=[self.event])
         self.old = dict(old_marker, started_at=0., deadline_at=900., stopped=False,
                         bindings={self.wid: old_binding}, claims=[])
         self.db.rows[old_marker['name']] = deepcopy(self.old)
         self.task = dict(task_id=selection_jobs.identifier(dict(gpu_key=gpu, purpose='gpu_comparison',
             generation_settings=None, reference_date=None)), worker_job_id=self.wid, purpose='gpu_comparison',
-            version='B', gpu_key=gpu, generation_settings=None, reference_date=None,
+            version=self.version, gpu_key=gpu, generation_settings=None, reference_date=None,
             status='comparison_completed', paused=False, error_code=None, finished_at='synthetic-completed')
         self.conn.tasks = [self.task]
         (self.directory / 'state.json').write_text(json.dumps(self.row['state']))
@@ -128,7 +138,7 @@ class ReportContinuationTests(unittest.TestCase):
         self.start()
         with self.conn.transaction():
             session.check_admission(self.conn, self.row['state']['input_sha256'],
-                                    self.row['state']['input_bytes'], ['B'], 'full_report')
+                                    self.row['state']['input_bytes'], [self.version], 'full_report')
             session.bind_job(self.conn, self.row, self.settings, None)
         session.check_dispatch(self.conn, self.row)
         session.check_events(self.conn, self.row, [self.event], self.settings, 'full_report', None)
@@ -162,9 +172,9 @@ class ReportContinuationTests(unittest.TestCase):
 
     def test_other_input_model_purpose_or_event_rejected(self):
         self.start(); source = self.marker['source']
-        for sha, versions, purpose in [('d' * 64, ['B'], 'full_report'),
-                                       (source['input_sha256'], ['R2'], 'full_report'),
-                                       (source['input_sha256'], ['B'], 'gpu_comparison')]:
+        for sha, versions, purpose in [('d' * 64, [self.version], 'full_report'),
+                                       (source['input_sha256'], ['R2' if self.version == 'B' else 'B'], 'full_report'),
+                                       (source['input_sha256'], [self.version], 'gpu_comparison')]:
             with self.assertRaises(WorkerError), self.conn.transaction():
                 session.check_admission(self.conn, sha, source['input_bytes'], versions, purpose)
         with self.assertRaises(WorkerError):
@@ -195,7 +205,7 @@ class ReportContinuationTests(unittest.TestCase):
         store.by_key.return_value = None
         with patch('apps.be_worker.selection_jobs.enqueue') as enqueue, self.assertRaisesRegex(
                 WorkerError, 'cannot_enqueue_gpu'):
-            selection_jobs.admit(store, self.directory / 'input.mp4', None, 'B', 'full_report',
+            selection_jobs.admit(store, self.directory / 'input.mp4', None, self.version, 'full_report',
                                   spool=self.root, config=self.row['state']['config'], jsonb=lambda v: v)
         enqueue.assert_not_called()
 
@@ -229,6 +239,10 @@ class ReportContinuationTests(unittest.TestCase):
         self.assertEqual(emit.call_args.args, ('completed',))
         self.assertEqual([c['kind'] for c in session.get(self.conn)['claims']], ['scene', 'cpu_retrieval'])
         self.assertEqual(self.db.rows[self.old['name']], self.old)
+
+
+class R2ReportContinuationTests(ReportContinuationTests):
+    VERSION = 'R2'
 
 
 if __name__ == '__main__':

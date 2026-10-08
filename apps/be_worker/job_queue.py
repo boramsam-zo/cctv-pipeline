@@ -187,6 +187,11 @@ class Coordinator:
                     intent_started = False
                     def commit_intent():
                         nonlocal intent_started
+                        # Closing a demo during provider preflight must still
+                        # prevent a fresh paid submission intent.
+                        from . import hour_session
+                        if hour_session.configured():
+                            hour_session.check_dispatch(self.store.connection, row)
                         # A connection error may hide a committed write. Never
                         # replace that possibly committed intent with prepared.
                         intent_started = True
