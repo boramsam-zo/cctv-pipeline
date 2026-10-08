@@ -6,7 +6,7 @@
 
 `scripts/prepare_git_publication.py`의 README 안내문 자동 삽입만 제거했다. 파일 선별·비밀 검사·개인 경로 및 운영 주소 익명화는 유지한다. 게시 관련7검사 통과, README 로컬 링크9개와 옛 README 보존 일치를 확인했다. 코드와 대조해 EC2 Python HTTP API/Runpod Starlette, 영상 분류 후 YOLO, 검색+템플릿 보고의 실제 역할을 설명했다. 새 모델 평가·성능 수치·서버 변경은 없다.
 
-기존 main 이력 위에 일반 push하고 소스 Actions 결과를 확인하는 단계다. 원본 보존·전후 비교 근거는 `artifacts/readme-project-overview-20261008-01/`에 둔다. 다음 작업은 문서 게시 확인이며 EC2/Pod 반영이나 모델 호출은 필요하지 않다.
+기존 main 이력 위에 [303d7bb](https://github.com/boramsam-zo/cctv-pipeline/commit/303d7bbb724c5532c99a14f837e3b6fc72c4b46f)를 일반 push했고, [소스 Actions37710502659](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37710502659)의324검사가 전부 통과했다. 원격 README의 blob 해시도 로컬 게시본과 일치한다. 원본 보존·전후 비교·CI 근거는 `artifacts/readme-project-overview-20261008-01/`에 있다. 요청한 문서 분리·게시 작업은 완료됐으며 이 완료 상태를 문서 커밋으로 남긴다. EC2/Pod 변경·모델 호출0.
 
 ## 작업 재개 요약 — 2026-10-08 최신 서비스 소스 Git 게시·Actions 완료
 

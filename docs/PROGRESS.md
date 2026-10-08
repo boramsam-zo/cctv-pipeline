@@ -2,6 +2,8 @@
 
 ## 2026-10-08 — README 소개·진행 이력·배포 안내 분리
 
+완료: 기존 main cc9581e 위에303d7bb를 일반 push했다(8파일, force push0). 원격 README blob dbb896a8635ad7a958473b3385faaaf03bd8791c가 검토본과 같다. GitHub Actions37710502659 SUCCESS:report160/mlflow46/demo75/ui32/privacy7/rag4 합계324통과. 이미지 workflow·배포·모델 실행은 발생시키지 않았다. 완료 상태만 후속 문서 커밋에 반영한다.
+
 사용자가 README는 프로젝트 설명이어야 하며 작업 이력은 다른 파일로 옮기도록 요청했다. README를 106줄의 소개·기능·사용 흐름·구성·검사·배포·문서 안내로 다시 작성했다. 원본은 `artifacts/readme-project-overview-20261008-01/README.before.md`에 바이트 그대로 보존하고, 이 문서 끝에 상대 링크를 맞춘 전체 이력을 옮겼다. 기존 팀 공유문도 보존하면서 `docs/team_handoff.md`에 배포 재현 범위를 배치했다.
 
 게시 스크립트가 README 앞에 안내문을 붙이던 동작을 제거했다. 자동 삽입 없이 README 본문이 유지되는지 기존 검사를 수정했으며, 비밀 검출·자료 제외·익명화 동작은 유지한다. `python3 -B -m unittest tests.test_git_publication -v`:7/7통과(0.019초). README 링크9개·코드 폴더·이전 README 변환 보존 일치 확인. 전체 기능 검사를 로컬에서 불필요하게 반복하지 않고 게시 시 GitHub 소스CI 결과를 확인한다. EC2/Pod 배포·모델/VLM호출·새 정확도/F1평가0.
