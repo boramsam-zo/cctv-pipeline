@@ -1,5 +1,17 @@
 # 진행 기록
 
+## 작업 재개 요약 — 2026-10-08 최신 서비스 소스 Git 게시·Actions 완료
+
+사용자 승인으로 기존 main `37e96b0`을 부모로 **[소스 커밋5fb08bc](https://github.com/boramsam-zo/cctv-pipeline/commit/5fb08bc155f8d7f40066ee4c229825e4b3be82a8)**를 일반 push했다. 선별496파일 중77파일(신규42/변경35)을 반영했고 삭제·force push0이다. 공개 조회/시연·알림/부분 갱신·조회 개선·MLflow 추적/내용 조회·저장 응답 보고 복구·총20건 설정·문서/관련검사를 포함한다. 실제 비밀·영상·가중치·운영 artifacts/DB·RAG corpus/index는 제외했으며 원본과 이전 이력은 보존했다.
+
+**검증:** 게시 복사본의324 합성 CPU검사 전부 통과(11.237초). [GitHub 소스 Actions37709394011](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37709394011)도324/324통과, [Runpod 검사37709393900](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37709393900)는130개중126통과/기존 비공개자료 관련4skip이며 두workflow SUCCESS다. 소스CI는 report160/mlflow46/demo75/ui32/privacy7/rag4이고 비공개 저장 snapshot/운영 driver는 실행목록에서 명시 제외했다. 전체 과거시험/실제 모델평가를 검증한 것은 아니다.
+
+**게시 준비 중 정정:** 공용Pod시작기의 오래된catalog/manifest pins를 현재 병렬이미지의c0e535…/584440…로 맞추고 소스재구성 대조검사를 추가했다. demo도입 후 과거B보고의code해시 때문에R2저장근거 재사용이 막힌 회귀는 source원장 검증 후 handoff에 그정책을 명시해수정했다. 기존불변/승인/현재실행검증은 유지하며 관련38검사 통과. source-only 검사에서비공개RAG자료를참조하던demo테스트fixture는공개계약+임시합성자료로분리했다. 최초실패2종로그는보존하고검사를생략해통과시키지않았다.
+
+**배포 경계:** 이번은 Git 게시다. EC2/Pod 재배포·모델/외부VLM 호출0. 위게시준비중도우미/과거보고준비회귀정정은Git에반영됐고운영서버에는추가반영하지않았다. GPU이미지내부소스차이0, Actions `publish_required=false`/게시job skipped로 기존병렬이미지digest38b63c7a…408757 유지. 현재Pod이미지교체필요없다. Git게시로만료된시연창이자동열리지않는다.
+
+근거 `artifacts/git-publication-20261008-01/`의publication-result-01.json, release-02/publication-manifest.json·checkout-sync.json·source-checks.log, source/image-actions-final.json·logs. README/LOCAL_SETUP상단의현재기능·과거시연시각안내도동기화했다. 이완료기록은별도문서커밋으로추가하며기능소스는5fb08bc기준이다. 다음한작업은새시연/운영반영이필요할때별도요청범위로진행하는것이며자동실행없다.
+
 ## 작업 재개 요약 — 2026-10-08 최신 서비스 소스 게시 준비
 
 사용자가 최신 변경의 Git push를 승인했다. 기존 게시용 checkout `artifacts/git-main-mlops-20261004-01`과 원격 main `37e96b0a44013b21e805cd9bfbe72e14a7208726`을 대조하고, 기존 이력을 유지하는 일반 게시를 준비했다. 선별본에는 공개 조회/시연·보고 저장 알림/부분 갱신·목록 조회 개선·MLflow 요청/응답/토큰 추적·저장 응답 보고 복구·총20건 상한과 관련 합성검사가 포함된다. 영상·가중치·비밀·운영 artifacts/DB·검색 인덱스는 제외하며 원본은 보존한다.
