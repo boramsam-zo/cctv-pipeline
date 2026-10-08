@@ -36,7 +36,7 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual({p.relative_to(tree).as_posix() for p in tree.rglob('*') if p.is_file()},
                          {'README.md', 'apps/demo.py'})
         self.assertEqual((self.root / 'README.md').read_bytes(), original)
-        self.assertIn('전체 과거 테스트', (tree / 'README.md').read_text())
+        self.assertEqual((tree / 'README.md').read_bytes(), original)
         self.assertEqual(result['remote_operations'], 0)
         self.assertEqual(result['secret_scan_findings'], 0)
         self.assertFalse(result['source_files_modified'])
@@ -47,10 +47,11 @@ class PublicationTests(unittest.TestCase):
         user = '/' + 'Users/some-person'
         volume = '/' + 'Volumes/T9'
         original = str(self.root) + '/apps/demo.py ' + user + '/notes ' + volume + '/video.mp4'
-        file = self.put('docs/guide.md', original)
+        file = self.put('README.md', '# Project overview\n' + original)
         self.prepare()
-        copied = (self.base / 'publication/tree/docs/guide.md').read_text()
-        self.assertEqual(file.read_text(), original)
+        copied = (self.base / 'publication/tree/README.md').read_text()
+        self.assertEqual(file.read_text(), '# Project overview\n' + original)
+        self.assertEqual(copied, '# Project overview\n./apps/demo.py /path/to/user/notes /path/to/data/video.mp4')
         self.assertIn('./apps/demo.py', copied)
         self.assertIn('/path/to/user/notes', copied)
         self.assertIn('/path/to/data/video.mp4', copied)

@@ -1,3 +1,49 @@
+# 개발·배포 인수인계
+
+프로젝트의 목적과 기능은 [README](../README.md), 실제 실행·종료는 [LOCAL_SETUP](../LOCAL_SETUP.md), 확인된 운영 상태는 [current_status](current_status.md)를 먼저 본다. 이 문서는 Git에 포함되는 자원과 별도로 준비할 배포 자원을 설명한다.
+
+## 이 Git 게시본의 재현 범위
+
+이 저장소는 실행 코드·설정 예시·공유 문서를 선별한 복사본입니다. 원본 프로젝트와 기존 Git main 이력은 보존하며, 게시용 디렉터리를 만드는 단계와 Git push·서버 배포는 별도입니다.
+
+- `.github/workflows/runpod-image.yml`의 CPU 계약/서비스/패키징 검사를 checkout에서 실행할 수 있습니다. 실제 GPU 추론·학습·EC2 배포는 CI 검사가 수행하지 않습니다.
+- `.github/workflows/source-checks.yml`은 BE 보고 재사용/복구·공개 조회/시연 경계·관제 UI·MLflow 추적·문서 관련성의 합성 CPU 검사를 실행합니다. BE/UI/보고 코드만 바뀌면 기존 Runpod 이미지를 다시 게시하지 않습니다.
+- 전체 과거 테스트는 Git에서 제외한 `artifacts/`와 평가 원본을 참조합니다. 따라서 이 checkout만으로 과거 전체 테스트나 저장 관제 화면을 모두 재현할 수 있다고 주장하지 않습니다.
+- 원본 영상·저장 사건 snapshot·모델 가중치·비밀 설정·개인 가상환경·실행 결과는 제외했습니다. 개인 절대경로는 이 게시 복사본에서만 프로젝트 상대경로 또는 중립 경로로 바꿨습니다.
+- 문서의 실제 EC2 식별자·공인 IP·Runpod 주소도 게시 복사본에서만 예시로 바꿨습니다. 운영 명령에는 사용 중인 서버 식별자를 넣어야 하며 원본 운영 문서는 별도로 보존합니다.
+- Runpod 이미지는 고정된 기존 P6 이미지의 모델/의존성을 재사용합니다. 신규 R2 모델은 Git/이미지 context에 넣지 않고 승인한 비공개 S3에서 Pod로 준비합니다.
+- `apps/team_rag/data/chunks.jsonl`·`index.sqlite`는 보고서 검색의 필수 자원입니다. Git 게시본에서는 제외했지만 EC2 배포 묶음에는 같은 경로/바이트로 포함하고 기존 EC2 자원·E5 모델 mount를 보존해야 합니다. 생략을 빈 검색 결과나 보고 성공으로 처리하지 마세요. 공개 재배포 권리를 확인한 것으로 간주하지 않습니다.
+- 기존 저장 결과를 조회할 때는 기존 EC2 API/DB 또는 승인된 로컬 snapshot을 연결하세요. 제외된 데이터를 다운로드하거나 분석을 자동 실행해 대체하지 않습니다.
+
+관련 CPU 검사:
+
+```bash
+python -m pip install -r apps/runpod_image/requirements-ci.txt -r scripts/requirements-viewer.txt jsonschema==4.25.1
+python -B scripts/ci_source_checks.py
+python -B -m unittest discover -s tests/runpod_image -p 'test_mlops*.py' -v
+python -B -m unittest discover -s tests/be_worker -p 'test_mlops*.py' -v
+python -B -m unittest tests.be_worker.test_mlflow_tracking tests.be_worker.test_register_mlops_models -v
+python -B scripts/prepare_runpod_ci.py --output /path/to/new-build-directory
+```
+
+마지막 경로의 부모 디렉터리는 존재해야 하며 결과 디렉터리는 새 이름을 사용합니다. 이 준비 명령은 Docker 빌드/게시를 수행하지 않습니다.
+
+---
+
+## 배포 시 함께 준비할 것
+
+- 실행 코드뿐 아니라 현재 설정·비밀 파일·S3 권한·모델·검색 인덱스를 확인한다. EC2는 이미지와 호스트 코드/데이터 마운트를 함께 사용한다.
+- DB, 작업 원장, 저장 영상 근거, MLflow 데이터는 컨테이너 수명과 분리해 보존한다.
+- CI의 이미지 게시 결과는 tag와 digest로 식별한다. Pod 생성·이미지 적용과 EC2 서비스 반영은 각 배포 절차에서 수행한다.
+- 모델 성능 수치에는 정답·평가 목록·판정 기준을 연결하고, 개발 검증과 독립 평가를 구분한다.
+
+## 이전 기획·공유 이력
+
+아래는 구현 전의 제안과 당시 인수인계 기록이다. 현재 기술 구성·알림 시점·완료 여부는 루트 README와 최신 상태 문서를 따른다.
+
+<details>
+<summary>이전 팀 공유 문서 펼치기</summary>
+
 # 팀 개발 시작 안내 — 서비스 PRD v0.2
 
 2026-09-27 Gemini 반영. **현재 설계: Streamlit + FastAPI + S3 + Runpod A4000 + YOLO11s/X3D-S + Gemini API + RAG + 사람 검토.** 이전 v0.1의 수동 Colab/React 구성 제안을 대체한다. 구현·배포 완료 문서는 아니다.
@@ -302,6 +348,8 @@ AWS GPU를 쓰지 않아도 웹/API/저장·전송 비용은 남는다. 비용 �
 이 파일의 상대 경로는 프로젝트를 받은 동료가 쓰는 경로다. 채팅의 내 Mac 절대 경로 링크는 동료 장비에서 열리지 않는다. 미리보기와 원본은 Git 제외 대상이므로 코드 저장소만 받아서는 영상이 생기지 않는다. 데이터 이용·공유 조건을 확인한 뒤 자료 접근 방법을 따로 안내한다.
 
 처음에는 문서와 `scripts/`, `src/`, `tests/`, `configs/`, 필요한 requirements만 공유하면 된다. `.venv*`, `data/local`, `artifacts` 전체, `.env`, 토큰, IDE 개인 설정을 통째로 보내지 않는다. 저장소는 아직 첫 커밋이 없는 상태이며 이번 작업에서 커밋·푸시를 하지 않았다. Git 공유를 선택하면 공유할 파일을 먼저 확인해 명시적으로 커밋·푸시한다.
+
+</details>
 
 </details>
 

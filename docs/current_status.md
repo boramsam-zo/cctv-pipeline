@@ -1,5 +1,13 @@
 # 현재 상태 — CCTV 파이프라인
 
+## 작업 재개 요약 — 2026-10-08 README 소개·이력 분리
+
+사용자 요청으로 README를 프로젝트 목적·주요 기능·분석 순서·시스템 구성·화면 사용·CPU 검사·배포 흐름·문서 안내 중심으로 다시 작성했다. 기존 README 전체는 링크 경로와 제목 수준만 맞춰 `docs/PROGRESS.md` 끝의 ‘README에서 옮긴 이전 소개·작업 이력’에 보존했다. 게시본 앞에 붙던 재현 범위·배포 준비 안내는 `docs/team_handoff.md`로 옮겼고, 이전 팀 공유안도 접은 이력으로 보존했다.
+
+`scripts/prepare_git_publication.py`의 README 안내문 자동 삽입만 제거했다. 파일 선별·비밀 검사·개인 경로 및 운영 주소 익명화는 유지한다. 게시 관련7검사 통과, README 로컬 링크9개와 옛 README 보존 일치를 확인했다. 코드와 대조해 EC2 Python HTTP API/Runpod Starlette, 영상 분류 후 YOLO, 검색+템플릿 보고의 실제 역할을 설명했다. 새 모델 평가·성능 수치·서버 변경은 없다.
+
+기존 main 이력 위에 일반 push하고 소스 Actions 결과를 확인하는 단계다. 원본 보존·전후 비교 근거는 `artifacts/readme-project-overview-20261008-01/`에 둔다. 다음 작업은 문서 게시 확인이며 EC2/Pod 반영이나 모델 호출은 필요하지 않다.
+
 ## 작업 재개 요약 — 2026-10-08 최신 서비스 소스 Git 게시·Actions 완료
 
 사용자 승인으로 기존 main `37e96b0`을 부모로 **[소스 커밋5fb08bc](https://github.com/boramsam-zo/cctv-pipeline/commit/5fb08bc155f8d7f40066ee4c229825e4b3be82a8)**를 일반 push했다. 선별496파일 중77파일(신규42/변경35)을 반영했고 삭제·force push0이다. 공개 조회/시연·알림/부분 갱신·조회 개선·MLflow 추적/내용 조회·저장 응답 보고 복구·총20건 설정·문서/관련검사를 포함한다. 실제 비밀·영상·가중치·운영 artifacts/DB·RAG corpus/index는 제외했으며 원본과 이전 이력은 보존했다.
