@@ -1,5 +1,19 @@
 # 실행·복구 사용법 — 현재 CCTV 프로젝트
 
+## 2026-10-10 — LC 포함 새 Runpod 이미지 게시 완료
+
+[GitHub Actions](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37950234412)의 검사·Linux amd64 빌드·Docker Hub 게시가 성공했다. 새 Pod의 이미지에는 아래 태그를 사용한다.
+
+```text
+dahyeguk/cctv-runpod-ab:sha-ce9f4674965305835e0c9fcc82c80e393e4af0dd
+```
+
+고정 참조: `dahyeguk/cctv-runpod-ab@sha256:a6672f0995013dfe978724c271bf65baff9965dca19c894d366808066d39d74e`. registry manifest와 Actions digest일치를확인했다. source326검사통과/image141통과+기존비공개자료4skip. Mac Docker는필요없다.
+
+새 Pod를 만든 뒤 **현재 Connect의 Pod ID·SSH over exposed TCP 정보와 HTTP8000 주소**를 확인한다. 기존 Pod/이전 날짜의주소를재사용하지않는다. 이후LC가중치준비/등록·EC2동일catalog/LC migration·새세션연결·영상1건확인이필요하다. 이미지게시만으로서버/DB가자동변경되지는않는다. 가중치/인증정보는Git이나새빌드context에포함하지않았다.
+
+로컬준비본 artifacts/model-integration/lastconv631-20261009-01/prepared/release-pins.json과prepared-be/cctv-ec2-mlops.zip을같은catalog1a8ff8e3…3020으로연결한다. 다음실행목록과검증digest는artifacts/git-publication-lastconv-20261010-01/deployment-handoff.json에있다. 기존B/R2등록은새바인딩에재사용하며원본을덮어쓰지않는다. 실제GPU추론은미실행이다.
+
 ## 2026-10-10 — lastconv631 선택형 릴리스
 
 `LC`는 R3D-18 lastconv631 epoch3 실험 모델이다. 기존 B/R2 기본 선택은 유지하며, LC 포함 릴리스와 허용 세션에서 세 번째 모델로 선택한다. 앙상블·재학습은 포함하지 않는다.

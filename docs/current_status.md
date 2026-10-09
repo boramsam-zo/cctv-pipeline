@@ -1,5 +1,13 @@
 # 현재 상태 — CCTV 파이프라인
 
+## 작업 재개 요약 — 2026-10-10 LC 이미지 게시·digest 검증 완료, 새 Pod 연결 대기
+
+사용자 승인에 따라 main에615aa48(LC관련47파일)·ce9f467(공개fixture/게시설명2파일)을 일반push했다. [소스 Actions](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37950234485)326/326 통과, [이미지 Actions](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37950234412)145중141통과/기존비공개자료4skip 및 Linux amd64 빌드·게시 성공이다. 최초비공개RAG자료의존실패는실제contract검증을유지한합성fixture로수정했고최초실패로그도보존했다.
+
+새 이미지 `dahyeguk/cctv-runpod-ab:sha-ce9f4674965305835e0c9fcc82c80e393e4af0dd`. 고정 digest `sha256:a6672f0995013dfe978724c271bf65baff9965dca19c894d366808066d39d74e`를 Docker Hub manifest에서 독립 조회해 Actions와 일치 확인했다. 빌드 내부 image53파일/service26파일과B/R2/LC지원계약 확인,모델연산0이다. GPU/BE catalog1a8ff8e3…3020·기존준비묶음/release-pins는동일하며,Mac Docker기동/전체이미지다운로드없음.
+
+**Git/이미지 게시 단계 완료. 다음 한 작업은 이 이미지의 새 Pod 생성 후 현재 Connect 정보 확인이다.** 사용자는 기존Pod를중단했고새Pod미구성이다. 실제LC가중치업로드/Registry추가·EC2코드/DB반영·새시연창·단건GPU/보고검증은아직미실행이다. 기존Pod주소/포트/세션승인을재사용하지않는다. 기존B/R2/원본/과거결과보존,앙상블/재학습없음. 근거 artifacts/git-publication-lastconv-20261010-01/publication-result.json·deployment-handoff.json·registry-manifest.json·최종Actions로그.
+
 ## 작업 재개 요약 — 2026-10-10 lastconv631 선택형 코드·Actions 게시
 
 사용자가 Git 반영→GitHub Actions 이미지 게시 순서를 승인했다. LC 선택형 모델의 전용 로더·BE/화면/보고/MLflow 연결, 선택적 DB migration·등록/배포 도우미와 관련 검사를 추가했다. 기존 B/R2 기본값·과거 릴리스·원본 결과는 보존한다. LC는 새 릴리스와 세션 허용 목록에서만 활성화되며 자동 앙상블은 없다.

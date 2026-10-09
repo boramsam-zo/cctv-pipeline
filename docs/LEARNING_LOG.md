@@ -1,5 +1,13 @@
 # 학습 기록 — 원리와 설계 선택
 
+## 2026-10-10 — 공개 CI의 합성 자료와 실제 배포 경계 확인
+
+공개 CI는 운영 자료 없이 코드 계약을 검증해야 한다. 예를 들어 LC의 보고설정검사가 개인 RAG 인덱스를읽으면GitHub에서실패하므로,공개계약파일과임시합성corpus/index로실제contract()해시검증을수행했다. 앱코드의자료존재검증을끄거나비공개인덱스를Git에올리지않았다. 해당6검사재확인후Actions의source326/image141통과+4skip과게시digest일치를확인했다.
+
+실제흐름은main push→runpod-image.yml의prepare_runpod_ci --include-lastconv→코드/manifest검사→Linux amd64 build/push→registry digest대조다. Mac에서전체CUDA이미지를만드는대신기존GitHub빌드경로를사용했고,실제GPU모델로딩·성능검증은이미지게시와구분한다. 관련파일tests/be_worker/test_lastconv_selection.py·scripts/prepare_runpod_ci.py·.github/workflows/runpod-image.yml,근거artifacts/git-publication-lastconv-20261010-01/publication-result.json.
+
+이해확인: 이미지게시후에도새Pod의가중치/EC2연결이필요한이유는무엇인가? 합성자료검사통과가실제GPU추론성공을보장하지않는이유는무엇인가? 사용자이해여부는미확인이다. 30초설명: “세번째선택모델의코드를GitHub가검사하고GPU이미지로게시했습니다. 새Pod를그이미지로만든뒤가중치와서버를연결하고영상한건으로실제동작을확인합니다.”
+
 ## 2026-10-10 — 선택형 모델 릴리스와 GitHub Actions
 
 선택형 모델 추가는 가중치뿐 아니라 입력 계약·로더·선택 허용 목록·결과 식별을 같은 릴리스로 연결하는 작업이다. 예를 들어 같은 영상에 LC를 선택하면 전용 R3D-18 loader를 거쳐 기존 YOLO/설명·보고 경로로 전달된다. 여러 모델 점수를 자동 결합하는 앙상블은 별도 작업이다.

@@ -1,5 +1,13 @@
 # 진행 기록
 
+## 2026-10-10 — LC Actions 게시 성공·registry 독립 확인
+
+최종ce9f467 커밋의[소스CI](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37950234485)326통과와[이미지CI](https://github.com/boramsam-zo/cctv-pipeline/actions/runs/37950234412)145중141통과/기존비공개자료4skip·check/publish성공을확인했다. image_runtime inspect53파일/verify_service_bundle26파일의원본해시와B/R2/LC지원검증은이미지빌드중실행됐고GPU추론은실행하지않았다.
+
+게시태그 `dahyeguk/cctv-runpod-ab:sha-ce9f4674965305835e0c9fcc82c80e393e4af0dd`, digest `sha256:a6672f0995013dfe978724c271bf65baff9965dca19c894d366808066d39d74e`. `docker buildx imagetools inspect <태그> --format '{{json .Manifest}}'`로 registry manifest만읽어Actions의IMAGE_DIGEST와일치/linux-amd64를확인했다. Mac Docker daemon/전체이미지pull/모델실행없음. 현재등록업로드/EC2·DB·Pod변경도0이며기존결과보존.
+
+최초실패37949876345의LC test private RAG 의존은public contract7파일+synthetic2파일로한검사에서만수정했다. 게시checkout의LC6개추가확인후재게시했고실제app계약검증을완화하지않았다. 이전준비context33파일은불변이다. 근거publication-result.json·registry-manifest.json·image-actions-final.json/log·source-actions-final.json/log·deployment-handoff.json. 완료범위는Git/이미지게시,다음은사용자새Pod현재Connect확인후가중치/운영연결과영상1건검증이다.
+
 ## 2026-10-10 — LC 선택형 모델 공개 소스 반영
 
 사용자 요청에 따라 lastconv631 epoch3을 선택형 LC로 추가했다. 기존 입력16프레임/224 letterbox/Kinetics 정규화/2초창·1초간격/argmax 동점 정상 규칙, 실제 checkpoint schema와 SHA를 연결했다. 기존 B/R2·저장 결과·원본은 보존하고 허용된 새 릴리스에서만 LC를 선택하도록 했다. 과거81원본 평가를 현행 B/R2와의 공통 성능 비교로 해석하지 않는다.

@@ -1,5 +1,14 @@
 # CCTV 프로젝트 실행계획 — 팀 서비스 기획·모델 실험
 
+## 2026-10-10 — LC GitHub Actions 이미지 게시 완료
+
+- [x] LC 소스 main615aa48/ce9f467 일반push, 공개fixture 수정·기존 원본/이력 보존.
+- [x] 소스326검사 통과, 이미지145중141통과/기존비공개자료4skip, Linux amd64 이미지 게시 성공.
+- [x] Docker Hub digest `sha256:a6672f0995013dfe978724c271bf65baff9965dca19c894d366808066d39d74e`가 Actions와 일치함을 manifest만 조회해 확인.
+- [ ] 다음: 새 이미지로 만든 Pod의 현재 Connect 정보 확인→LC가중치/Registry·EC2같은릴리스/DB적용→영상1건검증.
+
+이미지게시완료와운영사용가능을구분한다. 현재새Pod미구성이며모델연산/가중치업로드/운영변경0. 아래빌드중/게시대기절은당시이력이다.
+
 ## 2026-10-10 — lastconv631 선택형 추가 및 Actions 게시
 
 - [x] LC 모델 계약/전용 loader·BE/관제 선택·보고/추적 경로와 관련 오프라인 검사.
