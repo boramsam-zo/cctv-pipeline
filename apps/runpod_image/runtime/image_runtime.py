@@ -22,7 +22,7 @@ import time
 
 IMAGE_ROOT = Path("/opt/cctv-image")
 STATE_ROOT = Path("/workspace/cctv-image-state")
-VERSIONS = ("B", "R2")
+VERSIONS = ("B", "R2", "LC")  # Implemented versions; the image manifest enables a subset.
 GPU = "NVIDIA RTX A4500"
 RTX_GPU = "NVIDIA RTX 2000 Ada Generation"
 PORTABLE_GPU = "NVIDIA CUDA GPU"
@@ -101,7 +101,8 @@ def inspect_image(image_root):
     image_root = plain_path(image_root)
     manifest_path = relative_file(image_root, "image-manifest.json")
     manifest = read_json(manifest_path)
-    if (manifest.get("default_version") != "B" or manifest.get("supported_versions") != list(VERSIONS)
+    if (manifest.get("default_version") != "B"
+            or manifest.get("supported_versions") not in (["B", "R2"], ["B", "R2", "LC"])
             or manifest.get("gpu") not in SUPPORTED_GPUS
             or (manifest.get("gpu") == RTX_GPU
                 and manifest.get("schema_version") != "cctv-runpod-image-v2")
@@ -282,6 +283,8 @@ def execute(plan, identity, image_root, state_root, version, helpers, lock_fd):
     if version not in VERSIONS or not any(job["version"] == version for job in plan["jobs"]):
         raise ValueError("Selected version is invalid or absent from the plan")
     manifest, manifest_sha = inspect_image(image_root)
+    if any(job['version'] not in manifest['supported_versions'] for job in plan['jobs']):
+        raise ValueError('Selected classifier is not enabled by the image release')
     if manifest_sha != identity["image_manifest_sha256"] or plan["image_manifest_sha256"] != manifest_sha:
         raise ValueError("Image manifest identity changed before execution")
     expected_gpu = plan_gpu(plan, manifest["gpu"])
@@ -406,7 +409,7 @@ def main(argv=None):
     if args.command in (None, "inspect"):
         print(json.dumps({"status": "image_files_verified", "files_verified": len(manifest["files"]),
                           "image_manifest_sha256": manifest_sha, "default_version": "A",
-                          "supported_versions": list(VERSIONS), "gpu": manifest["gpu"], "model_calls": 0,
+                          "supported_versions": manifest['supported_versions'], "gpu": manifest["gpu"], "model_calls": 0,
                           "automatic_inference": False, "gpu_inference_verified": False}))
         return 0
     environment = check_environment(manifest)

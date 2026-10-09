@@ -28,7 +28,7 @@ def route(target, method='GET'):
         return None
     if method == 'POST':
         if (path == '/selections' and set(query) == {'selection', 'purpose'}
-                and query['selection'][0] in ('B', 'R2') and query['purpose'] == ['full_report']):
+                and query['selection'][0] in ('B', 'R2', 'LC') and query['purpose'] == ['full_report']):
             return '/demo/selections?' + urlencode({k: v[0] for k, v in query.items()})
         return None
     if method != 'GET':
@@ -132,6 +132,9 @@ class Handler(share.Handler):
         try:
             window = self.window()
             if not window.get('active'): return self.send_error_json(410, 'demo_closed')
+            selection = parse_qs(urlsplit(target).query)['selection'][0]
+            if selection not in window.get('allowed_selections', ('B', 'R2')):
+                return self.send_error_json(403, 'demo_model_not_allowed')
             length = int(self.headers.get('Content-Length', '0'))
             if (self.headers.get('Transfer-Encoding') or self.headers.get('Content-Type') != 'video/mp4'
                     or not 0 < length <= window['max_upload_bytes']):

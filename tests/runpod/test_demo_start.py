@@ -18,24 +18,30 @@ TOKEN = 'not-a-real-token-' + 'x' * 40
 
 class DemoStartTests(unittest.TestCase):
     def config(self):return start.configuration('demo-session-20261006-01',8,5)
-    def code(self):return start.embedded_launcher(OFFICIAL.read_bytes(),self.config())
-    def test_pins_match_current_source_only_release_without_private_artifacts(self):
+    def pins(self):
+        return dict(start.release_pins(), official_launcher_sha256=start.sha(OFFICIAL.read_bytes()))
+    def code(self):return start.embedded_launcher(OFFICIAL.read_bytes(),self.config(),self.pins())
+    def test_default_pins_preserve_active_release_while_new_source_needs_explicit_pins(self):
         from scripts import prepare_runpod_ci
         payloads, _ = prepare_runpod_ci.payloads_for_release(ROOT)
         catalog_path = 'apps/be_worker/mlops-20261004-v1.json'
-        self.assertEqual(start.sha((ROOT / catalog_path).read_bytes()), start.CATALOG_SHA)
-        self.assertEqual(start.sha(payloads['service/' + catalog_path]), start.CATALOG_SHA)
-        self.assertEqual(start.sha(payloads['service/service-manifest.json']), start.MANIFEST_SHA)
-        self.assertEqual(start.sha(payloads['service/apps/runpod_image/verify_service_bundle.py']),
-                         start.VERIFIER_SHA)
-        self.assertEqual(start.sha(payloads['service/apps/runpod_image/start-model-session.sh']),
-                         start.OFFICIAL_SHA)
+        current = (ROOT / catalog_path).read_bytes()
+        history = (ROOT / 'apps/be_worker/model_releases').glob('*.json')
+        self.assertTrue(any(start.sha(path.read_bytes()) == start.CATALOG_SHA for path in history),
+                        'The legacy launcher catalog must remain in immutable release history')
+        self.assertEqual(payloads['service/' + catalog_path], current)
+        self.assertEqual(set(json.loads(current)['classifiers']), {'B', 'R2'})
+        self.assertEqual(start.release_pins()['supported_versions'], ['B', 'R2'])
+        self.assertNotEqual(start.sha(payloads['service/' + catalog_path]), start.CATALOG_SHA)
+        if self.pins()['official_launcher_sha256'] != start.OFFICIAL_SHA:
+            with self.assertRaisesRegex(start.LaunchError, 'official_launcher_changed'):
+                start.embedded_launcher(OFFICIAL.read_bytes(), self.config())
     def test_policy_names_dates_and_finite_caps(self):
         config=self.config()
         self.assertEqual(config['limits'],{'max_jobs':5,'per_job_seconds':300.0,'whole_service_seconds':28800.0})
         twenty=start.configuration('demo-session-20261006-01',8,20)
         self.assertEqual(twenty['limits'],{'max_jobs':20,'per_job_seconds':300.0,'whole_service_seconds':28800.0})
-        self.assertIn("CCTV_GPU_MAX_JOBS='20'",start.embedded_launcher(OFFICIAL.read_bytes(),twenty))
+        self.assertIn("CCTV_GPU_MAX_JOBS='20'",start.embedded_launcher(OFFICIAL.read_bytes(),twenty,self.pins()))
         for name,hours,jobs in (('p6-hour-session-20261006-01',8,5),('demo-session-20260230-01',8,5),
                 ('demo-session-20261006-00',8,5),('demo-session-20261006-01',True,5),
                 ('demo-session-20261006-01',25,5),('demo-session-20261006-01',0,5),
@@ -53,7 +59,16 @@ class DemoStartTests(unittest.TestCase):
         self.assertEqual(restored,before)
         self.assertEqual(OFFICIAL.read_bytes(),raw)
         with self.assertRaisesRegex(start.LaunchError,'official_launcher_changed'):
-            start.embedded_launcher(raw+b'\n',self.config())
+            start.embedded_launcher(raw+b'\n',self.config(),self.pins())
+    def test_lastconv_pins_bind_versions_and_launcher_without_starting(self):
+        pins = dict(self.pins(), supported_versions=['B', 'R2', 'LC'], files_verified=26)
+        code = start.embedded_launcher(OFFICIAL.read_bytes(), self.config(), pins)
+        self.assertIn('Starting B/R2/LC demo API:', code)
+        self.assertEqual(start.release_pins()['supported_versions'], ['B', 'R2'])
+        for change in ({'supported_versions': ['LC']}, {'files_verified': True},
+                       {'verifier_sha256': 'invalid'}, {'unexpected': 'value'}):
+            with self.assertRaisesRegex(start.LaunchError, 'release_pins_invalid'):
+                start.release_pins(dict(pins, **change))
     def test_validation_prefix_cannot_create_or_launch(self):
         prefix=start.validation_code(self.code())
         calls=[node.func.attr for node in ast.walk(ast.parse(prefix))

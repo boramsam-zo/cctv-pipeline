@@ -96,7 +96,7 @@ def show_media(job, event_id, kind, label, mode):
         return
     version = (job.get('analysis_profile') or {}).get('version') or job.get('version')
     playback = raw
-    if version in ('B', 'R2') and kind != 'original':
+    if version in ('B', 'R2', 'LC') and kind != 'original':
         try:
             playback = get_media(job, event_id, kind + '_preview', mode)
         except Exception:

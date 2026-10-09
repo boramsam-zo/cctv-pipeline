@@ -200,6 +200,63 @@ class RegistrationTests(unittest.TestCase):
         self.assertTrue(receipt['sha256_metadata_matches'])
         self.assertFalse(receipt['s3_checksum_matches'])
 
+    def test_lastconv_extension_preserves_old_bindings_and_requires_its_upload_flag(self):
+        self.run_registration()
+        original = self.args.bindings_output
+        before = original.read_bytes()
+        self.args.bindings_input = original
+        self.args.bindings_output = original.with_name('bindings-with-lc.json')
+        self.args.lc_checkpoint = self.root / 'lastconv631-epoch3.pt'
+        lc_data = b'lastconv checkpoint fixture; no deserialization'
+        self.args.lc_checkpoint.write_bytes(lc_data)
+        lc = contract_for_version('LC')
+        lc.update(weights_sha256=hashlib.sha256(lc_data).hexdigest(), weights_bytes=len(lc_data))
+        self.args.lc_key = 'models/r3d_18/' + lc['weights_sha256'] + '/lastconv631-epoch3.pt'
+        self.args.lc_version_id = None
+        self.args.upload_lc = False
+        lc_s3 = FakeS3(lc, exists=False)
+        r2_s3 = self.s3
+
+        class RoutedS3:
+            def get_public_access_block(inner, **kwargs):
+                return r2_s3.get_public_access_block(**kwargs)
+
+            def head_object(inner, **kwargs):
+                return (lc_s3 if kwargs['Key'] == self.args.lc_key else r2_s3).head_object(**kwargs)
+
+            def put_object(inner, **kwargs):
+                return (lc_s3 if kwargs['Key'] == self.args.lc_key else r2_s3).put_object(**kwargs)
+
+        self.s3 = RoutedS3()
+        with patch.object(registration, 'contract_for_version', side_effect=lambda version:
+                          deepcopy(lc if version == 'LC' else self.r2) if version != 'B'
+                          else contract_for_version('B')):
+            with self.assertRaisesRegex(WorkerError, 'upload_not_requested'):
+                self.run_registration()
+            self.assertEqual(lc_s3.put_calls, [])
+            self.assertEqual(self.client.created_versions, 2)
+            self.args.upload_lc = True
+            result = self.run_registration()
+            extended = json.loads(self.args.bindings_output.read_bytes())
+            self.assertEqual({v: extended[v] for v in ('B', 'R2')}, json.loads(before))
+            self.assertEqual(set(extended), {'B', 'R2', 'LC'})
+            self.assertTrue(result['lc_upload_attempted'])
+            self.assertEqual(len(lc_s3.put_calls), 1)
+            self.assertEqual(lc_s3.put_calls[0]['IfNoneMatch'], '*')
+            self.assertEqual(self.client.created_versions, 3)
+            self.assertEqual(original.read_bytes(), before)
+            self.args.bindings_output = original
+            with self.assertRaisesRegex(WorkerError, 'existing_bindings_preserved'):
+                self.run_registration()
+            self.assertEqual(original.read_bytes(), before)
+
+    def test_lastconv_partial_options_fail_before_remote_calls(self):
+        self.args.lc_key = 'models/not-an-approved-checkpoint.pt'
+        with self.assertRaisesRegex(WorkerError, 'lc_checkpoint_and_key_required'):
+            self.run_registration()
+        self.assertEqual(self.s3.head_calls, [])
+        self.assertEqual(self.client.created_versions, 0)
+
 
 if __name__ == '__main__':
     unittest.main()

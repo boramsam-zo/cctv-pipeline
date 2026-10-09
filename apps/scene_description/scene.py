@@ -326,7 +326,7 @@ def build_request(event, media, fps):
 
 def validate_description(value, event, version='cctv-scene-v2'):
     allowed_assets = ['clip', 'frame']
-    if event.get('evidence_version') == 'runpod-evidence-v2' and event.get('version') in ('B', 'R2'):
+    if event.get('evidence_version') == 'runpod-evidence-v2' and event.get('version') in ('B', 'R2', 'LC'):
         allowed_assets.append('roi_clip')
     fields = {'summary', 'observations', 'uncertainties'}
     fields |= {'assessment'} if version == 'cctv-scene-v1' else {'accident_suspicion', 'incident_types'}

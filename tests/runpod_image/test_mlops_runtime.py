@@ -74,7 +74,7 @@ class RuntimeTests(unittest.TestCase):
             job.validate_result(result, {'duration_s': 2., 'fps': 30.}, lambda duration: [0.])
 
     def test_cli_only_new_versions_and_no_local_execution(self):
-        self.assertEqual(image_runtime.VERSIONS, ('B', 'R2'))
+        self.assertEqual(image_runtime.VERSIONS, ('B', 'R2', 'LC'))
         if __import__('sys').platform != 'linux':
             with self.assertRaisesRegex(RuntimeError, 'local inference disabled'):
                 job.require_remote_process()

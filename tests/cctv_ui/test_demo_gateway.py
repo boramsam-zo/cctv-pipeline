@@ -74,6 +74,21 @@ class DemoGatewayTests(unittest.TestCase):
         self.assertTrue(value.answers[0][1]['result_reused'])
         self.assertEqual(value.answers[0][1]['new_gpu_calls'],0)
 
+    def test_lastconv_upload_requires_explicit_session_selection_before_payload_read(self):
+        for allowed in (None, ['B', 'R2'], ['B', 'R2', 'LC']):
+            with self.subTest(allowed=allowed):
+                window={'active':True,'max_upload_bytes':64}
+                if allowed is not None:window['allowed_selections']=allowed
+                value=self.handler('/selections?selection=LC&purpose=full_report',window=window)
+                value.do_POST()
+                if allowed is not None and 'LC' in allowed:
+                    self.assertEqual(len(value.calls),1)
+                    self.assertEqual(value.calls[0].full_url,
+                        'http://private-api:8080/demo/selections?selection=LC&purpose=full_report')
+                else:
+                    self.assertEqual(value.answers,[(403,{'error':'demo_model_not_allowed'})])
+                    self.assertEqual(value.rfile.tell(),0);self.assertFalse(value.calls)
+
     def test_wire_alias_get_body_and_duplicate_length_rejected(self):
         for target, headers in (('//jobs', {}), ('/jobs', {'Content-Length':'1'}),
                                 ('/jobs', {'Transfer-Encoding':'chunked'}),

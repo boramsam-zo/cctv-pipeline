@@ -306,7 +306,7 @@ def display_summary(record):
               'saved_response_cpu_report_recovery': '저장 응답·보고 복구',
               'report_relevance_review': '저장 보고 근거 검수'}
     purpose_label = labels.get(purpose, purpose)
-    model = {'x3d_s': 'X3D-S', 'r2plus1d_18': 'R(2+1)D-18'}.get(
+    model = {'x3d_s': 'X3D-S', 'r2plus1d_18': 'R(2+1)D-18', 'r3d_18': 'R3D-18 lastconv631'}.get(
         binding['model_id'], binding['model_id'])
     name = f"{model} · {purpose_label} · {record['execution_id'][:8]}"
     lines = [f"작업: {purpose_label}",

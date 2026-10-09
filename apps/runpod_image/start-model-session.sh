@@ -5,6 +5,8 @@
 # runtime.env must be a private (0600) file of export KEY=VALUE assignments.
 # Required: CCTV_API_TOKEN_FILE, AWS_SHARED_CREDENTIALS_FILE, S3_BUCKET,
 # CCTV_MODEL_S3_BUCKET, CCTV_R2_MODEL_S3_KEY. Credentials/token files: 0600.
+# Optional LC preparation source: CCTV_LC_MODEL_S3_KEY / CCTV_LC_MODEL_S3_VERSION_ID.
+# LC releases require a separately prepared, hash-verified local model cache.
 # No Pod creation, model execution, S3 request, or old-session reset happens here.
 # Keep this process running (for example in the user's terminal multiplexer).
 set +x
@@ -47,7 +49,8 @@ try:
     allowed = {'CCTV_API_TOKEN_FILE', 'AWS_SHARED_CREDENTIALS_FILE', 'AWS_CONFIG_FILE',
                'AWS_PROFILE', 'AWS_DEFAULT_REGION', 'AWS_REGION', 'AWS_EC2_METADATA_DISABLED',
                'EVIDENCE_STORAGE', 'S3_BUCKET', 'S3_PREFIX', 'CCTV_MODEL_S3_BUCKET',
-               'CCTV_R2_MODEL_S3_KEY', 'CCTV_R2_MODEL_S3_VERSION_ID'}
+               'CCTV_R2_MODEL_S3_KEY', 'CCTV_R2_MODEL_S3_VERSION_ID',
+               'CCTV_LC_MODEL_S3_KEY', 'CCTV_LC_MODEL_S3_VERSION_ID'}
     settings = {}
     # Parse literal shell assignments; do not source executable shell content.
     for line in private_file(source).splitlines():
@@ -77,9 +80,13 @@ try:
                 and dict(config['default']) == {'region': 'ap-northeast-2'}, 'aws_config_invalid')
     for key in ('S3_BUCKET', 'CCTV_MODEL_S3_BUCKET'):
         require(re.fullmatch(r'[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]', settings[key]), 's3_bucket_invalid')
-    model_key = settings['CCTV_R2_MODEL_S3_KEY']
-    require(not model_key.startswith('/') and '..' not in model_key.split('/')
-            and 0 < len(model_key.encode()) <= 1024, 'model_key_invalid')
+    for key in ('CCTV_R2_MODEL_S3_KEY', 'CCTV_LC_MODEL_S3_KEY'):
+        if key in settings:
+            model_key = settings[key]
+            require(not model_key.startswith('/') and '..' not in model_key.split('/')
+                    and 0 < len(model_key.encode()) <= 1024, 'model_key_invalid')
+    require('CCTV_LC_MODEL_S3_VERSION_ID' not in settings or 'CCTV_LC_MODEL_S3_KEY' in settings,
+            'lastconv_model_key_required')
     fixed = {'AWS_PROFILE': 'default', 'AWS_DEFAULT_REGION': 'ap-northeast-2',
              'AWS_REGION': 'ap-northeast-2', 'AWS_EC2_METADATA_DISABLED': 'true',
              'EVIDENCE_STORAGE': 's3', 'S3_PREFIX': 'cctv-evidence'}

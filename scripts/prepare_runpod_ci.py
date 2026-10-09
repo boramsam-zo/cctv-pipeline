@@ -54,7 +54,7 @@ def read_source(name, root=ROOT):
     return raw
 
 
-def payloads_for_release(root=ROOT):
+def payloads_for_release(root=ROOT, *, include_lastconv=False):
     root = plain(root)
     raw_base = read_source(BASE_MANIFEST, root)
     if verifier.fingerprint(raw_base)['sha256'] != verifier.IMAGE_MANIFEST_SHA256:
@@ -63,13 +63,16 @@ def payloads_for_release(root=ROOT):
     if len(base['files']) != 53 or base['platform'] != 'linux/amd64':
         raise ValueError('Approved base file roster mismatch')
     runtime = {target: read_source(source, root) for target, source in RUNTIME_SOURCES.items()}
+    versions = ['B', 'R2', 'LC'] if include_lastconv else ['B', 'R2']
     manifest = deepcopy(base)
     manifest.update(schema_version='cctv-runpod-image-v4', gpu=verifier.PORTABLE_GPU,
-                    supported_versions=['B', 'R2'], default_version='B',
+                    supported_versions=versions, default_version='B',
                     base_image=verifier.PORTABLE_BASE_IMAGE,
                     parent_image_manifest_sha256=verifier.IMAGE_MANIFEST_SHA256,
                     deployment=verifier.MLOPS_DEPLOYMENT,
-                    scope='B/R2 runtime overlay; R2 weights are fetched privately on Pod, never in the image.')
+                    scope=('B/R2/LC opt-in runtime overlay; R2/LC weights are fetched privately on Pod, never in the image.'
+                           if include_lastconv else
+                           'B/R2 runtime overlay; R2 weights are fetched privately on Pod, never in the image.'))
     for name, raw in runtime.items():
         manifest['files'][name] = verifier.fingerprint(raw)
     dockerfile = read_source('apps/runpod_image/MLops.Dockerfile', root)
@@ -95,7 +98,7 @@ def payloads_for_release(root=ROOT):
         'image_manifest_sha256': verifier.fingerprint(json_bytes(manifest))['sha256'],
         'execution_adapter_sha256': manifest['files']['runtime/job.py']['sha256'],
         'code_files': dict(sorted(code_files.items())),
-        'classifiers': {version: deepcopy(models.contract_for_version(version)) for version in ('B', 'R2')},
+        'classifiers': {version: deepcopy(models.contract_for_version(version)) for version in versions},
     }
     verifier.validate_mlops_catalog(catalog)
     service[verifier.MLOPS_CATALOG] = json_bytes(catalog)
@@ -144,14 +147,16 @@ def write_catalog(root=ROOT):
             'image_manifest_sha256': catalog['image_manifest_sha256']}
 
 
-def build(output, root=ROOT):
+def build(output, root=ROOT, *, include_lastconv=False):
     output = plain(output)
     if output.exists():
         raise ValueError('Use a new output directory; existing files are preserved')
     if not output.parent.is_dir():
         raise ValueError('Output parent must exist')
-    payloads, catalog = payloads_for_release(root)
-    if read_source(verifier.MLOPS_CATALOG, root) != json_bytes(catalog):
+    payloads, catalog = payloads_for_release(root, include_lastconv=include_lastconv)
+    # A third-model release is staged in its own directory. The current B/R2
+    # descriptor and all archived release identities remain untouched.
+    if not include_lastconv and read_source(verifier.MLOPS_CATALOG, root) != json_bytes(catalog):
         raise ValueError('Source/catalog drift: run prepare_runpod_ci.py --write-catalog and review the change')
     output.mkdir(mode=0o700)
     context = output / 'context'
@@ -164,6 +169,18 @@ def build(output, root=ROOT):
     if actual != set(payloads) or any((context / name).read_bytes() != raw for name, raw in payloads.items()):
         raise ValueError('Build context readback mismatch')
     checked = verifier.verify(context / 'service')
+    pins = {
+        'schema_version': 'cctv-demo-release-pins-v1',
+        'official_launcher_sha256': verifier.fingerprint(
+            payloads['service/apps/runpod_image/start-model-session.sh'])['sha256'],
+        'verifier_sha256': verifier.fingerprint(
+            payloads['service/apps/runpod_image/verify_service_bundle.py'])['sha256'],
+        'catalog_sha256': verifier.fingerprint(payloads['service/' + verifier.MLOPS_CATALOG])['sha256'],
+        'service_manifest_sha256': checked['manifest_sha256'],
+        'files_verified': checked['files_verified'],
+        'supported_versions': list(catalog['classifiers']),
+    }
+    (output / 'release-pins.json').write_bytes(json_bytes(pins))
     record = {
         'status': 'mlops_ci_context_prepared', 'deployment': verifier.MLOPS_DEPLOYMENT,
         'platform': 'linux/amd64', 'base_image': verifier.PORTABLE_BASE_IMAGE,
@@ -174,6 +191,8 @@ def build(output, root=ROOT):
         'inherited_files_verification': 'deferred to Docker build inspect',
         'includes_model_weights': False, 'includes_secrets': False,
         'model_calls': 0, 'docker_build_performed': False, 'registry_uploads': 0,
+        'supported_versions': pins['supported_versions'], 'release_pins': 'release-pins.json',
+        'source_catalog_modified': False,
     }
     (output / 'preparation.json').write_bytes(json_bytes(record))
     return record
@@ -184,5 +203,10 @@ if __name__ == '__main__':
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument('--output', type=Path)
     action.add_argument('--write-catalog', action='store_true')
+    parser.add_argument('--include-lastconv', action='store_true',
+                        help='Stage B/R2/LC in a new --output directory; preserves the active source catalog.')
     args = parser.parse_args()
-    print(json.dumps(write_catalog() if args.write_catalog else build(args.output), indent=2))
+    if args.write_catalog and args.include_lastconv:
+        parser.error('--include-lastconv requires --output; the current catalog is preserved')
+    print(json.dumps(write_catalog() if args.write_catalog else
+                     build(args.output, include_lastconv=args.include_lastconv), indent=2))

@@ -1,5 +1,20 @@
 # 실행·복구 사용법 — 현재 CCTV 프로젝트
 
+## 2026-10-10 — lastconv631 선택형 릴리스
+
+`LC`는 R3D-18 lastconv631 epoch3 실험 모델이다. 기존 B/R2 기본 선택은 유지하며, LC 포함 릴리스와 허용 세션에서 세 번째 모델로 선택한다. 앙상블·재학습은 포함하지 않는다.
+
+GitHub Actions의 Runpod image workflow는 main 이미지 변경 시 `--include-lastconv`로 소스를 준비하고 Linux amd64 이미지를 Docker Hub에 게시한다. Mac Docker/Runpod 선기동은 필요하지 않다. 커밋 태그와 digest는 해당 Actions 성공 결과를 확인한다. Git push 자체가 Pod 생성·가중치 등록·EC2 배포를 수행하지는 않는다.
+
+적용 순서:
+1. Actions 성공과 새 image digest를 확인한다.
+2. `prepare_runpod_ci.py --include-lastconv --output <새폴더>`로 같은 소스의 catalog/release-pins를 준비한다. BE 묶음에는 `build_be_mlops_bundle.py --release-catalog <새catalog>`를 사용한다.
+3. 기존 B/R2 바인딩은 `register_mlops_models.py --bindings-input`으로 새 출력에 보존한다. LC 원본 SHA256은 `6139ac8597f4c6e6a3fd5a632fc490e636e7188d076739e29f841f3ca3da0558`, 크기는132769867B다. 실제 전송은 명시적 `--upload-lc`를 사용한다.
+4. 새 Pod와 EC2에 같은 릴리스를 적용한다. `mlops_schema.sql` 이후 별도 `lastconv_schema.sql`을 적용하고 Pod의 LC 캐시는 `python -m apps.runpod_image.model_prepare --version LC`로 준비한다.
+5. `start_runpod_demo.py --release-pins <새release-pins.json>`과 LC를 포함한 허용 목록으로 연결하고 영상1건을 확인한다. 새 Pod의 현재 Connect 정보를 사용하며 이전 세션 원장은 보존한다.
+
+가중치·자격증명·영상은 Git과 이미지 빌드 context에서 제외한다. 원본 checkpoint의 SHA/크기는 확인했으나 실제 GPU 로딩·추론은 아직 실행하지 않았다. 기존 X3D-S/R2 대비 성능 향상은 미측정이다.
+
 ## 최신 사용 안내·과거 시연 시각 구분 — 2026-10-08
 
 아래 ‘현재 시연’ 문구가 있는 날짜별 절은 당시 실행 이력입니다. 마지막으로 확인한 세션은 `demo-session-20261007-01`이며 **10월7일09:13:41~17:13:41 KST**, 총20건·동시1건으로 변경됐습니다. 10월7일11:01 조회 당시1건사용·19건남음이며 현재 잔여량을 뜻하지 않습니다. 기록된 만료 시각은 지났고, 이번 Git 게시 작업에서는 서버 전원/새 창 상태를 조회하거나 변경하지 않습니다.

@@ -1,5 +1,15 @@
 # 학습 기록 — 원리와 설계 선택
 
+## 2026-10-10 — 선택형 모델 릴리스와 GitHub Actions
+
+선택형 모델 추가는 가중치뿐 아니라 입력 계약·로더·선택 허용 목록·결과 식별을 같은 릴리스로 연결하는 작업이다. 예를 들어 같은 영상에 LC를 선택하면 전용 R3D-18 loader를 거쳐 기존 YOLO/설명·보고 경로로 전달된다. 여러 모델 점수를 자동 결합하는 앙상블은 별도 작업이다.
+
+model_catalog→analysis_profiles→Runpod lastconv_classifier→BE 결과/MLflow→관제 선택 흐름을 연결했다. prepare_runpod_ci의 --include-lastconv로 새 catalog/manifest/release-pins를 만들고 GitHub Actions가 이를 이미지로 게시한다. 기존 catalog는 B/R2로 유지하며 별도 새 릴리스에서만 LC를 활성화해 과거 작업 재현을 보존한다.
+
+GitHub Actions의 이미지 게시와 Runpod/EC2 운영 적용은 단계가 다르다. Git push 후 이미지가 게시돼도 새 Pod·모델 cache·BE/DB·세션 연결은 필요하다. 실제 checkpoint는 SHA와 크기만 확인했고 GPU 호환성/단건 보고 성공·현행 모델 대비 성능은 아직 확인하지 않았다. 직접 확인할 파일은 apps/runpod_image/lastconv_classifier.py, scripts/prepare_runpod_ci.py, .github/workflows/runpod-image.yml이다.
+
+30초 설명: “lastconv631을 기존 흐름의 세 번째 선택 모델로 연결했습니다. GitHub가 새 GPU 이미지를 만들며, 그 이미지와 같은 모델 계약을 새 Pod/서버에 적용한 뒤 영상 한 건으로 확인합니다.”
+
 ## 2026-10-08 — README와 작업 기록의 역할
 
 README는 처음 읽는 사람이 프로젝트 목적·기능·사용 경로를 이해하는 입구다. 예를 들어 ‘영상 업로드부터 보고 확인까지 무엇을 하는가’는 README에, ‘어느 날 어떤 검사를 하고 무엇이 바뀌었는가’는 PROGRESS에 둔다. 이번에는 `scripts/prepare_git_publication.py`가 README에 게시 안내를 자동 삽입하던 동작을 없애고 그 내용은 `docs/team_handoff.md`로 옮겼다.

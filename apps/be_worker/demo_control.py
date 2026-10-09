@@ -175,15 +175,17 @@ def provider_ready(api, marker, now):
     require(profiles.deployment_for_profile(expected) == profiles.MLOPS_DEPLOYMENT,
             'demo_mlops_deployment_required')
     health = api.health(expected)
+    versions = list(profiles.supported_versions())
+    require(all(version in versions for version in marker['versions']), 'demo_model_not_packaged')
     limits = {'max_jobs': marker['max_jobs'], 'per_job_seconds': marker['per_job_seconds'],
               'whole_service_seconds': marker['window_seconds']}
     require(health.get('limits') == limits and type(health['limits'].get('max_jobs')) is int
             and all(type(health['limits'].get(k)) in (int, float)
                     for k in ('per_job_seconds', 'whole_service_seconds')), 'demo_provider_limits_differ')
     require(health.get('api_schema') == 'runpod-ab-api-v1' and health.get('storage') == 's3'
-            and health.get('supported_versions') == ['B', 'R2']
+            and health.get('supported_versions') == versions
             and health.get('profiles') == {version: profiles.gpu_identity('0' * 64,
-                profiles.profile(version))['profile_sha256'] for version in ('B', 'R2')},
+                profiles.profile(version))['profile_sha256'] for version in versions},
             'demo_provider_catalog_differ')
     require(type(health.get('admissions')) is int and health['admissions'] == 0,
             'demo_provider_window_already_used')
@@ -285,7 +287,7 @@ def main(argv=None):
     launch.add_argument('--name', required=True)
     launch.add_argument('--hours', type=float, default=8)
     launch.add_argument('--max-jobs', type=int, default=demo.DEFAULT_MAX_JOBS)
-    launch.add_argument('--models', nargs='+', choices=('B', 'R2'), default=['B', 'R2'])
+    launch.add_argument('--models', nargs='+', choices=('B', 'R2', 'LC'), default=['B', 'R2'])
     launch.add_argument('--max-upload-mib', type=int, default=50)
     launch.add_argument('--max-video-seconds', type=int, default=demo.DEFAULT_VIDEO_SECONDS)
     launch.add_argument('--apply', action='store_true')

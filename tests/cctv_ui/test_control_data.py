@@ -87,6 +87,7 @@ class SavedControlDataTests(unittest.TestCase):
                     ('a', '1' * 64, 'B', '2026-10-05T00:00:00Z'),
                     ('b', '1' * 64, 'B', '2026-10-05T12:00:00+09:00'),
                     ('c', '1' * 64, 'R2', '2026-10-05T05:00:00Z'),
+                    ('e', '1' * 64, 'LC', '2026-10-05T06:00:00Z'),
                     ('d', '1' * 8 + '2' * 56, 'B', '2026-10-06T00:00:00Z')]]
         before = copy.deepcopy(rows)
         tags = data.card_identities(rows + [rows[0]])
@@ -95,7 +96,9 @@ class SavedControlDataTests(unittest.TestCase):
         self.assertEqual(tags['b' * 32]['model_label'], 'X3D-S')
         self.assertEqual(tags['c' * 32]['model_label'], 'R(2+1)D-18')
         self.assertEqual(tags['c' * 32]['run_label'], '최신 실행')
-        self.assertEqual(tags['c' * 32]['source_count'], 3)
+        self.assertEqual(tags['c' * 32]['source_count'], 4)
+        self.assertEqual(tags['e' * 32]['model_label'], 'R3D-18 · lastconv631 · 실험용')
+        self.assertEqual(tags['e' * 32]['run_label'], '최신 실행')
         self.assertEqual(tags['d' * 32]['source_count'], 1)
         self.assertEqual(rows, before)
         self.assertNotIn('과거 모델', str(tags))

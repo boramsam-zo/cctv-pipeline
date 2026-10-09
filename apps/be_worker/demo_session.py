@@ -1,7 +1,7 @@
 """Finite public-demo policy; selecting a marker never grants execution.
 
 The existing hour_session database ledger owns activation, expiry and claims.
-This policy permits new uploads for the packaged B/R2 models and one generated
+This policy permits new uploads for explicitly selected packaged models and one generated
 description/report for the earliest generated candidate. All GPU candidates
 remain in the original handoff; unselected candidates are not described.
 """
@@ -43,7 +43,8 @@ def validate_marker(value):
         date.fromisoformat(day[:4] + '-' + day[4:6] + '-' + day[6:])
     except ValueError:
         raise WorkerError('demo_session_marker_invalid') from None
-    require(value['versions'] in (['B'], ['B', 'R2']) and value['purpose'] == 'full_report'
+    require(value['versions'] in (['B'], ['B', 'R2'], ['B', 'LC'], ['B', 'R2', 'LC'])
+            and value['purpose'] == 'full_report'
             and type(value['max_jobs']) is int and 1 <= value['max_jobs'] <= MAX_JOBS
             and type(value['per_job_seconds']) is int and value['per_job_seconds'] == 300
             and type(value['window_seconds']) is int and 60 <= value['window_seconds'] <= MAX_WINDOW_SECONDS

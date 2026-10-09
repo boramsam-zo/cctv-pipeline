@@ -116,8 +116,11 @@ def model_identity(job):
     tracking, profile = _dict(job.get('mlflow')), _dict(job.get('analysis_profile'))
     version = job.get('version') or profile.get('version')
     identifier = tracking.get('model_id') or profile.get('model_id')
-    identifier = identifier or {'B': 'x3d_s', 'R2': 'r2plus1d_18'}.get(version)
-    label = {'x3d_s': 'X3D-S', 'r2plus1d_18': 'R(2+1)D-18'}.get(identifier)
+    identifier = identifier or {'B': 'x3d_s', 'R2': 'r2plus1d_18', 'LC': 'r3d_18'}.get(version)
+    label = {'x3d_s': 'X3D-S', 'r2plus1d_18': 'R(2+1)D-18', 'r3d_18': 'R3D-18'}.get(identifier)
+    if identifier == 'r3d_18' and (version == 'LC' or
+            (tracking.get('model_version') or profile.get('model_version')) == 'lastconv631-epoch3'):
+        label = 'R3D-18 · lastconv631 · 실험용'
     return identifier, label or str(identifier or '모델 미기록')
 
 

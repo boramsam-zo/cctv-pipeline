@@ -23,6 +23,8 @@ on:
       - 'tests/be_worker/test_mlops*.py'
       - 'tests/be_worker/test_mlflow_tracking.py'
       - 'tests/be_worker/test_register_mlops_models.py'
+      - 'tests/runpod_image/test_lastconv_classifier.py'
+      - 'tests/be_worker/test_lastconv_selection.py'
       - 'tests/be_worker/test_ab_storage_parallel.py'
   push:
     branches: [main]
@@ -46,6 +48,8 @@ on:
       - 'tests/be_worker/test_mlops*.py'
       - 'tests/be_worker/test_mlflow_tracking.py'
       - 'tests/be_worker/test_register_mlops_models.py'
+      - 'tests/runpod_image/test_lastconv_classifier.py'
+      - 'tests/be_worker/test_lastconv_selection.py'
       - 'tests/be_worker/test_ab_storage_parallel.py'
   workflow_dispatch:
 
@@ -89,7 +93,8 @@ jobs:
           python -B -m unittest discover -s tests/be_worker -p 'test_mlops*.py' -v
           python -B -m unittest tests.be_worker.test_mlflow_tracking tests.be_worker.test_register_mlops_models -v
           python -B -m unittest tests.be_worker.test_ab_storage_parallel -v
-          python -B scripts/prepare_runpod_ci.py --output "$RUNNER_TEMP/runpod-check"
+          python -B -m unittest tests.runpod_image.test_lastconv_classifier tests.be_worker.test_lastconv_selection -v
+          python -B scripts/prepare_runpod_ci.py --include-lastconv --output "$RUNNER_TEMP/runpod-check"
 
   publish:
     needs: check
@@ -106,7 +111,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Prepare allowlisted code context
-        run: python -B scripts/prepare_runpod_ci.py --output "$RUNNER_TEMP/runpod-release"
+        run: python -B scripts/prepare_runpod_ci.py --include-lastconv --output "$RUNNER_TEMP/runpod-release"
       - name: Reserve disk for the CUDA base on the ephemeral runner
         shell: bash
         run: |

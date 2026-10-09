@@ -53,11 +53,11 @@ def validate_manifest(manifest, config):
 
 
 def asset_kinds(event):
-    return ('clip', 'frame', 'roi_clip', 'context') if event['version'] in ('B', 'R2') else ('clip', 'frame')
+    return ('clip', 'frame', 'roi_clip', 'context') if event['version'] in ('B', 'R2', 'LC') else ('clip', 'frame')
 
 
 def visual_kinds(event):
-    return ('clip', 'frame', 'roi_clip') if event['version'] in ('B', 'R2') else ('clip', 'frame')
+    return ('clip', 'frame', 'roi_clip') if event['version'] in ('B', 'R2', 'LC') else ('clip', 'frame')
 
 
 def checked_index(raw, config, manifest):

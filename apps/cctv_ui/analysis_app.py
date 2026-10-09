@@ -41,7 +41,8 @@ if DEMO_MODE:
                f"파일 최대 {demo_status['max_upload_bytes'] / 1024**2:g} MiB · 동시 분석 1건")
 for key, value in [('selected_result', None), ('last_submission', None)]:
     st.session_state.setdefault(key, value)
-VERSIONS = {'A': 'A · 과거 기준', 'B': 'X3D-S · 운영 epoch 7', 'R2': 'R(2+1)D-18 · epoch 7', 'A+B': 'A+B · 과거 판본 비교'}
+VERSIONS = {'A': 'A · 과거 기준', 'B': 'X3D-S · 운영 epoch 7', 'R2': 'R(2+1)D-18 · epoch 7',
+            'LC': 'R3D-18 · lastconv631 · 실험용', 'A+B': 'A+B · 과거 판본 비교'}
 PURPOSES = {'gpu_comparison': '분석 근거 비교', 'full_report': '장면 설명·보고까지'}
 LABELS = {'prepared': '대기 중', 'queued': '대기 중', 'submitting': '분석 요청 중',
     'waiting': 'GPU 분석·S3 저장 중', 'evidence_ready': '근거 수집 대기',
@@ -71,10 +72,10 @@ except Exception:
 
 
 model_selections = [item['selection'] for item in (pipeline or {}).get('analysis_models', [])]
-choices = {key: VERSIONS[key] for key in model_selections if key in ('B', 'R2')} if model_selections else {key: VERSIONS[key] for key in ('A', 'B', 'A+B')}
+choices = {key: VERSIONS[key] for key in model_selections if key in ('B', 'R2', 'LC')} if model_selections else {key: VERSIONS[key] for key in ('A', 'B', 'A+B')}
 if DEMO_MODE:
     choices = {key: VERSIONS[key] for key in (demo_status.get('allowed_selections') or [])
-               if key in model_selections and key in ('B', 'R2')}
+               if key in model_selections and key in ('B', 'R2', 'LC')}
     if not choices:
         st.warning('지금 접수할 수 있는 사고 모델이 없습니다. 연결·시연 설정을 확인해 주세요.')
         st.stop()
@@ -84,6 +85,8 @@ with st.form('video_submission'):
         max_upload_size=max(1, math.ceil(demo_status['max_upload_bytes'] / 1024**2)) if DEMO_MODE else 200, key='video_upload')
     selection = st.segmented_control('사고 영상 모델', list(choices), default='B' if 'B' in choices else next(iter(choices)),
         format_func=VERSIONS.get, required=True, key='analysis_selection')
+    if 'LC' in choices:
+        st.caption('lastconv631은 실험·비교용 모델입니다. 기존 모델보다 성능이 높다고 검증된 것은 아닙니다.')
     if DEMO_MODE:
         purpose = 'full_report'
         st.caption('실행 범위: GPU 분석 → 장면 설명 → 문서 검색·보고서')
@@ -174,7 +177,7 @@ def show_clip(identifier, event_id, kind, label, version):
     except Exception as exc:
         st.warning('근거 읽기 실패: ' + str(exc))
         return
-    if version in ('B', 'R2'):
+    if version in ('B', 'R2', 'LC'):
         try:
             st.video(media(identifier, event_id, kind + '_preview'))
             st.caption('화면 재생용 사본 · 아래 다운로드는 원본 근거입니다.')
@@ -196,15 +199,15 @@ def show_evidence(job, event_id, event):
         st.caption(' · '.join(shown))
         st.caption('원본 영상 기준 시각이며 확인된 충돌 시점은 아닙니다.')
     show_clip(identifier, event_id, 'clip', '전체 화면 클립', version)
-    if version in ('B', 'R2'):
+    if version in ('B', 'R2', 'LC'):
         show_clip(identifier, event_id, 'roi_clip', 'ROI 확대 클립', version)
     try:
         st.image(media(identifier, event_id, 'frame'),
-            caption='모델 주석 프레임 · PRIMARY/RELATED는 검토 후보입니다.' if version in ('B', 'R2')
+            caption='모델 주석 프레임 · PRIMARY/RELATED는 검토 후보입니다.' if version in ('B', 'R2', 'LC')
                     else '원본 대표 프레임')
     except Exception as exc:
         st.warning('프레임 표시 실패: ' + str(exc))
-    if version in ('B', 'R2'):
+    if version in ('B', 'R2', 'LC'):
         st.caption('박스 겹침은 실제 접촉의 확정 근거가 아닙니다. 클래스 매핑·당사자 후보는 검수가 필요합니다.')
         with st.expander('모델 문맥·클래스 매핑·한계'):
             st.json({'incident_context': event.get('incident_context'),

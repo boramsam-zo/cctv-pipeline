@@ -139,6 +139,26 @@ class CheckoutReleaseTests(unittest.TestCase):
         self.assertFalse(builder.write_catalog(self.root)['previous_catalog_archived'])
         self.build()
 
+    def test_lastconv_release_is_opt_in_and_preserves_active_catalog(self):
+        catalog_path = self.root / builder.verifier.MLOPS_CATALOG
+        before = catalog_path.read_bytes()
+        result = builder.build(self.parent / 'lastconv', self.root, include_lastconv=True)
+        self.assertEqual(catalog_path.read_bytes(), before)
+        self.assertEqual(result['supported_versions'], ['B', 'R2', 'LC'])
+        self.assertFalse(result['source_catalog_modified'])
+        context = self.parent / 'lastconv/context'
+        catalog = json.loads((context / 'service' / builder.verifier.MLOPS_CATALOG).read_bytes())
+        image = json.loads((context / 'image-manifest.json').read_bytes())
+        self.assertEqual(set(catalog['classifiers']), {'B', 'R2', 'LC'})
+        self.assertEqual(image['supported_versions'], ['B', 'R2', 'LC'])
+        self.assertEqual(image['default_version'], 'B')
+        self.assertTrue((context / 'service/apps/runpod_image/lastconv_classifier.py').is_file())
+        from scripts.start_runpod_demo import release_pins
+        pins = release_pins(json.loads((self.parent / 'lastconv/release-pins.json').read_bytes()))
+        self.assertEqual(pins['supported_versions'], ['B', 'R2', 'LC'])
+        self.assertEqual(pins['catalog_sha256'], hashlib.sha256(
+            (context / 'service' / builder.verifier.MLOPS_CATALOG).read_bytes()).hexdigest())
+
     def test_conflicting_catalog_archive_blocks_update(self):
         target = self.root / builder.verifier.MLOPS_CATALOG
         before = target.read_bytes()

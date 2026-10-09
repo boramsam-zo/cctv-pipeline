@@ -69,21 +69,25 @@ class AppTests(unittest.TestCase):
         st.cache_data.clear()
 
     def test_model_selection_keeps_full_report_request_and_does_not_auto_submit(self):
-        replies=Replies(report_pipeline={'pipeline_id':'team-rag-v1',
-            'document_reference_date_supported':False,
-            'analysis_models':[{'selection':'B'},{'selection':'R2'}]})
-        upload=io.BytesIO(b'0000ftyp-synthetic-model-selection');upload.name='test.mp4'
-        with patch('apps.cctv_ui.client.request',side_effect=replies), \
-                patch('streamlit.file_uploader',return_value=upload):
-            app=AppTest.from_file(str(APP)).run()
-            self.assertFalse(app.exception);self.assertFalse(replies.posts)
-            self.assertEqual(app.session_state['analysis_selection'],'B')
-            app.session_state['analysis_selection']='R2'
-            app.selectbox(key='analysis_purpose').select('full_report')
-            app.button[0].click().run()
-        self.assertFalse(app.exception);self.assertEqual(len(replies.posts),1)
-        query=parse_qs(urlsplit(replies.posts[0][0]).query)
-        self.assertEqual(query,{'selection':['R2'],'purpose':['full_report']})
+        for selected in ('R2', 'LC'):
+            with self.subTest(selected=selected):
+                replies=Replies(report_pipeline={'pipeline_id':'team-rag-v1',
+                    'document_reference_date_supported':False,
+                    'analysis_models':[{'selection':'B'},{'selection':selected}]})
+                upload=io.BytesIO(b'0000ftyp-synthetic-model-selection');upload.name='test.mp4'
+                with patch('apps.cctv_ui.client.request',side_effect=replies), \
+                        patch('streamlit.file_uploader',return_value=upload):
+                    app=AppTest.from_file(str(APP)).run()
+                    self.assertFalse(app.exception);self.assertFalse(replies.posts)
+                    self.assertEqual(app.session_state['analysis_selection'],'B')
+                    self.assertEqual(any('lastconv631은 실험' in row.value for row in app.caption),
+                                     selected == 'LC')
+                    app.session_state['analysis_selection']=selected
+                    app.selectbox(key='analysis_purpose').select('full_report')
+                    app.button[0].click().run()
+                self.assertFalse(app.exception);self.assertEqual(len(replies.posts),1)
+                query=parse_qs(urlsplit(replies.posts[0][0]).query)
+                self.assertEqual(query,{'selection':[selected],'purpose':['full_report']})
 
     def test_refresh_legacy_job_only_reads_and_never_labels_it_a(self):
         replies=Replies(jobs=[job()])

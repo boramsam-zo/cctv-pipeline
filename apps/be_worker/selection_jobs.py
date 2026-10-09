@@ -86,11 +86,11 @@ def validate_stored(task, row, *, directory):
 
 
 def admit(store, video, reference_date, selection, purpose, *, spool, config, jsonb):
-    versions = {'A':['A'], 'B':['B'], 'A+B':['A','B'], 'R2':['R2']}.get(selection)
+    versions = {'A':['A'], 'B':['B'], 'A+B':['A','B'], 'R2':['R2'], 'LC':['LC']}.get(selection)
     if versions is None or purpose not in ('gpu_comparison','full_report'):
         raise WorkerError('invalid_analysis_selection')
     team = team_settings.enabled() and purpose == 'full_report'
-    if team and (versions not in (['B'], ['R2']) or reference_date is not None):
+    if team and (versions not in (['B'], ['R2'], ['LC']) or reference_date is not None):
         raise WorkerError('team_rag_requires_b_without_date')
     if team and not trial_limits.hour_session.configured():
         raise WorkerError('team_rag_requires_active_test_session')

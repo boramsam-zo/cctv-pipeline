@@ -41,6 +41,7 @@ MLOPS_FILES = PORTABLE_FILES + (
     'apps/be_worker/model_catalog.py',
     'apps/runpod_image/model_artifact.py',
     'apps/runpod_image/classifier_adapter.py',
+    'apps/runpod_image/lastconv_classifier.py',
     'apps/runpod_image/classifier_pipeline.py',
     'apps/runpod_image/model_prepare.py',
     'apps/runpod_image/runtime/image_runtime.py',
@@ -90,7 +91,7 @@ def validate_mlops_catalog(catalog):
             or not isinstance(catalog['code_files'], dict) or not catalog['code_files']):
         raise ValueError('MLOps deployment catalog identity mismatch')
     if 'classifiers' in catalog and (not isinstance(catalog['classifiers'], dict)
-            or set(catalog['classifiers']) != {'B', 'R2'}
+            or set(catalog['classifiers']) not in ({'B', 'R2'}, {'B', 'R2', 'LC'})
             or any(not isinstance(value, dict) or not value for value in catalog['classifiers'].values())):
         raise ValueError('MLOps classifier snapshots invalid')
     values = [catalog['image_manifest_sha256'], catalog['execution_adapter_sha256'],

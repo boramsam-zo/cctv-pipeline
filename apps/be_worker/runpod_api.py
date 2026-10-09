@@ -76,6 +76,7 @@ class RunpodAPI:
             versions = supported_versions(deployment)
             companions = companion_profiles(expected_profile) if expected_profile is not None else {
                 v: profile(v, deployment=deployment) for v in versions}
+            versions = tuple(companions)
             expected = {v: gpu_identity('0' * 64, companions[v])['profile_sha256'] for v in versions}
             if (value.get('status') != 'ok' or value.get('api_schema') != 'runpod-ab-api-v1'
                     or value.get('storage') != 's3' or value.get('gpu_concurrency') != 1

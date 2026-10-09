@@ -1,5 +1,13 @@
 # 진행 기록
 
+## 2026-10-10 — LC 선택형 모델 공개 소스 반영
+
+사용자 요청에 따라 lastconv631 epoch3을 선택형 LC로 추가했다. 기존 입력16프레임/224 letterbox/Kinetics 정규화/2초창·1초간격/argmax 동점 정상 규칙, 실제 checkpoint schema와 SHA를 연결했다. 기존 B/R2·저장 결과·원본은 보존하고 허용된 새 릴리스에서만 LC를 선택하도록 했다. 과거81원본 평가를 현행 B/R2와의 공통 성능 비교로 해석하지 않는다.
+
+BE22/UI11/GPU17/등록·기동·묶음24 및 CLI1, 후속 Actions/legacy pin 관련5개 오프라인 검사를 통과했다. 공개 소스 준비에서 비밀·가중치·영상·운영 자료를 제외했고 source-only context는 기존 준비본과 일치한다. 실제 모델 연산/학습/DB·EC2 변경은0이며 이번 commit의 CI 결과는 Actions 완료 후 기록한다.
+
+Mac Docker 요구 안내를 기존 GitHub Actions 빌드/게시로 정정했다. 사용자의 후속 진행 승인에 따라 기존 main 이력 위에 LC 관련 소스와 이 기록만 반영한다. 새 Pod 생성·가중치 등록·EC2 적용·단건 확인은 이후 순서다. 원본과 게시본 선별/해시 근거는 비공개 artifacts/git-publication-lastconv-20261010-01에 보존한다.
+
 ## 2026-10-08 — README 소개·진행 이력·배포 안내 분리
 
 완료: 기존 main cc9581e 위에303d7bb를 일반 push했다(8파일, force push0). 원격 README blob dbb896a8635ad7a958473b3385faaaf03bd8791c가 검토본과 같다. GitHub Actions37710502659 SUCCESS:report160/mlflow46/demo75/ui32/privacy7/rag4 합계324통과. 이미지 workflow·배포·모델 실행은 발생시키지 않았다. 완료 상태만 후속 문서 커밋에 반영한다.

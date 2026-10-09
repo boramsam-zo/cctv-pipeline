@@ -131,7 +131,7 @@ def _input_sha(value):
 
 
 def _version(version):
-    if not isinstance(version, str) or version not in (*VERSIONS, 'R2'):
+    if not isinstance(version, str) or version not in (*VERSIONS, 'R2', 'LC'):
         raise ValueError('analysis_version_unknown')
     return version
 
@@ -202,7 +202,7 @@ def _mlops_profiles(path=None):
                   *release['code_files'].values()]:
         _input_sha(value)
     contracts = release.get('classifiers', {version: contract_for_version(version) for version in ('B', 'R2')})
-    if not isinstance(contracts, dict) or set(contracts) != {'B', 'R2'}:
+    if not isinstance(contracts, dict) or set(contracts) not in ({'B', 'R2'}, {'B', 'R2', 'LC'}):
         raise ValueError('analysis_deployment_classifier_contracts_invalid')
     for version, contract in contracts.items():
         if (not isinstance(contract, dict) or set(contract) != set(contract_for_version(version))
@@ -210,8 +210,12 @@ def _mlops_profiles(path=None):
             raise ValueError('analysis_deployment_classifier_contracts_invalid')
         _input_sha(contract['weights_sha256'])
         _canonical(contract)
+        if version == 'LC' and _canonical(contract) != _canonical(contract_for_version('LC')):
+            raise ValueError('analysis_deployment_classifier_contracts_invalid')
     result = {}
-    for version in ('B', 'R2'):
+    for version in ('B', 'R2', 'LC'):
+        if version not in contracts:
+            continue
         item = deepcopy(_PROFILES['B'])
         item.update(version=version, deployment=MLOPS_DEPLOYMENT,
                     classifier=deepcopy(contracts[version]))
@@ -219,9 +223,11 @@ def _mlops_profiles(path=None):
         item['code_files'].update(release['code_files'])
         for field in ('image_manifest_sha256', 'execution_adapter_sha256'):
             item[field] = release[field]
-        if version == 'R2':
+        if version in ('R2', 'LC'):
             del item['model_files']['models/x3d_s_real_so_tad_epoch7_best_model.pt']
-            item['model_files']['models/r2plus1d_18/candidate-epoch-7.pt'] = {
+            model_path = ('models/r2plus1d_18/candidate-epoch-7.pt' if version == 'R2'
+                          else 'models/r3d_18/lastconv631-epoch3.pt')
+            item['model_files'][model_path] = {
                 'sha256': item['classifier']['weights_sha256'],
                 'bytes': item['classifier']['weights_bytes']}
         result[version] = item
@@ -256,7 +262,7 @@ def companion_profiles(snapshot):
     frozen = validate_profile(snapshot)
     if frozen.get('deployment') == MLOPS_DEPLOYMENT:
         for entries in _mlops_snapshots():
-            if _canonical(entries[frozen['version']]) == _canonical(frozen):
+            if frozen['version'] in entries and _canonical(entries[frozen['version']]) == _canonical(frozen):
                 return entries
         raise ValueError('analysis_profile_changed')
     deployment = deployment_for_profile(frozen)
@@ -266,7 +272,7 @@ def companion_profiles(snapshot):
 def supported_versions(deployment=None):
     selected = os.environ.get('CCTV_ANALYSIS_DEPLOYMENT', LEGACY_DEPLOYMENT) if deployment is None else deployment
     if selected == MLOPS_DEPLOYMENT:
-        return ('B', 'R2')
+        return tuple(_mlops_profiles())
     if selected != LEGACY_DEPLOYMENT and selected not in _RELEASE_CATALOGS:
         raise ValueError('analysis_deployment_unknown')
     return ('A', 'B')
@@ -394,7 +400,7 @@ def selection_identity(input_sha256, selection, purpose):
     This is an identity description, not a transaction or worker scheduling API.
     Successful-result reuse still requires the caller to verify the saved result.
     """
-    choices = {'A': ('A',), 'B': ('B',), 'A+B': ('A', 'B'), 'R2': ('R2',)}
+    choices = {'A': ('A',), 'B': ('B',), 'A+B': ('A', 'B'), 'R2': ('R2',), 'LC': ('LC',)}
     if not isinstance(selection, str) or selection not in choices:
         raise ValueError('analysis_selection_unknown')
     children = [request_identity(input_sha256, profile(version), purpose)

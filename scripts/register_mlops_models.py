@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register the two approved model references, with an explicit optional R2 upload.
+"""Register B/R2 and opt-in lastconv631 references, with explicit per-model uploads.
 
 No training, checkpoint deserialization, model imports, or Runpod requests.
 The CLI performs real S3/MLflow calls only when explicitly invoked. Credentials
@@ -27,7 +27,7 @@ from apps.be_worker import mlflow_tracking as tracking
 BASE_IMAGE_DIGEST = '037355788382bd35081d798b4ff6f7131f7745735097058ba58f711af8477cb6'
 X3D_SOURCE_URI = ('baseimage://sha256:' + BASE_IMAGE_DIGEST +
     '/opt/cctv-image/sources/deployment_handoff_1001/models/x3d_s_real_so_tad_epoch7_best_model.pt')
-REGISTERED_NAMES = {'B': 'cctv-x3d-s', 'R2': 'cctv-r2plus1d-18'}
+REGISTERED_NAMES = {'B': 'cctv-x3d-s', 'R2': 'cctv-r2plus1d-18', 'LC': 'cctv-r3d-18-lastconv631'}
 PUBLIC_BLOCK_FIELDS = ('BlockPublicAcls', 'IgnorePublicAcls', 'BlockPublicPolicy', 'RestrictPublicBuckets')
 
 
@@ -58,11 +58,15 @@ def verify_checkpoint(path, contract):
     return expected
 
 
-def _locations(bucket, key, version_id, contract):
+def _locations(bucket, key, version_id, contract, *, version='R2'):
     _require(isinstance(bucket, str) and re.fullmatch(r'[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]', bucket)
              and '..' not in bucket, 'mlops_invalid_s3_bucket')
-    required_key = ('models/r2plus1d_18/' + contract['weights_sha256'] + '/candidate-epoch-7.pt')
-    _require(key == required_key, 'mlops_r2_key_not_content_addressed')
+    layout = {'R2': ('r2plus1d_18', 'candidate-epoch-7.pt'),
+              'LC': ('r3d_18', 'lastconv631-epoch3.pt')}
+    _require(version in layout, 'mlops_unknown_model_version')
+    directory, filename = layout[version]
+    required_key = 'models/' + directory + '/' + contract['weights_sha256'] + '/' + filename
+    _require(key == required_key, 'mlops_' + version.lower() + '_key_not_content_addressed')
     if version_id is not None:
         _require(isinstance(version_id, str) and 1 <= len(version_id) <= 1024
                  and version_id.isascii() and all(32 < ord(c) < 127 for c in version_id),
@@ -101,9 +105,10 @@ def _check_head(head, contract, version_id):
             'version_id': head.get('VersionId'), 'server_side_encryption': 'AES256'}
 
 
-def prepare_r2(*, checkpoint, bucket, key, version_id, upload, receipt_dir, client, contract):
+def prepare_checkpoint(*, checkpoint, bucket, key, version_id, upload, receipt_dir, client, contract,
+                       version='R2'):
     """Never overwrite an existing object; conditional Put is limited to one key."""
-    _locations(bucket, key, version_id, contract)
+    _locations(bucket, key, version_id, contract, version=version)
     signature = verify_checkpoint(checkpoint, contract)
     try:
         access = client.get_public_access_block(Bucket=bucket)['PublicAccessBlockConfiguration']
@@ -150,6 +155,14 @@ def prepare_r2(*, checkpoint, bucket, key, version_id, upload, receipt_dir, clie
     return receipt
 
 
+def prepare_r2(**kwargs):
+    return prepare_checkpoint(**kwargs, version='R2')
+
+
+def prepare_lc(**kwargs):
+    return prepare_checkpoint(**kwargs, version='LC')
+
+
 def _write_new(path, value):
     """Atomically publish a private file without replacing any existing target."""
     path = Path(path)
@@ -184,20 +197,38 @@ def register_models(args, *, s3_client=None, mlflow_client=None):
     output = Path(args.bindings_output)
     _require(not output.is_symlink(), 'mlops_bindings_output_unsafe')
     existing = read_json(output) if output.exists() else None
+    include_lc = any(getattr(args, key, None) for key in
+                     ('lc_checkpoint', 'lc_key', 'lc_version_id', 'upload_lc'))
+    _require(not include_lc or (getattr(args, 'lc_checkpoint', None) and getattr(args, 'lc_key', None)),
+             'mlops_lc_checkpoint_and_key_required')
+    versions = ('B', 'R2', 'LC') if include_lc else ('B', 'R2')
     if existing is not None:
-        _require(isinstance(existing, dict) and set(existing) == {'B', 'R2'},
+        _require(isinstance(existing, dict) and set(existing) == set(versions),
                  'mlops_existing_bindings_preserved')
+    prior = existing or {}
+    bindings_input = getattr(args, 'bindings_input', None)
+    if bindings_input is not None:
+        supplied = read_json(bindings_input)
+        _require(isinstance(supplied, dict) and set(supplied) in ({'B', 'R2'}, set(versions)),
+                 'mlops_existing_bindings_preserved')
+        _require(all(key not in prior or prior[key] == value for key, value in supplied.items()),
+                 'mlops_existing_bindings_preserved')
+        prior = {**supplied, **prior}
     r2 = contract_for_version('R2')
     _locations(args.s3_bucket, args.r2_key, args.r2_version_id, r2)
+    if include_lc:
+        _locations(args.s3_bucket, args.lc_key, getattr(args, 'lc_version_id', None),
+                   contract_for_version('LC'), version='LC')
     specs = {}
-    for version in ('B', 'R2'):
+    for version in versions:
         contract = contract_for_version(version)
+        key = args.r2_key if version == 'R2' else getattr(args, 'lc_key', None)
         specs[version] = dict(registered_model_name=REGISTERED_NAMES[version],
             model_id=contract['model_id'], model_version=contract['model_version'],
             weights_sha256=contract['weights_sha256'], contract_sha256=contract_sha256(contract),
-            source_uri=X3D_SOURCE_URI if version == 'B' else 's3://' + args.s3_bucket + '/' + args.r2_key)
-        if existing is not None:
-            saved = tracking.validate_binding(existing[version])
+            source_uri=X3D_SOURCE_URI if version == 'B' else 's3://' + args.s3_bucket + '/' + key)
+        if version in prior:
+            saved = tracking.validate_binding(prior[version])
             _require(all(saved[key] == value for key, value in specs[version].items()),
                      'mlops_existing_bindings_preserved')
     if s3_client is None:
@@ -209,16 +240,23 @@ def register_models(args, *, s3_client=None, mlflow_client=None):
     publication = prepare_r2(checkpoint=args.r2_checkpoint, bucket=args.s3_bucket,
         key=args.r2_key, version_id=args.r2_version_id, upload=args.upload_r2,
         receipt_dir=args.receipt_dir, client=s3_client, contract=r2)
+    lc_publication = None
+    if include_lc:
+        lc = contract_for_version('LC')
+        lc_publication = prepare_lc(checkpoint=args.lc_checkpoint, bucket=args.s3_bucket,
+            key=args.lc_key, version_id=getattr(args, 'lc_version_id', None),
+            upload=getattr(args, 'upload_lc', False), receipt_dir=args.receipt_dir,
+            client=s3_client, contract=lc)
     client = mlflow_client or tracking.client_for_uri(args.tracking_uri)
     bindings = {}
-    for version in ('B', 'R2'):
-        if existing is not None:
-            bindings[version] = tracking.verify_registered_model(client, existing[version])
+    for version in versions:
+        if version in prior:
+            bindings[version] = tracking.verify_registered_model(client, prior[version])
         else:
             bindings[version] = tracking.register_model_reference(args.receipt_dir, specs[version], client=client)
     written = _write_new(output, bindings)
     # Do not print bucket names, keys, host paths, URLs, credentials, or SDK errors.
-    return {'status': 'mlops_model_references_registered', 'bindings_written': written,
+    result = {'status': 'mlops_model_references_registered', 'bindings_written': written,
             'r2_local_sha256': r2['weights_sha256'], 'r2_bytes': r2['weights_bytes'],
             'r2_upload_attempted': publication['upload_attempted'],
             'remote_sha_metadata_matches': publication['sha256_metadata_matches'],
@@ -227,12 +265,19 @@ def register_models(args, *, s3_client=None, mlflow_client=None):
                           'registered_model_name': b['registered_model_name'],
                           'registered_model_version': b['registered_model_version']} for v, b in bindings.items()},
             'model_loaded': False, 'inference_calls': 0}
+    if lc_publication is not None:
+        result.update(lc_local_sha256=lc['weights_sha256'], lc_bytes=lc['weights_bytes'],
+                      lc_upload_attempted=lc_publication['upload_attempted'],
+                      lc_remote_sha_metadata_matches=lc_publication['sha256_metadata_matches'])
+    return result
 
 
 def parser():
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument('--tracking-uri', required=True)
     cli.add_argument('--bindings-output', required=True, type=Path)
+    cli.add_argument('--bindings-input', type=Path,
+                     help='Reuse verified B/R2 references while writing a separate extended output.')
     cli.add_argument('--receipt-dir', required=True, type=Path)
     cli.add_argument('--s3-bucket', required=True)
     cli.add_argument('--r2-key', required=True)
@@ -240,6 +285,12 @@ def parser():
     cli.add_argument('--r2-checkpoint', required=True, type=Path)
     cli.add_argument('--upload-r2', action='store_true',
                      help='Upload only if the exact immutable key is absent; never overwrite.')
+    cli.add_argument('--lc-key')
+    cli.add_argument('--lc-version-id')
+    cli.add_argument('--lc-checkpoint', type=Path,
+                     help='Opt in to the recorded lastconv631 checkpoint; requires --lc-key.')
+    cli.add_argument('--upload-lc', action='store_true',
+                     help='Upload LC only if its exact immutable key is absent; never overwrite.')
     return cli
 
 

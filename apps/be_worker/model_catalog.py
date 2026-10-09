@@ -1,11 +1,11 @@
-"""The two approved accident classifiers. Metadata only; never loads weights."""
+"""Pinned accident classifiers; release/session policy controls availability."""
 from copy import deepcopy
 import hashlib
 import json
 
 SCHEMA = 'cctv-classifier-contract-v1'
 DEPLOYMENT = 'mlops-20261004-v1'
-VERSIONS = ('B', 'R2')
+VERSIONS = ('B', 'R2', 'LC')
 _COMMON = dict(schema_version=SCHEMA, class_mapping={'normal': 0, 'accident': 1})
 _CONTRACTS = {
     'B': dict(_COMMON, model_id='x3d_s', model_version='operating-epoch7',
@@ -20,6 +20,16 @@ _CONTRACTS = {
     'R2': dict(_COMMON, model_id='r2plus1d_18', model_version='sotad-head-epoch7',
         weights_sha256='c40c150ea70cd422edc546c9d110b138c87cba67a277c5c4d65353ba04478b46',
         weights_bytes=125379501, checkpoint_key='model_state',
+        preprocessing=dict(frames=16, height=224, width=224, color='RGB',
+            resize='pil_bilinear_letterbox_black', mean=[.43216, .394666, .37645],
+            std=[.22803, .22145, .216989], temporal_sampling='pts_bin_centers_no_future_boundary',
+            window_seconds=2, stride_seconds=1, window_coverage='complete_windows_only',
+            short_video='reject_less_than_window'),
+        decision_policy=dict(method='argmax', threshold=.5, tie='normal',
+                             event_merge_gap_seconds=4)),
+    'LC': dict(_COMMON, model_id='r3d_18', model_version='lastconv631-epoch3',
+        weights_sha256='6139ac8597f4c6e6a3fd5a632fc490e636e7188d076739e29f841f3ca3da0558',
+        weights_bytes=132769867, checkpoint_key='model_state',
         preprocessing=dict(frames=16, height=224, width=224, color='RGB',
             resize='pil_bilinear_letterbox_black', mean=[.43216, .394666, .37645],
             std=[.22803, .22145, .216989], temporal_sampling='pts_bin_centers_no_future_boundary',

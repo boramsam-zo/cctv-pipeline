@@ -1,5 +1,13 @@
 # 현재 상태 — CCTV 파이프라인
 
+## 작업 재개 요약 — 2026-10-10 lastconv631 선택형 코드·Actions 게시
+
+사용자가 Git 반영→GitHub Actions 이미지 게시 순서를 승인했다. LC 선택형 모델의 전용 로더·BE/화면/보고/MLflow 연결, 선택적 DB migration·등록/배포 도우미와 관련 검사를 추가했다. 기존 B/R2 기본값·과거 릴리스·원본 결과는 보존한다. LC는 새 릴리스와 세션 허용 목록에서만 활성화되며 자동 앙상블은 없다.
+
+Runpod image workflow의 검사/게시 양쪽에 --include-lastconv를 반영했다. source catalog는 B/R2를 유지하면서 코드해시를 동기화하고 직전 원문을 model_releases에 보존했다. 준비된 GPU/BE catalog SHA는1a8ff8e3aa99b6cf700de63f15bd40b04cb8432df0869324de46608f8f983020이다. 원본 epoch3 가중치는132769867B/SHA6139ac85…0558로 확인했으며 Git/이미지 context에 포함하지 않는다.
+
+로컬 관련 오프라인 검사와 공개 소스 비밀 검사를 통과했다. 이번 커밋의 Actions 최종 상태/이미지 digest는 실제 실행 결과로 별도 확인한다. 사용자는 기존 Pod를 중단했고 새 Pod는 아직 구성하지 않았다. 현재 GPU 추론·EC2 적용·DB 변경·새 세션은 미실행이며 다음은 Actions 게시 성공 확인 후 새 Pod/가중치·EC2 연결과 영상1건 확인이다. Mac Docker 선기동은 불필요하다.
+
 ## 작업 재개 요약 — 2026-10-08 README 소개·이력 분리
 
 사용자 요청으로 README를 프로젝트 목적·주요 기능·분석 순서·시스템 구성·화면 사용·CPU 검사·배포 흐름·문서 안내 중심으로 다시 작성했다. 기존 README 전체는 링크 경로와 제목 수준만 맞춰 `docs/PROGRESS.md` 끝의 ‘README에서 옮긴 이전 소개·작업 이력’에 보존했다. 게시본 앞에 붙던 재현 범위·배포 준비 안내는 `docs/team_handoff.md`로 옮겼고, 이전 팀 공유안도 접은 이력으로 보존했다.

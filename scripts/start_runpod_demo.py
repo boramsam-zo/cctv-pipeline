@@ -4,8 +4,9 @@
 Run with the existing image Python. This never uploads credentials, downloads
 weights, executes inference, terminates another API, or resets an old session.
 The original image launcher and bundle remain byte-for-byte unchanged.
-The pinned catalog and service manifest identify the published parallel S3
-transfer release; a different image requires a reviewed pin update.
+The default pins identify the published parallel S3 transfer release. A newly
+prepared image requires its reviewed --release-pins file; this never changes
+the original defaults or prepares missing model weights automatically.
 """
 import argparse
 import ast
@@ -53,6 +54,24 @@ def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def release_pins(value=None):
+    if value is None:
+        value = {'schema_version': 'cctv-demo-release-pins-v1',
+            'official_launcher_sha256': OFFICIAL_SHA, 'verifier_sha256': VERIFIER_SHA,
+            'catalog_sha256': CATALOG_SHA, 'service_manifest_sha256': MANIFEST_SHA,
+            'files_verified': 25, 'supported_versions': ['B', 'R2']}
+    require(isinstance(value, dict) and set(value) == {
+        'schema_version', 'official_launcher_sha256', 'verifier_sha256', 'catalog_sha256',
+        'service_manifest_sha256', 'files_verified', 'supported_versions'}
+        and value['schema_version'] == 'cctv-demo-release-pins-v1', 'release_pins_invalid')
+    require(all(isinstance(value[key], str) and re.fullmatch(r'[0-9a-f]{64}', value[key])
+                for key in ('official_launcher_sha256', 'verifier_sha256', 'catalog_sha256',
+                            'service_manifest_sha256'))
+            and type(value['files_verified']) is int and 1 <= value['files_verified'] <= 100
+            and value['supported_versions'] in (['B', 'R2'], ['B', 'R2', 'LC']), 'release_pins_invalid')
+    return value
+
+
 def configuration(name, hours, max_jobs):
     require(isinstance(name, str) and re.fullmatch(r'demo-session-[0-9]{8}-[0-9]{2}', name)
             and not name.endswith('-00'), 'demo_session_name_invalid')
@@ -81,18 +100,20 @@ def private_directory(path):
             and stat.S_IMODE(info.st_mode) == 0o700, 'private_directory_invalid')
 
 
-def embedded_launcher(raw, config):
-    require(sha(raw) == OFFICIAL_SHA, 'official_launcher_changed')
+def embedded_launcher(raw, config, pins=None):
+    pins = release_pins(pins)
+    require(sha(raw) == pins['official_launcher_sha256'], 'official_launcher_changed')
     text = raw.decode()
     require(text.count("<<'PY'\n") == 1 and text.endswith('\nPY\n'), 'official_launcher_framing_changed')
     code = text.split("<<'PY'\n", 1)[1][:-4]
     seconds = config['hours'] * 3600
+    versions = '/'.join(pins['supported_versions'])
     replacements = {
         "r'mlops-session-[0-9]{8}-[0-9]{2}'": "r'demo-session-[0-9]{8}-[0-9]{2}'",
         "CCTV_GPU_MAX_JOBS='2'": f"CCTV_GPU_MAX_JOBS='{config['max_jobs']}'",
         "CCTV_GPU_TOTAL_SECONDS='900'": f"CCTV_GPU_TOTAL_SECONDS='{seconds}'",
         'Starting B/R2 API: 2 jobs, 300 seconds/job, 900 seconds/session; no automatic inference.':
-            f"Starting B/R2 demo API: {config['max_jobs']} jobs, 300 seconds/job, {seconds} seconds/session; no automatic inference.",
+            f"Starting {versions} demo API: {config['max_jobs']} jobs, 300 seconds/job, {seconds} seconds/session; no automatic inference.",
     }
     for before, after in replacements.items():
         require(code.count(before) == 1, 'official_launcher_substitution_changed')
@@ -129,7 +150,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def local_health(token):
+def local_health(token, pins=None):
+    pins = release_pins(pins)
     request = urllib.request.Request('http://127.0.0.1:8000/health',
         headers={'Authorization': 'Bearer ' + token, 'User-Agent': 'boram3-cctv-be-worker/1.0'})
     with urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect()).open(request, timeout=2) as response:
@@ -139,7 +161,7 @@ def local_health(token):
     require(isinstance(result, dict) and result.get('status') == 'ok'
             and result.get('api_schema') == 'runpod-ab-api-v1'
             and result.get('storage') == 's3' and result.get('gpu_concurrency') == 1
-            and result.get('supported_versions') == ['B', 'R2'], 'api_health_identity_changed')
+            and result.get('supported_versions') == pins['supported_versions'], 'api_health_identity_changed')
     return result
 
 
@@ -156,7 +178,7 @@ def health_summary(health, now):
             'exhausted': admissions >= limits['max_jobs']}
 
 
-def existing_api(token, *, proc=Path('/proc')):
+def existing_api(token, *, proc=Path('/proc'), pins=None):
     processes = []
     for process in proc.iterdir():
         if not process.name.isdigit():
@@ -176,7 +198,7 @@ def existing_api(token, *, proc=Path('/proc')):
                'present': bool(processes) or listening, 'automatic_stop': False}
     if summary['present']:
         try:
-            summary.update(health_summary(local_health(token), time.time()))
+            summary.update(health_summary(local_health(token, pins), time.time()))
         except Exception:
             summary.update(authenticated_health=False, expired=None, exhausted=None,
                            health_status='not_verified')
@@ -205,7 +227,8 @@ def existing_api(token, *, proc=Path('/proc')):
     return summary
 
 
-def inspect(config, runtime_env):
+def inspect(config, runtime_env, pins=None):
+    pins = release_pins(pins)
     require(sys.platform.startswith('linux') and Path('/proc/1/environ').is_file(), 'run_inside_runpod_required')
     init = dict(v.split(b'=', 1) for v in Path('/proc/1/environ').read_bytes().split(b'\0') if b'=' in v)
     pod = init.get(b'RUNPOD_POD_ID', os.environ.get('RUNPOD_POD_ID', '').encode()).decode()
@@ -219,29 +242,36 @@ def inspect(config, runtime_env):
     launcher = plain(SERVICE / 'apps/runpod_image/start-model-session.sh')
     verifier = plain(SERVICE / 'apps/runpod_image/verify_service_bundle.py')
     catalog = plain(SERVICE / 'apps/be_worker/mlops-20261004-v1.json')
-    require(sha(verifier.read_bytes()) == VERIFIER_SHA, 'bundle_verifier_changed')
-    require(sha(catalog.read_bytes()) == CATALOG_SHA, 'model_catalog_changed')
-    code = embedded_launcher(launcher.read_bytes(), config)
+    require(sha(verifier.read_bytes()) == pins['verifier_sha256'], 'bundle_verifier_changed')
+    require(sha(catalog.read_bytes()) == pins['catalog_sha256'], 'model_catalog_changed')
+    if 'LC' in pins['supported_versions']:
+        require(set(json.loads(catalog.read_bytes()).get('classifiers', {})) ==
+                set(pins['supported_versions']), 'model_catalog_versions_changed')
+    code = embedded_launcher(launcher.read_bytes(), config, pins)
     token = validate_private_without_start(code, config['name'], runtime_env)
     checked = subprocess.run([PYTHON, '-B', str(verifier), '--root', str(SERVICE)],
         cwd=SERVICE, capture_output=True, text=True, timeout=35)
     require(checked.returncode == 0, 'service_bundle_verification_failed')
     bundle = json.loads(checked.stdout)
-    require(bundle.get('status') == 'service_bundle_verified' and bundle.get('manifest_sha256') == MANIFEST_SHA
-            and bundle.get('files_verified') == 25 and bundle.get('model_calls') == 0, 'service_bundle_identity_changed')
-    existing = existing_api(token)
+    require(bundle.get('status') == 'service_bundle_verified'
+            and bundle.get('manifest_sha256') == pins['service_manifest_sha256']
+            and bundle.get('files_verified') == pins['files_verified']
+            and bundle.get('model_calls') == 0, 'service_bundle_identity_changed')
+    existing = existing_api(token, pins=pins)
     plan = {'status': 'demo_pod_api_readonly_plan', 'pod_id': pod, 'session': config['name'],
         'limits': config['limits'], 'can_apply': not existing['present'], 'existing_api': existing,
-        'original_launcher_sha256': OFFICIAL_SHA, 'effective_launcher_sha256': sha(code.encode()),
+        'original_launcher_sha256': pins['official_launcher_sha256'], 'effective_launcher_sha256': sha(code.encode()),
         'helper_sha256': sha(Path(__file__).read_bytes()),
-        'service_manifest_sha256': MANIFEST_SHA, 'model_catalog_sha256': CATALOG_SHA,
+        'service_manifest_sha256': pins['service_manifest_sha256'], 'model_catalog_sha256': pins['catalog_sha256'],
+        'supported_versions': pins['supported_versions'],
         'overrides': ['session_name_pattern', 'max_jobs', 'whole_service_seconds', 'human_startup_banner'],
         'owner_private_runtime_validated': True, 'session_and_launch_unused': True,
         'image_catalog_files_modified': False, 'model_calls': 0, 'model_downloads': 0,
         'credential_values_exposed': False, 'automatic_retry': False, 'remote_mutations': 0}
     # Stable identity excludes the changing process/deadline observation.
     review = {k: plan[k] for k in ('pod_id', 'session', 'limits', 'original_launcher_sha256',
-              'effective_launcher_sha256', 'helper_sha256', 'service_manifest_sha256', 'model_catalog_sha256')}
+              'effective_launcher_sha256', 'helper_sha256', 'service_manifest_sha256', 'model_catalog_sha256',
+              'supported_versions')}
     plan['plan_sha256'] = sha(json.dumps(review, sort_keys=True, separators=(',', ':')).encode())
     return plan, code, token
 
@@ -258,9 +288,9 @@ def write_exclusive(path, value, *, text=False):
         os.fsync(stream.fileno())
 
 
-def apply(config, runtime_env, approved=None):
+def apply(config, runtime_env, approved=None, pins=None):
     global CLAIMED
-    plan, code, token = inspect(config, runtime_env)
+    plan, code, token = inspect(config, runtime_env, pins)
     require(plan['can_apply'], 'existing_api_preserved_separate_shutdown_required')
     require(approved is None or approved == plan['plan_sha256'], 'reviewed_pod_start_plan_changed')
     os.umask(0o077)
@@ -283,7 +313,7 @@ def apply(config, runtime_env, approved=None):
     while time.monotonic() < until:
         require(process.poll() is None, 'api_start_failed_preserve_private_log')
         try:
-            health = local_health(token)
+            health = local_health(token, pins)
             summary = health_summary(health, time.time())
             require(health['limits'] == config['limits'] and health['admissions'] == 0,
                     'started_api_health_changed')
@@ -297,6 +327,7 @@ def apply(config, runtime_env, approved=None):
             answer = {'status': 'demo_pod_api_started', 'pod_id': plan['pod_id'], 'session': config['name'],
                 'pid': process.pid, 'plan_sha256': plan['plan_sha256'], 'limits': config['limits'],
                 'deadline_at': health['deadline_at'], 'admissions': 0, 'authenticated_local_health': True,
+                'supported_versions': plan['supported_versions'],
                 'model_calls': 0, 'model_downloads': 0, 'automatic_retry': False,
                 'pod_automatic_stop': False, 'image_catalog_files_modified': False}
             write_exclusive(launch / 'ready.json', answer)
@@ -314,10 +345,17 @@ def main():
     parser.add_argument('--runtime-env', required=True)
     parser.add_argument('--apply', action='store_true')
     parser.add_argument('--approved-plan-sha256')
+    parser.add_argument('--release-pins', type=Path,
+                        help='Reviewed release-pins.json generated with the exact new image context.')
     args = parser.parse_args()
+    pins = None
+    if args.release_pins is not None:
+        source = plain(args.release_pins.absolute())
+        require(source.is_file() and source.stat().st_size <= 65536, 'release_pins_invalid')
+        pins = release_pins(json.loads(source.read_bytes()))
     config = configuration(args.name, args.hours, args.max_jobs)
-    answer = (apply(config, args.runtime_env, args.approved_plan_sha256) if args.apply
-              else inspect(config, args.runtime_env)[0])
+    answer = (apply(config, args.runtime_env, args.approved_plan_sha256, pins) if args.apply
+              else inspect(config, args.runtime_env, pins)[0])
     print(json.dumps(answer, sort_keys=True, allow_nan=False))
 
 

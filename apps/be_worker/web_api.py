@@ -134,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
                         return self.send({'error':'invalid_selection_query'},400)
                     selection=query.get('selection',[''])[0]
                     purpose=query.get('purpose',[''])[0]
-                    if selection not in ('A','B','A+B','R2') or purpose not in ('gpu_comparison','full_report'):
+                    if selection not in ('A','B','A+B','R2','LC') or purpose not in ('gpu_comparison','full_report'):
                         return self.send({'error':'invalid_analysis_selection'},400)
                     if is_demo and (selection not in policy['versions'] or purpose != 'full_report'
                                     or 'reference_date' in query):

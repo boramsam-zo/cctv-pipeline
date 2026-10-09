@@ -129,7 +129,7 @@ def validate_result(result, checked, starts):
         raise ValueError("Analysis FPS differs from the fully decoded input")
     classifier = result.get('classifier', result.get('x3d'))
     windows = classifier["windows"]
-    r2 = classifier.get('model_id') == 'r2plus1d_18'
+    argmax = classifier.get('model_id') in ('r2plus1d_18', 'r3d_18')
     expected_starts = starts(duration)
     if not windows or len(windows) != len(expected_starts):
         raise ValueError("Missing inference windows")
@@ -140,7 +140,7 @@ def validate_result(result, checked, starts):
             raise ValueError("Invalid inference window values")
         if abs(row["start_s"] - start) > 1e-6 or abs(row["end_s"] - min(start + 2, duration)) > 1e-6:
             raise ValueError("Inference window coverage mismatch")
-        positive = row['logits'][1] > row['logits'][0] if r2 else score >= .5
+        positive = row['logits'][1] > row['logits'][0] if argmax else score >= .5
         if row["is_positive"] != positive:
             raise ValueError("Inference threshold flag mismatch")
     events, handoffs = result["events"], result["vlm_handoffs"]
@@ -298,22 +298,27 @@ def run_job(work_root, version, video, output, *, expected_gpu=GPU):
     from apps.be_worker.model_catalog import contract_for_version
     from apps.runpod_image import classifier_pipeline
     contract = contract_for_version(version)
-    if version == 'R2':
-        from apps.runpod_image.classifier_adapter import R2Classifier
-        from apps.runpod_image.model_prepare import cached_r2
-        classifier = R2Classifier(cached_r2(), device='cuda')
+    if version in ('R2', 'LC'):
+        if version == 'LC':
+            from apps.runpod_image.lastconv_classifier import LastConvClassifier
+            from apps.runpod_image.model_prepare import cached_lc
+            classifier = LastConvClassifier(cached_lc(), device='cuda')
+        else:
+            from apps.runpod_image.classifier_adapter import R2Classifier
+            from apps.runpod_image.model_prepare import cached_r2
+            classifier = R2Classifier(cached_r2(), device='cuda')
         models = classifier_pipeline.fixed_b_detector(pipeline, yolo_path)
     else:
         models = pipeline.ModelBundle(x3d_path, yolo_path, device="cuda")
     class_mapping = {"checkpoint_names": names_dict(models.yolo.names),
                      "effective_names": names_dict(models.yolo_names)}
-    if version in ("B", "R2"):
+    if version in ("B", "R2", "LC"):
         sidecar = json.loads(yolo_path.with_name("yolo11s_so_tad_985_no_class4_960_b16_classes.json").read_text())
         class_mapping = validate_b_classes(models.yolo.names, sidecar["class_names"], models.yolo_names)
     torch.cuda.synchronize()
     loaded_at = time.perf_counter()
     embedded_media_seconds = [0.0]
-    if version in ("B", "R2"):
+    if version in ("B", "R2", "LC"):
         import cv2
         context = importlib.import_module("_ab_b_source.incident_context")
         if (context.VLM_BEFORE_S, context.VLM_AFTER_S) != (3.0, 5.0):
@@ -331,7 +336,7 @@ def run_job(work_root, version, video, output, *, expected_gpu=GPU):
 
         context._write_clip, cv2.imwrite = measured(original_clip), measured(original_image)
         try:
-            if version == 'R2':
+            if version in ('R2', 'LC'):
                 result = classifier_pipeline.analyze_video(video, raw, classifier, models,
                     checked=checked, contract=contract, context_builder=context.build_incident_context,
                     group_alerts=pipeline.group_alerts, batch_size=8)
@@ -349,7 +354,7 @@ def run_job(work_root, version, video, output, *, expected_gpu=GPU):
     torch.cuda.synchronize()
     analyzed_at = time.perf_counter()
     status = validate_result(result, checked,
-        classifier_pipeline.window_starts if version == 'R2' else pipeline.window_starts)
+        classifier_pipeline.window_starts if version in ('R2', 'LC') else pipeline.window_starts)
     json.dumps(result, allow_nan=False)
     if json.loads((raw / "result.json").read_text()) != result:
         raise ValueError("Saved raw result differs from the returned analysis")
@@ -403,7 +408,7 @@ def run_job(work_root, version, video, output, *, expected_gpu=GPU):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work-root", type=Path, required=True)
-    parser.add_argument("--version", choices=("B", "R2"), required=True)
+    parser.add_argument("--version", choices=("B", "R2", "LC"), required=True)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-gpu", default=GPU)

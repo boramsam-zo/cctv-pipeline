@@ -11,7 +11,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from apps.be_worker.analysis_profiles import gpu_identity, profile
+from apps.be_worker.analysis_profiles import gpu_identity, profile, supported_versions
 from apps.be_worker.common import checked_id, read_json, save
 from apps.runpod_image import image_runtime as legacy_runtime
 from apps.runpod_image.runtime import image_runtime as classifier_runtime
@@ -56,7 +56,15 @@ class Runtime:
         self.actual_gpu = None
         self.verify_service()
         manifest, digest = runtime.inspect_image(self.image_root)
-        snapshots = [profile(version) for version in runtime.VERSIONS]
+        versions = manifest['supported_versions']
+        if tuple(versions) != supported_versions():
+            raise ValueError('service_image_classifier_versions_mismatch')
+        # LC is opt-in: an enabled release must have explicitly prepared weights.
+        # This local SHA/size check never downloads or imports model libraries.
+        if 'LC' in versions:
+            from apps.runpod_image.model_prepare import cached_lc
+            cached_lc()
+        snapshots = [profile(version) for version in versions]
         for snapshot in snapshots:
             self.verify_service(snapshot=snapshot)
         expected_gpu = snapshots[0]['runtime']['gpu']

@@ -196,7 +196,7 @@ def process_events(queue, row, reference_date, emit, scenes=None, reports=None, 
         if 'analysis_profile' in row['state'] or not scene_state.get('media_bytes_verified'):
             emit('verifying_media')
             scenes.fetch(row['worker_job_id'], event)
-        if row['state'].get('analysis_profile',{}).get('version') in ('B','R2'):
+        if row['state'].get('analysis_profile',{}).get('version') in ('B','R2','LC'):
             emit('preparing_preview')
             (previews or prepare_previews)(scenes,row['worker_job_id'],event)
         if purpose=='gpu_comparison':
@@ -416,7 +416,7 @@ def media(conn, identifier, event, kind):
         from . import browser_preview
         from apps.scene_description import scene
         original=kind.removesuffix('_preview')
-        if selected.get('version') not in ('B','R2'):raise WorkerError('preview_requires_version_b')
+        if selected.get('version') not in ('B','R2','LC'):raise WorkerError('preview_requires_version_b')
         index=read_json(inputs/'evidence.json')
         target=directory/'scenes'/event/'display-preview'/original
         browser_preview.validate(inputs/selected[original],target,source_sha256=scene.sha(assets[original]),
@@ -441,7 +441,7 @@ def selection_views(conn, identifier=None, *, verified_jobs=None):
     output=[]
     for group in groups:
         children=[]
-        expected_versions={'A':['A'],'B':['B'],'A+B':['A','B'],'R2':['R2']}.get(group['selection'])
+        expected_versions={'A':['A'],'B':['B'],'A+B':['A','B'],'R2':['R2'],'LC':['LC']}.get(group['selection'])
         if (expected_versions is None or [m.get('version') for m in group['children']] != expected_versions
                 or group['selection_id'] != selection_jobs.identifier(dict(input_sha256=group['input_sha256'],
                     selection=group['selection'],purpose=group['purpose'],

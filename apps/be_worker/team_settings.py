@@ -44,7 +44,7 @@ def metadata():
 
 def _schema_fields(version):
     """Literal v1 semantics, including historical records; no release reads."""
-    if version not in ('B', 'R2'):
+    if version not in ('B', 'R2', 'LC'):
         raise WorkerError('team_rag_requires_version_b')
     return dict(schema_version=SCHEMA, report_pipeline=PIPELINE,
                 scene_fps=4, scene_prompt_version='cctv-team-scene-v2-01',
@@ -92,7 +92,7 @@ def validate(value, profile):
     from .generation_settings import _model
     try:
         frozen = validate_profile(profile)
-        if frozen['version'] not in ('B', 'R2'):
+        if frozen['version'] not in ('B', 'R2', 'LC'):
             raise ValueError('unsupported_team_classifier')
     except (ValueError, TypeError):
         raise WorkerError('team_rag_requires_version_b') from None

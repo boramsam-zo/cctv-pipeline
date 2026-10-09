@@ -131,7 +131,7 @@ def _classifier(raw, snapshot):
 
 
 def _windows(raw, normalized, duration):
-    if normalized['version'] == 'R2':
+    if normalized['version'] in ('R2', 'LC'):
         return _r2_windows(raw, normalized, duration)
     x3d = raw['x3d']
     _require(x3d['model'] == 'x3d_s_real_so_tad_v1_epoch7'
@@ -201,7 +201,7 @@ def _r2_windows(raw, normalized, duration):
 
 
 def _handoff_classifier(handoff, frozen):
-    if frozen['version'] == 'R2':
+    if frozen['version'] in ('R2', 'LC'):
         from .model_catalog import contract_sha256
         _require(handoff.get('classifier_collision_candidate') is True
                  and 'x3d_collision_candidate' not in handoff, 'r2_handoff_classifier')

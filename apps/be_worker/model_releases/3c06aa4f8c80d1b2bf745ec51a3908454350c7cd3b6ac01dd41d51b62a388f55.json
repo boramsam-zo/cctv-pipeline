@@ -1,0 +1,112 @@
+{
+  "schema_version": "cctv-mlops-deployment-v1",
+  "deployment": "mlops-20261004-v1",
+  "gpu": "NVIDIA CUDA GPU",
+  "image_manifest_sha256": "24305629627fcc66e5599dc640dfb70f7c173e4811c481e2b1c44ee268176ebc",
+  "execution_adapter_sha256": "3247ea95d7a0f1c892633aaeec7d8da16a41bc1647e7b5f4414dcc4980ca8276",
+  "code_files": {
+    "runtime/image_runtime.py": "e3262e4d4e025288fa468e4af034b1f1f026a328b4cdd2cdc3d30e36a697998e",
+    "runtime/job.py": "3247ea95d7a0f1c892633aaeec7d8da16a41bc1647e7b5f4414dcc4980ca8276",
+    "runtime/runner.py": "0c6be2fd50020b98a282119bd2043c929b84ba50fd0cf191e1a6724dee323781",
+    "service/apps/be_worker/__init__.py": "d52eb47b67d993b7859475567c269ed77832e32b42506e2bc82e1fbb658d65a3",
+    "service/apps/be_worker/ab_evidence.py": "35a9e178624f9f0bae851a198d57122821e7ad3215655bcfcc2d4b94998e1f8b",
+    "service/apps/be_worker/analysis_profiles.py": "f722352a287987831d7e90886f5378575909d273aff892901cb19a6e1ee572b7",
+    "service/apps/be_worker/common.py": "75de7a8c9b2bba418b07b437cbc3c13225114c37c9509b2d9a099c6bb548090d",
+    "service/apps/be_worker/model_catalog.py": "47fd82b36f14ea5187e01791df1a34bff08391c7d8d284d4d5b6f43e0a078e02",
+    "service/apps/model_compare/__init__.py": "37aaa4d29f92988d7206e5bb33cf232ea88b72a165bf9088a5bcfe487fdab124",
+    "service/apps/model_compare/runner.py": "0c6be2fd50020b98a282119bd2043c929b84ba50fd0cf191e1a6724dee323781",
+    "service/apps/runpod_image/classifier_adapter.py": "7cdcd0f98356345c332db1c6baf463220f2dc87e2925295f340b027fd0ac99f8",
+    "service/apps/runpod_image/classifier_pipeline.py": "eaa42239b4bacd97f0abd8f3985658689d1b49ea21be5dfdedc9518d50d794d2",
+    "service/apps/runpod_image/image_runtime.py": "53eb8827285afbe87acf3cb7f54d6dfbd38b3db0a0a6a0257b097e5e9e0fb895",
+    "service/apps/runpod_image/model_artifact.py": "f2ca40c32446bb6e327546fbf34f39c754665db78d6a18882838c03c5ffd01ff",
+    "service/apps/runpod_image/model_prepare.py": "7dc3373b8ccb7da60ce2aa6252a15b8d04e4007a5a1de5d3921e82f4ffe30ef5",
+    "service/apps/runpod_image/runtime/image_runtime.py": "e3262e4d4e025288fa468e4af034b1f1f026a328b4cdd2cdc3d30e36a697998e",
+    "service/apps/runpod_image/service.py": "8b0723d720002e2a9951138eab0286b6aecca2bf6cc13899b8b381e355786ead",
+    "service/apps/runpod_image/service_job.py": "839dbbc2bf365610c5fdee4a3eee5092604a86a6c66a6926d776cacc57c4a0b9",
+    "service/apps/runpod_image/verify_service_bundle.py": "157ba1ec3cd612b9e8e61aeac202ed22c1cdf9c1300ff5e050b1daf192bfa072",
+    "service/apps/runpod_worker/storage.py": "b3b8a3dfd2efd50be33f2c68905d79623561c099ec7e4f518cde0e7ed2a666d5",
+    "service/apps/runpod_worker/verify_bundle.py": "45aa8f82e3aec1bff31533f709f1f8af34b4e504e4467a4b3ec3741d10c62e99"
+  },
+  "classifiers": {
+    "B": {
+      "schema_version": "cctv-classifier-contract-v1",
+      "class_mapping": {
+        "normal": 0,
+        "accident": 1
+      },
+      "model_id": "x3d_s",
+      "model_version": "operating-epoch7",
+      "weights_sha256": "ca2db4a25c9cd2d859a7143932d911a3351beacc5193de3ada16f3115bea09bf",
+      "weights_bytes": 36344683,
+      "checkpoint_key": "model_state_dict",
+      "preprocessing": {
+        "frames": 16,
+        "height": 182,
+        "width": 182,
+        "color": "RGB",
+        "resize": "cv2_inter_area_stretch",
+        "mean": [
+          0.45,
+          0.45,
+          0.45
+        ],
+        "std": [
+          0.225,
+          0.225,
+          0.225
+        ],
+        "temporal_sampling": "operating_window_start_uniform",
+        "window_seconds": 2,
+        "stride_seconds": 1,
+        "window_coverage": "include_shifted_final",
+        "short_video": "pad_existing"
+      },
+      "decision_policy": {
+        "method": "accident_score_gte",
+        "threshold": 0.5,
+        "tie": "accident",
+        "event_merge_gap_seconds": 4
+      }
+    },
+    "R2": {
+      "schema_version": "cctv-classifier-contract-v1",
+      "class_mapping": {
+        "normal": 0,
+        "accident": 1
+      },
+      "model_id": "r2plus1d_18",
+      "model_version": "sotad-head-epoch7",
+      "weights_sha256": "c40c150ea70cd422edc546c9d110b138c87cba67a277c5c4d65353ba04478b46",
+      "weights_bytes": 125379501,
+      "checkpoint_key": "model_state",
+      "preprocessing": {
+        "frames": 16,
+        "height": 224,
+        "width": 224,
+        "color": "RGB",
+        "resize": "pil_bilinear_letterbox_black",
+        "mean": [
+          0.43216,
+          0.394666,
+          0.37645
+        ],
+        "std": [
+          0.22803,
+          0.22145,
+          0.216989
+        ],
+        "temporal_sampling": "pts_bin_centers_no_future_boundary",
+        "window_seconds": 2,
+        "stride_seconds": 1,
+        "window_coverage": "complete_windows_only",
+        "short_video": "reject_less_than_window"
+      },
+      "decision_policy": {
+        "method": "argmax",
+        "threshold": 0.5,
+        "tie": "normal",
+        "event_merge_gap_seconds": 4
+      }
+    }
+  }
+}

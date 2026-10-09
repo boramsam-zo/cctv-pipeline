@@ -22,7 +22,7 @@ from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from apps.be_worker.analysis_profiles import gpu_identity, profile
+from apps.be_worker.analysis_profiles import gpu_identity, profile, supported_versions
 from apps.be_worker.common import MAX_VIDEO, checked_id, now, read_json, save
 from apps.runpod_image.service_job import Runtime
 from apps.runpod_worker.storage import settings
@@ -223,6 +223,11 @@ class Jobs:
             # attempt. It may access private S3, but never imports/executes models.
             await self.process([sys.executable, '-B', '-m', 'apps.runpod_image.model_prepare',
                                 '--version', 'R2'], directory, seconds)
+        elif state['analysis_profile']['version'] == 'LC':
+            # Startup required explicit LC preparation; loss of the cache is a
+            # failure, never permission to fetch weights during an analysis.
+            from apps.runpod_image.model_prepare import cached_lc
+            await asyncio.to_thread(cached_lc)
         remaining = seconds - (time.monotonic() - began)
         if remaining <= 0:
             raise TimeoutError('model_preparation_consumed_job_budget')
@@ -338,7 +343,7 @@ def create_app(root=None, token=None, limits=None, s3_config=None, **injected):
         return {k: v for k, v in state.items() if k != 's3_config'}
 
     async def health(request):
-        versions = ('B', 'R2') if os.environ.get('CCTV_ANALYSIS_DEPLOYMENT') == 'mlops-20261004-v1' else ('A', 'B')
+        versions = supported_versions()
         return JSONResponse({'status': 'ok', 'api_schema': SCHEMA, 'storage': 's3',
             'supported_versions': list(versions), 'profiles': {
                 v: gpu_identity('0' * 64, profile(v))['profile_sha256'] for v in versions},

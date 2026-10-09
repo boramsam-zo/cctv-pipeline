@@ -101,21 +101,40 @@ def payloads(root=ROOT):
     return result
 
 
-def build(output, root=ROOT):
+def build(output, root=ROOT, *, release_catalog=None):
     output = plain(output)
     if output.exists() or not output.parent.is_dir():
         raise ValueError('bundle_output_must_be_new_with_existing_parent')
     files = payloads(root)
+    generated = set()
+    if release_catalog is not None:
+        from apps.be_worker import analysis_profiles
+        path = plain(release_catalog)
+        entries = analysis_profiles._mlops_profiles(path)
+        if tuple(entries) != ('B', 'R2', 'LC'):
+            raise ValueError('bundle_lastconv_release_required')
+        name = 'apps/be_worker/mlops-20261004-v1.json'
+        previous = json.loads(files[name])
+        archive = 'apps/be_worker/model_releases/' + analysis_profiles._sha(previous) + '.json'
+        if archive in files and json.loads(files[archive]) != previous:
+            raise ValueError('bundle_release_history_conflict')
+        if archive not in files:
+            files[archive] = files[name]
+            generated.add(archive)
+        files[name] = path.read_bytes()
+        generated.add(name)
     # Validate local import completeness without executing app modules.
     from scripts.build_runpod_service_bundle import verify_local_imports
     verify_local_imports(files)
     for name, raw in files.items():
-        if name != 'EC2_MLOPS_PREPARATION.md' and plain(root / name).read_bytes() != raw:
+        if name != 'EC2_MLOPS_PREPARATION.md' and name not in generated and plain(root / name).read_bytes() != raw:
             raise ValueError('bundle_source_changed_before_write:' + name)
     manifest = {'schema_version': 'ec2-mlops-preparation-v1',
                 'files': {name: digest(data) for name, data in sorted(files.items())},
                 'expected_existing_cpu_image': CPU_BASE, 'expected_existing_cpu_image_id': CPU_BASE_ID,
                 'rag_resources_included': list(RESOURCE_FILES), 'model_weights_included': False,
+                'release_catalog_override': release_catalog is not None,
+                'release_catalog_sha256': digest(files['apps/be_worker/mlops-20261004-v1.json'])['sha256'],
                 'secrets_included': False, 'service_changes': False, 'docker_builds': 0,
                 'mlflow_server_started': False, 'database_writes': 0, 'model_calls': 0}
     files['ec2-mlops-manifest.json'] = (json.dumps(manifest, indent=2) + '\n').encode()
@@ -151,5 +170,7 @@ def build(output, root=ROOT):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--release-catalog', type=Path,
+                        help='Use the reviewed LC GPU package catalog in the new bundle only; preserve source/history.')
     args = parser.parse_args()
-    print(json.dumps(build(args.output), indent=2))
+    print(json.dumps(build(args.output, release_catalog=args.release_catalog), indent=2))
