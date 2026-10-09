@@ -53,7 +53,25 @@ class LastconvSelectionTests(unittest.TestCase):
         lc = selected['children'][0]['profile']
         self.assertEqual(lc['classifier'], model_catalog.contract_for_version('LC'))
         self.assertNotIn('models/x3d_s_real_so_tad_epoch7_best_model.pt', lc['model_files'])
-        self.assertEqual(team_settings.contract('LC')['analysis_version'], 'LC')
+        # Exercise the real contract hashing against public release files and
+        # synthetic corpus/index bytes; private RAG artifacts are absent in CI.
+        resources = self.root / 'synthetic-contract-resources'
+        public_files = ('team_rag/VLM_PROMPT.md', 'team_rag/event.schema.json',
+            'scene_description/team_scene.py', 'team_rag/control_rag.py',
+            'team_rag/runtime.py', 'team_rag/e5-model-manifest.json',
+            'team_rag/contacts.json')
+        for relative in public_files:
+            target = resources / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((team_settings.ROOT / relative).read_bytes())
+        for relative, content in (
+                ('team_rag/data/chunks.jsonl', b'{"synthetic_corpus":true}\n'),
+                ('team_rag/data/index.sqlite', b'synthetic-index-contract-only')):
+            target = resources / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+        with patch.object(team_settings, 'ROOT', resources):
+            self.assertEqual(team_settings.contract('LC')['analysis_version'], 'LC')
         self.assertEqual(ab_scene.asset_kinds({'version': 'LC'}), ('clip', 'frame', 'roi_clip', 'context'))
         for version in ('B', 'R2'):
             self.assertEqual(profiles.profile(version), self.old_profiles[version])

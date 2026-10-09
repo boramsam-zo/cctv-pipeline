@@ -51,7 +51,7 @@ def summary(image, commit, digest, path):
                      f'- Immutable image reference: `{image}@{digest}`\n'
                      '- Platform: `linux/amd64`\n'
                      '- Pod creation/replacement and EC2 activation are manual.\n'
-                     '- R2 model bytes and runtime credentials are excluded from this build context.\n')
+                     '- R2/LC model bytes and runtime credentials are excluded from this build context.\n')
 
 
 def main():
