@@ -19,6 +19,17 @@
 
 같은 영상 파일은 SHA-256으로 식별하고, 모델·가중치·전처리 설정을 함께 기록해 모델별 실행을 구분합니다. 화면의 **사고 후보 / 후보 없음 / 미판정**은 서로 다른 상태이며, 처리 실패를 정상 영상으로 표시하지 않습니다.
 
+## 분석 결과 예시
+
+영상 모델이 찾은 **사고 후보 클립**과, 같은 구간에서 YOLO 탐지 결과를 프레임 사이로 이어 만든 **차량 추적 주석 이미지**입니다.
+
+| | 사례 1 | 사례 2 | 사례 3 |
+|---|---|---|---|
+| **사고 후보 클립** | <img src="docs/assets/gallery/case1_clip.gif" width="280" alt="사례 1 사고 후보 클립"> | <img src="docs/assets/gallery/case2_clip.gif" width="280" alt="사례 2 사고 후보 클립"> | <img src="docs/assets/gallery/case3_clip.gif" width="280" alt="사례 3 사고 후보 클립"> |
+| **차량 추적 주석** | <img src="docs/assets/gallery/case1_tracking.jpg" width="280" alt="사례 1 차량 추적 주석 이미지"> | <img src="docs/assets/gallery/case2_tracking.jpg" width="280" alt="사례 2 차량 추적 주석 이미지"> | <img src="docs/assets/gallery/case3_tracking.jpg" width="280" alt="사례 3 차량 추적 주석 이미지"> |
+
+주석 이미지의 빨간 상자(PRIMARY)는 움직임 변화가 가장 큰 차량, 주황 상자(RELATED)는 그 차량과 가까워진 관련 차량, 선은 각 차량의 이동 경로, 노란 상자는 사고 관심 영역(ROI)입니다. 모두 검토용 후보이며 사고 확정 판정이 아닙니다.
+
 ## 분석 과정
 
 1. **접수:** MP4 영상과 분석 모델을 선택하면 EC2가 작업과 설정을 저장합니다.
