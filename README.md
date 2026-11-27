@@ -21,11 +21,12 @@
 
 ## 분석 결과 예시
 
-영상 모델이 찾은 **사고 후보 클립**과, 같은 구간에서 YOLO로 탐지한 차량을 ByteTrack으로 프레임 사이에 이어 만든 **ByteTrack 추적 주석 이미지**입니다.
+영상 모델이 찾은 **사고 후보 클립**, 사고 관심 영역만 잘라 낸 **ROI 영상**, 같은 구간에서 YOLO로 탐지한 차량을 ByteTrack으로 프레임 사이에 이어 만든 **ByteTrack 추적 주석 이미지**입니다.
 
 | | 사례 1 | 사례 2 | 사례 3 |
 |---|---|---|---|
 | **사고 후보 클립** | <img src="docs/assets/gallery/case1_clip.gif" width="280" alt="사례 1 사고 후보 클립"> | <img src="docs/assets/gallery/case2_clip.gif" width="280" alt="사례 2 사고 후보 클립"> | <img src="docs/assets/gallery/case3_clip.gif" width="280" alt="사례 3 사고 후보 클립"> |
+| **ROI 영상** | <img src="docs/assets/gallery/case1_roi.gif" width="280" alt="사례 1 ROI 영상"> | <img src="docs/assets/gallery/case2_roi.gif" width="280" alt="사례 2 ROI 영상"> | <img src="docs/assets/gallery/case3_roi.gif" width="280" alt="사례 3 ROI 영상"> |
 | **ByteTrack 추적 주석** | <img src="docs/assets/gallery/case1_tracking.jpg" width="280" alt="사례 1 ByteTrack 추적 주석 이미지"> | <img src="docs/assets/gallery/case2_tracking.jpg" width="280" alt="사례 2 ByteTrack 추적 주석 이미지"> | <img src="docs/assets/gallery/case3_tracking.jpg" width="280" alt="사례 3 ByteTrack 추적 주석 이미지"> |
 
 주석 이미지의 빨간 상자(PRIMARY)는 움직임 변화가 가장 큰 차량, 주황 상자(RELATED)는 그 차량과 가까워진 관련 차량, 선은 각 차량의 이동 경로, 노란 상자는 사고 관심 영역(ROI)입니다. 모두 검토용 후보이며 사고 확정 판정이 아닙니다.
